@@ -28,10 +28,10 @@ public class Worker : BackgroundService
 
   protected override async Task ExecuteAsync(CancellationToken stoppingToken)
   {
-    _logger.LogInformation("Worker service starting..", DateTimeOffset.Now);
+    _logger.LogInformation("Worker service starting..");
 
     await _entryPointService.ExecuteAsync(stoppingToken);
     
-    _logger.LogInformation("Worker service stopped!", DateTimeOffset.Now);
+    _logger.LogInformation("Worker service stopped!");
   }
 }

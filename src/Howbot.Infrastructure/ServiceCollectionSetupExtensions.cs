@@ -27,6 +27,7 @@ public static class ServiceCollectionSetupExtensions
 
   public static void AddHowbotServices(this IServiceCollection services)
   {
+    services.AddSingleton<IVoiceService, VoiceService>();
     services.AddSingleton<ILavaNodeService, LavaNodeService>();
     services.AddSingleton<IMusicService, MusicService>();
     services.AddSingleton<IEmbedService, EmbedService>();
