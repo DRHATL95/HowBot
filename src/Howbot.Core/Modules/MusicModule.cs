@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -22,11 +21,11 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     _serviceLocator = serviceLocator;
   }
 
-  [SlashCommand("join", "Join a voice channel within a Guild.", true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.JoinCommandName, Constants.Commands.JoinCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildPermission.Connect | GuildPermission.ViewChannel)]
-  [RequireUserPermission(GuildPermission.Connect | GuildPermission.ViewChannel)]
-  public async Task JoinAsync()
+  [RequireBotPermission(Permissions.Bot.GuildBotVoiceCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoiceCommandPermission)]
+  public async Task JoinCommandAsync()
   {
     try
     {
@@ -52,18 +51,18 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception thrown executing command [{CommandName}]", nameof(JoinAsync));
+      _logger.LogError(exception, "Exception thrown executing command [{CommandName}]", nameof(JoinCommandAsync));
       throw;
     }
   }
 
-  [SlashCommand("play", "Play a search request using the given search providers. Defaults to YouTube.", true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.PlayCommandName, Constants.Commands.PlayCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildPermission.Connect | GuildPermission.ViewChannel | GuildPermission.Speak)]
-  [RequireUserPermission(GuildPermission.Connect | GuildPermission.ViewChannel | GuildPermission.Speak)]
-  public async Task PlayAsync(
-    [Summary("search_request", "Search request used to search through audio providers.")] string searchRequest,
-    [Summary("search_type", "Audio providers used with search request. Default is YouTube.")] SearchType? searchType = null)
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
+  public async Task PlayCommandAsync(
+    [Summary(Constants.Commands.PlaySearchRequestArgumentName, Constants.Commands.PlaySearchRequestArgumentDescription)] string searchRequest,
+    [Summary(Constants.Commands.PlaySearchTypeArgumentName, Constants.Commands.PlaySearchTypeArgumentDescription)] SearchType? searchType = null)
   {
     try
     {
@@ -103,12 +102,52 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       }
       else
       {
-        await DeleteOriginalResponseAsync();
+        _logger.LogDebug("Else");
+        // Should create embed somewhere after this point
       }
     }
     catch (Exception exception)
     {
       _logger.LogError(exception, "Exception thrown playing song");
+      throw;
+    }
+  }
+
+  [SlashCommand(Constants.Commands.PauseCommandName, Constants.Commands.PauseCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
+  public async Task PauseCommandAsync()
+  {
+    try
+    {
+      await DeferAsync(ephemeral: true);
+
+      using var scope = _serviceLocator.CreateScope();
+      var musicService = scope.ServiceProvider.GetRequiredService<IMusicService>();
+
+      var commandResponse = await musicService.PauseCurrentPlayingTrackAsync(Context.Guild);
+    }
+    catch (Exception exception)
+    {
+      Console.WriteLine(exception);
+      throw;
+    }
+  }
+
+  [SlashCommand(Constants.Commands.ResumeCommandName, Constants.Commands.ResumeCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
+  public async Task ResumeCommandAsync()
+  {
+    try
+    {
+      await DeferAsync(ephemeral: true);
+    }
+    catch (Exception e)
+    {
+      Console.WriteLine(e);
       throw;
     }
   }

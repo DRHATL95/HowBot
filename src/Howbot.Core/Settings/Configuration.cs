@@ -48,16 +48,18 @@ public class Configuration
   
   public NodeConfiguration NodeConfiguration
   {
-    get =>
-      new()
+    get
+    {
+      return new NodeConfiguration
       {
         Port = 2333, // TODO: dhoward - Move to web.config or .env
         Hostname = "localhost", // TODO: dhoward - Move to web.config or .env
-        Authorization = GetLavaLinkPassword(),
+        Authorization = this.GetLavaLinkPassword(),
         SelfDeaf = true,
-        EnableResume = true
-        // SocketConfiguration = this.WebSocketConfiguration
+        EnableResume = true,
+        SocketConfiguration = this.WebSocketConfiguration
       };
+    }
   }
   
   private WebSocketConfiguration WebSocketConfiguration
@@ -143,6 +145,8 @@ public class Configuration
         token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
                 Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
 
+        _logger.LogDebug("TOKEN: {Token}", token);
+        
         return token ?? string.Empty;
       }
     }

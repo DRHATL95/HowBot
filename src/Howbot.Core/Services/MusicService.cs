@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Victoria.Node;
 using Victoria.Player;
@@ -14,13 +15,11 @@ namespace Howbot.Core.Services;
 public class MusicService : IMusicService
 {
   private readonly ILoggerAdapter<MusicService> _logger;
-  private readonly LavaNode _lavaNode;
   private readonly IServiceLocator _serviceLocator;
 
-  public MusicService(ILoggerAdapter<MusicService> logger, LavaNode lavaNode, IServiceLocator serviceLocator)
+  public MusicService(ILoggerAdapter<MusicService> logger, IServiceLocator serviceLocator)
   {
     _logger = logger;
-    _lavaNode = lavaNode;
     _serviceLocator = serviceLocator;
   }
 
@@ -69,9 +68,35 @@ public class MusicService : IMusicService
     }
   }
 
-  public Task<CommandResponse> PlayByYouTubeSearch(string searchRequest, IGuildUser user, IVoiceState voiceState, ITextChannel textChannel)
+  public async Task<CommandResponse> PauseCurrentPlayingTrackAsync(IGuild guild)
   {
-    throw new NotImplementedException();
+    try
+    {
+      using var scope = _serviceLocator.CreateScope();
+      var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
+
+      if (!lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      {
+        _logger.LogDebug("Unable to pause, player is not defined");
+        return CommandResponse.CommandNotSuccessful("I am not connected to a voice channel");
+      }
+
+      if (lavaPlayer.PlayerState is not PlayerState.Playing)
+      {
+        _logger.LogDebug("Unable to pause, player is not playing");
+        return CommandResponse.CommandNotSuccessful("Unable to pause anything. There is nothing playing!");
+      }
+
+      _logger.LogDebug("Pausing current track");
+      await lavaPlayer.PauseAsync();
+
+      return CommandResponse.CommandSuccessful();
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception, "Exception thrown in MusicService.PauseCurrentPlayingTrackAsync");
+      throw;
+    }
   }
 
   #endregion
