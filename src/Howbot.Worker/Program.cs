@@ -50,7 +50,6 @@ public abstract class Program
           .ConfigureServices((hostContext, services) =>
           {
             services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
-            services.AddSingleton<IEntryPointService, EntryPointService>();
             services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
             
             services.AddHowbotServices();
@@ -63,18 +62,12 @@ public abstract class Program
             services.AddTransient<MusicModule>();
 
             // Infrastructure.ContainerSetup
-            services.AddMessageQueues();
             services.AddDbContext(hostContext.Configuration);
             services.AddRepositories();
-            services.AddUrlCheckingServices();
 
             var workerSettings = new WorkerSettings();
             hostContext.Configuration.Bind(nameof(WorkerSettings), workerSettings);
             services.AddSingleton(workerSettings);
-
-            var entryPointSettings = new EntryPointSettings();
-            hostContext.Configuration.Bind(nameof(EntryPointSettings), entryPointSettings);
-            services.AddSingleton(entryPointSettings);
 
             services.AddHostedService<Worker>();
           });

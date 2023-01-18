@@ -2,6 +2,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Settings;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Howbot.Worker;
@@ -14,23 +16,32 @@ namespace Howbot.Worker;
 public class Worker : BackgroundService
 {
   private readonly ILoggerAdapter<Worker> _logger;
-  private readonly IEntryPointService _entryPointService;
-  private readonly WorkerSettings _settings;
+  private readonly IServiceLocator _serviceLocator;
+  // private readonly WorkerSettings _settings;
 
-  public Worker(ILoggerAdapter<Worker> logger,
-      IEntryPointService entryPointService,
-      WorkerSettings settings)
+  public Worker(ILoggerAdapter<Worker> logger, IServiceLocator serviceLocator)
   {
     _logger = logger;
-    _entryPointService = entryPointService;
-    _settings = settings;
+    _serviceLocator = serviceLocator;
   }
 
-  protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+  protected override async Task ExecuteAsync(CancellationToken cancellationToken)
   {
     _logger.LogInformation("Worker service starting..");
 
-    await _entryPointService.ExecuteAsync(stoppingToken);
+    using var scope = _serviceLocator.CreateScope();
+    var discordClientService = scope.ServiceProvider.GetRequiredService<IDiscordClientService>();
+    var configuration = scope.ServiceProvider.GetRequiredService<Configuration>();
+
+    if (!(await discordClientService.LoginDiscordBotAsync(configuration.DiscordToken)))
+    {
+      _logger.LogCritical("Unable to login to discord with provided token."); // New exception type? (DiscordLoginException)
+      await this.StopAsync(cancellationToken); // Stop worker, cannot continue without being authenticated
+    }
+
+    await discordClientService.StartDiscordBotAsync();
+
+    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
     
     _logger.LogInformation("Worker service stopped!");
   }
