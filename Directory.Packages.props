@@ -32,18 +32,20 @@
 		<PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
-		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
-		<PackageVersion Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="7.0.0" />
-		<PackageVersion Include="Moq" Version="4.18.2" />
-		<PackageVersion Include="Newtonsoft.Json" Version="13.0.2-beta2" />
-		<PackageVersion Include="ReportGenerator" Version="5.1.12" />
-		<PackageVersion Include="Serilog.AspNetCore" Version="6.1.0-dev-00285" />
-		<PackageVersion Include="Serilog.Sinks.ApplicationInsights" Version="4.0.1-dev-00040" />
-		<PackageVersion Include="SQLite" Version="3.13.0" />
-		<PackageVersion Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-		<PackageVersion Include="Swashbuckle.AspNetCore.Annotations" Version="6.4.0" />
-		<PackageVersion Include="xunit" Version="2.4.2" />
-		<PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
-	</ItemGroup>
+    <PackageVersion Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="7.0.0" />
+    <PackageVersion Include="Moq" Version="4.18.2" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.2-beta2" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.1" />
+    <PackageVersion Include="ReportGenerator" Version="5.1.12" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="6.1.0-dev-00285" />
+    <PackageVersion Include="Serilog.Sinks.ApplicationInsights" Version="4.0.1-dev-00040" />
+    <PackageVersion Include="SQLite" Version="3.13.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore.Annotations" Version="6.4.0" />
+    <PackageVersion Include="Victoria" Version="6.0.1026" />
+    <PackageVersion Include="xunit" Version="2.4.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
+  </ItemGroup>
 </Project>
