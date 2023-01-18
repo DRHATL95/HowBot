@@ -34,13 +34,13 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       using var scope = _serviceLocator.CreateScope();
       var voiceService = scope.ServiceProvider.GetRequiredService<IVoiceService>();
 
-      var result = await voiceService.JoinVoiceAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
-
-      if (!result.Success)
+      var commandResponse = await voiceService.JoinVoiceAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
+      
+      if (!commandResponse.Success)
       {
-        if (result.Exception != null) throw result.Exception;
+        if (commandResponse.Exception != null) throw commandResponse.Exception;
 
-        if (!string.IsNullOrEmpty(result.Message)) _logger.LogDebug(result.Message);
+        if (!string.IsNullOrEmpty(commandResponse.Message)) _logger.LogDebug(commandResponse.Message);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = "Command did not run successfully.");
       }
@@ -125,12 +125,28 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       using var scope = _serviceLocator.CreateScope();
       var musicService = scope.ServiceProvider.GetRequiredService<IMusicService>();
+      // var embedService = scope.ServiceProvider.GetRequiredService<IEmbedService>();
 
-      var commandResponse = await musicService.PauseCurrentPlayingTrackAsync(Context.Guild);
+      var commandResponse = await musicService.PauseTrackAsync(Context.Guild);
+
+      if (!commandResponse.Success)
+      {
+        _logger.LogCommandFailed(nameof(PauseCommandAsync));
+
+        if (commandResponse.Exception != null) throw commandResponse.Exception;
+        
+        if (!string.IsNullOrEmpty(commandResponse.Message)) _logger.LogDebug(commandResponse.Message);
+
+        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+      }
+      else
+      {
+        await ModifyOriginalResponseAsync(properties => properties.Content = Messages.Responses.BotTrackPaused);
+      }
     }
     catch (Exception exception)
     {
-      Console.WriteLine(exception);
+      _logger.LogError(exception, "Error has been thrown");
       throw;
     }
   }
@@ -144,6 +160,171 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     try
     {
       await DeferAsync(ephemeral: true);
+
+      using var scope = _serviceLocator.CreateScope();
+      var musicService = scope.ServiceProvider.GetRequiredService<IMusicService>();
+
+      var commandResponse = await musicService.ResumeTrackAsync(Context.Guild);
+
+      if (!commandResponse.Success)
+      {
+        _logger.LogCommandFailed(nameof(ResumeCommandAsync));
+
+        if (commandResponse.Exception != null) throw commandResponse.Exception;
+        
+        if (!string.IsNullOrEmpty(commandResponse.Message)) _logger.LogDebug(commandResponse.Message);
+
+        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+      }
+      else
+      {
+        // TODO: Embed or ReplyAsync
+        await ModifyOriginalResponseAsync(properties => properties.Content = "Resuming track");
+      }
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      throw;
+    }
+  }
+
+  [SlashCommand("seek", "Seek something", true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
+  public async Task SeekCommandAsync(TimeSpan timeToSeek)
+  {
+    try
+    {
+      await DeferAsync(ephemeral: true);
+
+      using var scope = _serviceLocator.CreateScope();
+      var musicService = scope.ServiceProvider.GetRequiredService<IMusicService>();
+
+      var commandResponse = await musicService.SeekTrackAsync(Context.Guild, timeToSeek);
+
+      if (!commandResponse.Success)
+      {
+        _logger.LogCommandFailed(nameof(SeekCommandAsync));
+
+        if (commandResponse.Exception != null) throw commandResponse.Exception;
+        
+        if (!string.IsNullOrEmpty(commandResponse.Message)) _logger.LogDebug(commandResponse.Message);
+
+        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+      }
+      else
+      {
+        // TODO: Embed or RespondAsync
+        await ModifyOriginalResponseAsync(properties => properties.Content = "Seeking to desired location");
+      }
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      throw;
+    }
+  }
+
+  [SlashCommand("skip", "skip either to next track or a valid number of tracks in the queue", true, RunMode.Async)]
+  public async Task SkipCommandAsync(int? tracksToSkip = null)
+  {
+    try
+    {
+      await DeferAsync(ephemeral: true);
+
+      using var scope = _serviceLocator.CreateScope();
+      var musicService = scope.ServiceProvider.GetRequiredService<IMusicService>();
+
+      var commandResponse = await musicService.SkipTrackAsync(Context.Guild, tracksToSkip ?? 0);
+
+      if (!commandResponse.Success)
+      {
+        _logger.LogCommandFailed(nameof(SkipCommandAsync));
+
+        if (commandResponse.Exception != null) throw commandResponse.Exception;
+        
+        if (!string.IsNullOrEmpty(commandResponse.Message)) _logger.LogDebug(commandResponse.Message);
+
+        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+      }
+      else
+      {
+        await ModifyOriginalResponseAsync(properties => properties.Content = "Skipping to spot in queue");
+      }
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      throw;
+    }
+  }
+
+  [SlashCommand("volume", "Change volume", true, RunMode.Async)]
+  public async Task VolumeCommandAsync(int? newVolume = 0)
+  {
+    try
+    {
+      await DeferAsync(ephemeral: true);
+
+      using var scope = _serviceLocator.CreateScope();
+      var musicService = scope.ServiceProvider.GetRequiredService<IMusicService>();
+
+      var commandResponse = await musicService.ChangeVolumeAsync(Context.Guild, newVolume ?? 0);
+
+      if (!commandResponse.Success)
+      {
+        _logger.LogCommandFailed(nameof(VolumeCommandAsync));
+
+        if (commandResponse.Exception != null) throw commandResponse.Exception;
+        
+        if (!string.IsNullOrEmpty(commandResponse.Message)) _logger.LogDebug(commandResponse.Message);
+
+        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+      }
+      else
+      {
+        await ModifyOriginalResponseAsync(properties => properties.Content = "Changing volume");
+      }
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      throw;
+    }
+  }
+
+  [SlashCommand("np", "Gets an embed of the current playing track", true, RunMode.Async)]
+  public async Task NowPlayingCommandAsync()
+  {
+    try
+    {
+      await DeferAsync(ephemeral: true);
+
+      using var scope = _serviceLocator.CreateScope();
+      var musicService = scope.ServiceProvider.GetRequiredService<IMusicService>();
+
+      var commandResponse = await musicService.NowPlayingAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
+
+      if (!commandResponse.Success)
+      {
+        _logger.LogCommandFailed(nameof(NowPlayingCommandAsync));
+
+        if (commandResponse.Exception != null) throw commandResponse.Exception;
+        
+        if (!string.IsNullOrEmpty(commandResponse.Message)) _logger.LogDebug(commandResponse.Message);
+
+        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+      }
+      else
+      {
+        if (commandResponse.Embed != null)
+        {
+          await ModifyOriginalResponseAsync(properties => properties.Embed = commandResponse.Embed as Embed);
+        }
+        // await ModifyOriginalResponseAsync(properties => properties.Content = "Skipping to spot in queue");
+      }
     }
     catch (Exception e)
     {

@@ -14,7 +14,7 @@ public abstract record Constants
     // Play Command
     public const string PlayCommandName = "play";
     public const string PlayCommandDescription =
-      "Plays a track from a given search query. Optionally, can choose different search providers (Default: YouTube).";
+      "Plays a track from a given search query. Optionally, can choose different search providers.";
     // Play Command Args
     public const string PlaySearchRequestArgumentName = "search_request";
     public const string PlaySearchRequestArgumentDescription = "Search request used for search provider.";

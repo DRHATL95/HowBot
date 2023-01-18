@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Howbot.UnitTests;
+namespace Howbot.UnitTests.Core;
 
 public class EntryPointServiceExecuteAsync
 {

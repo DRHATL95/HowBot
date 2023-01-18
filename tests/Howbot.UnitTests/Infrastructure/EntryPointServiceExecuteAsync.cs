@@ -3,7 +3,7 @@ using System;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Howbot.UnitTests;
+namespace Howbot.UnitTests.Infrastructure;
 
 public class InMemoryQueueReceiverGetMessageFromQueue
 {

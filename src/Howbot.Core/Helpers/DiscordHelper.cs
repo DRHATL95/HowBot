@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Helpers;
 
-public class DiscordHelper
+public static class DiscordHelper
 {
   
   /// <summary>

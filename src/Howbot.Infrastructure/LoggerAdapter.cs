@@ -29,6 +29,13 @@ public class LoggerAdapter<T> : ILoggerAdapter<T>
     _logger.Log(severity, message, args);
   }
 
+  public void LogError(Exception exception)
+  {
+    if (exception == null) throw new ArgumentNullException(nameof(exception));
+    
+    _logger.LogError(exception, null);
+  }
+
   public void LogError(string message, params object[] args)
   {
     if (string.IsNullOrEmpty(message)) throw new ArgumentNullException(nameof(message));
@@ -56,5 +63,16 @@ public class LoggerAdapter<T> : ILoggerAdapter<T>
     if (string.IsNullOrEmpty(message)) throw new ArgumentNullException(nameof(message));
     
     _logger.LogDebug(message, args);
+  }
+  
+  public void LogCommandFailed(string commandName)
+  {
+    if (!string.IsNullOrEmpty(commandName))
+    {
+      // Generic response
+      LogInformation("Command has failed.");
+    }
+    
+    LogInformation("{CommandName} has failed", commandName);
   }
 }

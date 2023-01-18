@@ -2,7 +2,23 @@
 
 public abstract record Messages
 {
-  // Error Messages
+  public abstract record Responses
+  {
+    public const string BotNotConnectedToVoiceResponseMessage = "I am not connected to a voice channel";
+    public const string BotSkipQueueOutOfBounds = "There are not that many songs in queue. Try a smaller number.";
+    public const string BotTrackPaused = "Current track has been paused.";
+  }
+
+  public abstract record Debug
+  {
+    public const string SkipNextTrack = "Skipping to next track.";
+    public const string NowPlaying = "Now playing new track";
+
+    public const string ClientNotConnectedToVoiceChannel =
+      "Client is not connected to voice channel. Unable to execute command.";
+    public const string ClientQueueOutOfBounds = "Requested number of tracks to skip exceeds queue count";
+  }
+  
   public abstract record Errors
   {
     public const string InteractionUnknownCommand = "Unknown command used. Please try another command!";

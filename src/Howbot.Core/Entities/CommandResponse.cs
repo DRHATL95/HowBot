@@ -1,4 +1,5 @@
 ﻿using System;
+using Discord;
 using JetBrains.Annotations;
 using Victoria.Player;
 
@@ -6,19 +7,22 @@ namespace Howbot.Core.Entities;
 
 public class CommandResponse : BaseEntity
 {
-  public bool Success { get; set; }
+  public bool Success { get; }
   
-  [CanBeNull] public Exception Exception { get; set; }
-  
-  public string Message { get; set; }
-  
-  [CanBeNull] public LavaPlayer<LavaTrack> LavaPlayer { get; set; }
+  public string Message { get; }
 
-  public CommandResponse()
+  [CanBeNull] public Exception Exception { get; }
+  
+  [CanBeNull] public IEmbed Embed { get; }
+  
+  [CanBeNull] public LavaPlayer<LavaTrack> LavaPlayer { get; init; }
+
+  private CommandResponse()
   {
     Message = string.Empty;
     Success = false;
     Exception = null;
+    Embed = null;
   }
 
   private CommandResponse(bool success)
@@ -38,6 +42,12 @@ public class CommandResponse : BaseEntity
   {
     Success = true;
     LavaPlayer = lavaPlayer;
+  }
+
+  private CommandResponse(IEmbed embed)
+  {
+    Success = true;
+    Embed = embed;
   }
 
   private CommandResponse(string message)
@@ -65,6 +75,8 @@ public class CommandResponse : BaseEntity
   public static CommandResponse CommandSuccessful(LavaPlayer<LavaTrack> lavaPlayer) => new(lavaPlayer);
   
   public static CommandResponse CommandSuccessful(LavaPlayer lavaPlayer) => new(lavaPlayer);
+
+  public static CommandResponse CommandSuccessful(IEmbed embed) => new(embed);
 
   public static CommandResponse CommandNotSuccessful() => new(false);
 
