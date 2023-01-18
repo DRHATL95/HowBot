@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Howbot.Core.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Howbot.Core.Services;
 

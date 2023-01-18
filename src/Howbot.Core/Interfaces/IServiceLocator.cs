@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Core.Interfaces;
 
 public interface IServiceLocator : IDisposable
 {

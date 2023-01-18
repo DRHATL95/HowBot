@@ -47,7 +47,6 @@ public class LavaNodeService : ILavaNodeService
   {
     StringBuilder stringBuilder = new StringBuilder();
 
-    stringBuilder.AppendLine();
     stringBuilder.AppendLine($"Lavalink has been online for: {arg.Uptime}");
     stringBuilder.AppendLine($"CPU Cores: {arg.Cpu.Cores}");
     stringBuilder.AppendLine($"Total players playing: {arg.PlayingPlayers}");

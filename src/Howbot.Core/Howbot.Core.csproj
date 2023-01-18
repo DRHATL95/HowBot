@@ -12,8 +12,4 @@
     <PackageReference Include="Victoria" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Exceptions" />
-  </ItemGroup>
-
 </Project>

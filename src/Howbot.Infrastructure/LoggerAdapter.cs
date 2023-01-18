@@ -17,16 +17,18 @@ public class LoggerAdapter<T> : ILoggerAdapter<T>
     _logger = logger;
   }
 
-  public ILogger<T> GetInstance()
-  {
-    return _logger as ILogger<T>;
-  }
-
   public void Log(LogLevel severity, string message, params object[] args)
   {
     if (string.IsNullOrEmpty(message)) throw new ArgumentNullException(nameof(message));
     
     _logger.Log(severity, message, args);
+  }
+
+  public void LogError(Exception exception)
+  {
+    if (exception == null) throw new ArgumentNullException(nameof(exception));
+    
+    _logger.LogError(exception, null);
   }
 
   public void LogError(string message, params object[] args)
@@ -56,5 +58,35 @@ public class LoggerAdapter<T> : ILoggerAdapter<T>
     if (string.IsNullOrEmpty(message)) throw new ArgumentNullException(nameof(message));
     
     _logger.LogDebug(message, args);
+  }
+
+  public void LogWarning(string message, params object[] args)
+  {
+    if (string.IsNullOrEmpty(message)) throw new ArgumentNullException(nameof(message));
+    
+    _logger.LogWarning(message, args);
+  }
+
+  public void LogCritical(string message, params object[] args)
+  {
+    if (string.IsNullOrEmpty(message)) throw new ArgumentNullException(nameof(message));
+    
+    _logger.LogCritical(message, args);
+  }
+  
+  public void LogCommandFailed(string commandName)
+  {
+    if (!string.IsNullOrEmpty(commandName))
+    {
+      LogInformation("Command has failed.");
+      return;
+    }
+    
+    LogInformation("{CommandName} has failed", commandName);
+  }
+
+  public bool IsLogLevelEnabled(LogLevel level)
+  {
+    return _logger.IsEnabled(level);
   }
 }

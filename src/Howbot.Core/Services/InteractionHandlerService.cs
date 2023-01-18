@@ -5,6 +5,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
@@ -75,8 +76,17 @@ public class InteractionHandlerService : IInteractionHandlerService
     try
     {
       var logLevel = DiscordHelper.ConvertLogSeverityToLogLevel(arg.Severity);
-      _logger.Log(logLevel, arg.Message);
 
+      if (logLevel == LogLevel.Error)
+      {
+        _logger.LogError(arg.Exception, "Exception thrown logging interaction service");
+      }
+      else
+      {
+        var logMessage = arg.Message ?? string.Empty;
+        _logger.Log(logLevel, logMessage);
+      }
+      
       return Task.CompletedTask;
     }
     catch (Exception exception)
