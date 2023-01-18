@@ -1,0 +1,12 @@
+﻿using System.Threading.Tasks;
+using Discord;
+using Howbot.Core.Entities;
+using JetBrains.Annotations;
+using Victoria.Player;
+
+namespace Howbot.Core.Interfaces;
+
+public interface IVoiceService
+{
+  public Task<CommandResponse> JoinVoiceAsync(IGuildUser user, ITextChannel textChannel);
+}
