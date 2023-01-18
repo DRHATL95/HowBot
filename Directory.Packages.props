@@ -47,7 +47,7 @@
     <PackageVersion Include="Serilog.AspNetCore" Version="6.1.0-dev-00285" />
     <PackageVersion Include="Serilog.Sinks.ApplicationInsights" Version="4.0.1-dev-00040" />
     <PackageVersion Include="SQLite" Version="3.13.0" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+		<PackageVersion Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore.Annotations" Version="6.4.0" />
     <PackageVersion Include="Victoria" Version="6.0.1026" />
     <PackageVersion Include="xunit" Version="2.4.2" />
