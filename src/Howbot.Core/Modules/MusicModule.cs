@@ -4,7 +4,6 @@ using Discord;
 using Discord.Interactions;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Victoria.Responses.Search;
 
