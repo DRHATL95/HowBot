@@ -4,7 +4,7 @@ A music and general purpose bot for Discord written in C# using .NET7 Worker Ser
 
 ## Give a Star! :star:
 
-If you like or are using this project to learn or start your solution, please give it a star. Thanks!
+If you like this project, please give it a star. Thanks!
 
 ## Getting Started
 
@@ -21,8 +21,6 @@ dotnet ef database update -c appdbcontext -p ../Howbot.Infrastructure/Howbot.Inf
 Check the connection string in `appsettings.json` in the Howbot.Worker project to verify its details if you have problems.
 
 Open the solution in Visual Studio and run it with ctrl-F5 (the Howbot.Worker project should be the startup project) or in the console go to the `src/Howbot.Worker` folder and run `dotnet run`.
-
-On startup the app queues up 10 URLs to hit (google.com) and you should see it make 10 requests and save them to the database and then do nothing, logging each second.
 
 ## References
 
