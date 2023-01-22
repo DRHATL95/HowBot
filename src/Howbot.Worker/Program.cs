@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Docker.DotNet;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Modules;
 using Howbot.Core.Services;
@@ -58,6 +59,7 @@ public abstract class Program
             services.AddSingleton(x => new DiscordSocketClient(x.GetRequiredService<Configuration>().DiscordSocketConfig));
             services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<Configuration>().InteractionServiceConfig));
             services.AddSingleton(x => new LavaNode(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<Configuration>().NodeConfiguration, x.GetRequiredService<ILogger<LavaNode>>()));
+            services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
 
             services.AddTransient<MusicModule>();
 

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Docker.DotNet;
+using Docker.DotNet.Models;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,7 +34,10 @@ public class Worker : BackgroundService
     using var scope = _serviceLocator.CreateScope();
     var discordClientService = scope.ServiceProvider.GetRequiredService<IDiscordClientService>();
     var configuration = scope.ServiceProvider.GetRequiredService<Configuration>();
+    var dockerClient = scope.ServiceProvider.GetRequiredService<DockerClient>();
 
+    var count = (await dockerClient.Containers.ListContainersAsync(new ContainersListParameters(), cancellationToken));
+    
     if (!(await discordClientService.LoginDiscordBotAsync(configuration.DiscordToken)))
     {
       _logger.LogCritical("Unable to login to discord with provided token."); // New exception type? (DiscordLoginException)

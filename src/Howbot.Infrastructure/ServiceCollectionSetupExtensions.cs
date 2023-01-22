@@ -25,6 +25,8 @@ public static class ServiceCollectionSetupExtensions
     services.AddSingleton<IEmbedService, EmbedService>();
     services.AddSingleton<IDiscordClientService, DiscordClientService>();
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
+    services.AddSingleton<IDockerService, DockerService>();
+    services.AddSingleton<IDeploymentService, DeploymentService>();
     // services.AddTransient<IHttpService, HttpService>();
   }
 }

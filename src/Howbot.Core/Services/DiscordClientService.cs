@@ -35,6 +35,9 @@ public class DiscordClientService : IDiscordClientService
     _serviceProvider = serviceProvider;
     _configuration = configuration;
     _serviceLocator = serviceLocator;
+
+    var dockerClientService = _serviceProvider.GetRequiredService<IDockerService>();
+    // dockerClientService.PullLavalinkImageFromHub();
     
     _discordSocketClient.Log += DiscordSocketClientOnLog;
     _discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
