@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Discord;
@@ -10,6 +11,7 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Modules;
 using Howbot.Core.Settings;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
@@ -18,24 +20,25 @@ namespace Howbot.Core.Services;
 
 public class DiscordClientService : IDiscordClientService
 {
-  private readonly ILoggerAdapter<DiscordClientService> _logger;
   private readonly DiscordSocketClient _discordSocketClient;
-  private readonly InteractionService _interactionService;
   private readonly IServiceProvider _serviceProvider;
-  private readonly Configuration _configuration;
-  private readonly IServiceLocator _serviceLocator;
+  private readonly InteractionService _interactionService;
+  private readonly LavaNode _lavaNode;
+  private readonly ILoggerAdapter<DiscordClientService> _logger;
 
-  private string BotUsername => _discordSocketClient?.CurrentUser?.Username ?? string.Empty;
-
-  public DiscordClientService(ILoggerAdapter<DiscordClientService> logger, DiscordSocketClient discordSocketClient, InteractionService interactionService, IServiceProvider serviceProvider, Configuration configuration, IServiceLocator serviceLocator)
+  public DiscordClientService(DiscordSocketClient discordSocketClient, IServiceProvider serviceProvider, InteractionService interactionService, LavaNode lavaNode, ILoggerAdapter<DiscordClientService> logger)
   {
-    _logger = logger;
     _discordSocketClient = discordSocketClient;
-    _interactionService = interactionService;
     _serviceProvider = serviceProvider;
-    _configuration = configuration;
-    _serviceLocator = serviceLocator;
-    
+    _interactionService = interactionService;
+    _lavaNode = lavaNode;
+    _logger = logger;
+  }
+
+  public void Initialize()
+  {
+    if (_discordSocketClient == null) return;
+
     _discordSocketClient.Log += DiscordSocketClientOnLog;
     _discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
     _discordSocketClient.JoinedGuild += DiscordSocketClientOnJoinedGuild;
@@ -49,18 +52,19 @@ public class DiscordClientService : IDiscordClientService
 
   public async ValueTask<bool> LoginDiscordBotAsync(string discordToken)
   {
+    // TODO: dhoward - Is throwing exception OK here?
     if (string.IsNullOrEmpty(discordToken)) throw new ArgumentNullException(nameof(discordToken));
 
     try
     {
       await _discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
-
+      
       return true;
     }
     catch (Exception exception)
     {
       _logger.LogError(exception, "Unable to login to discord API with token");
-      throw;
+      return false;
     }
   }
 
@@ -78,9 +82,12 @@ public class DiscordClientService : IDiscordClientService
     
       // Will signal ready state. Must be called only when bot has finished logging in.
       await _discordSocketClient.StartAsync();
-    
-      // TODO: dhoward - Remove w/ prod release
-      await _discordSocketClient.SetStatusAsync(UserStatus.Invisible);
+      
+      // Only in debug, set bots online presence to offline
+      if (Configuration.IsDebug())
+      {
+        await _discordSocketClient.SetStatusAsync(UserStatus.Invisible);
+      }
     
       // Add modules dynamically to discord bot
       await this.AddModulesToDiscordBotAsync();
@@ -98,14 +105,11 @@ public class DiscordClientService : IDiscordClientService
   {
     try
     {
-      var assembly = ReflectionHelper.GetAssemblyByName("Howbot.Core");
-
       await _interactionService.AddModuleAsync(typeof(MusicModule), _serviceProvider);
-      // await _interactionService.AddModulesAsync(assembly, _serviceProvider);
     }
     catch (FileNotFoundException exception)
     {
-      _logger.LogError(exception, "Unable to find the assembly. Value: {AssemblyName}", "Howbot.Core");
+      _logger.LogError(exception, "Unable to find the assembly. Value: {AssemblyName}", Assembly.GetEntryAssembly()?.ToString());
       throw;
     }
   }
@@ -152,25 +156,25 @@ public class DiscordClientService : IDiscordClientService
   
   private Task DiscordSocketClientOnDisconnected(Exception arg)
   {
-    _logger.LogDebug("{Username} has disconnected from socket", BotUsername);
+    _logger.LogDebug("{Username} has disconnected from socket", Constants.BotName);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnConnected()
   {
-    _logger.LogDebug("{Username} has connected to socket", BotUsername);
+    _logger.LogDebug("{Username} has connected to socket", Constants.BotName);
 
     return Task.CompletedTask;
   }
 
   private async Task DiscordSocketClientOnReady()
   {
-    _logger.LogDebug("{Username} is now in READY state", BotUsername);
+    _logger.LogDebug("{Username} is now in READY state", Constants.BotName);
 
     try
     {
-      if (_configuration.IsDebug())
+      if (Configuration.IsDebug())
       {
         _logger.LogDebug("Registering commands to DEV Guild");
         await _interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
@@ -180,42 +184,42 @@ public class DiscordClientService : IDiscordClientService
         _logger.LogDebug("Registering commands globally");
         await _interactionService.RegisterCommandsGloballyAsync();
       }
+      
       _logger.LogDebug("Successfully registered commands to discord bot");
 
-      using var scope = _serviceLocator.CreateScope();
-      var lavaNode = _serviceProvider.GetRequiredService<LavaNode>();
-      
-      if (!lavaNode.IsConnected)
+      if (!_lavaNode.IsConnected)
       {
         _logger.LogDebug("Connecting to lavalink server");
           
-        await lavaNode.ConnectAsync();
+        await _lavaNode.ConnectAsync();
+        
+        _logger.LogDebug("Successfully connected to lavalink server");
       }
     }
     catch (Exception exception)
     {
       _logger.LogError(exception, "Exception thrown in client ready event");
-      throw; // ends process by re-throwing caught exception
+      throw;
     }
   }
 
   private Task DiscordSocketClientOnLoggedOut()
   {
-    _logger.LogDebug("{Username} has logged out successfully", BotUsername);
+    _logger.LogDebug("{Username} has logged out successfully", Constants.BotName);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnLoggedIn()
   {
-    _logger.LogDebug("{Username} has logged in successfully", BotUsername);
+    _logger.LogDebug("{Username} has logged in successfully", Constants.BotName);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnJoinedGuild(SocketGuild arg)
   {
-    _logger.LogDebug("{Username} has joined Guild {GuildTag}", BotUsername, GuildHelper.GetGuildTag(arg));
+    _logger.LogDebug("{Username} has joined Guild {GuildTag}", Constants.BotName, GuildHelper.GetGuildTag(arg));
 
     return Task.CompletedTask;
   }

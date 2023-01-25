@@ -5,6 +5,7 @@ using Discord;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Victoria;
 using Victoria.Node;
 using Victoria.Player;
 using Victoria.Player.Filters;
@@ -14,13 +15,21 @@ namespace Howbot.Core.Services;
 
 public class MusicService : IMusicService
 {
+  private readonly IVoiceService _voiceService;
+  private readonly IEmbedService _embedService;
+  private readonly LavaNode _lavaNode;
   private readonly ILoggerAdapter<MusicService> _logger;
-  private readonly IServiceLocator _serviceLocator;
-
-  public MusicService(ILoggerAdapter<MusicService> logger, IServiceLocator serviceLocator)
+  public MusicService(IVoiceService voiceService, IEmbedService embedService, LavaNode lavaNode, ILoggerAdapter<MusicService> logger)
   {
+    _voiceService = voiceService;
+    _embedService = embedService;
+    _lavaNode = lavaNode;
     _logger = logger;
-    _serviceLocator = serviceLocator;
+  }
+  
+  public void Initialize()
+  {
+    // TODO: 
   }
 
   #region Music Module Commands
@@ -29,11 +38,6 @@ public class MusicService : IMusicService
   {
     try
     {
-      using var scope = _serviceLocator.CreateScope();
-      var voiceService = scope.ServiceProvider.GetRequiredService<IVoiceService>();
-      var musicService = scope.ServiceProvider.GetRequiredService<IMusicService>();
-      var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
-
       if (user.Guild == null)
       {
         _logger.LogError("No guild exists for user in MusicService.PlayBySearchTypeAsync");
@@ -41,7 +45,7 @@ public class MusicService : IMusicService
       }
 
       // Join voice channel, if already connected return that
-      var voiceServiceResponse = await voiceService.JoinVoiceAsync(user, textChannel);
+      var voiceServiceResponse = await _voiceService.JoinVoiceAsync(user, textChannel);
 
       if (voiceServiceResponse.LavaPlayer == null)
       {
@@ -49,7 +53,7 @@ public class MusicService : IMusicService
       }
 
       _logger.LogDebug("Search Request: {SearchRequest} | Search Type: {SearchType}", searchRequest, searchType);
-      var searchResponse = await lavaNode.SearchAsync(searchType, searchRequest);
+      var searchResponse = await _lavaNode.SearchAsync(searchType, searchRequest);
 
       if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
       {
@@ -71,10 +75,7 @@ public class MusicService : IMusicService
   {
     try
     {
-      using var scope = _serviceLocator.CreateScope();
-      var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
-
-      if (!lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
         _logger.LogDebug("Unable to pause, player is not defined");
         return CommandResponse.CommandNotSuccessful("I am not connected to a voice channel");
@@ -102,10 +103,7 @@ public class MusicService : IMusicService
   {
     try
     {
-      using var scope = _serviceLocator.CreateScope();
-      var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
-
-      if (!lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
         _logger.LogDebug("Unable to resume track, player is not defined.");
         return CommandResponse.CommandNotSuccessful("I am not connected to a voice channel");
@@ -133,10 +131,7 @@ public class MusicService : IMusicService
   {
     try
     {
-      using var scope = _serviceLocator.CreateScope();
-      var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
-
-      if (!lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
         _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
         return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
@@ -176,10 +171,7 @@ public class MusicService : IMusicService
   {
     try
     {
-      using var scope = _serviceLocator.CreateScope();
-      var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
-
-      if (!lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
         _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
         return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
@@ -222,10 +214,7 @@ public class MusicService : IMusicService
       // Since second param is optional, if 0 do nothing but return command success
       if (!newVolume.HasValue) return CommandResponse.CommandSuccessful();
       
-      using var scope = _serviceLocator.CreateScope();
-      var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
-
-      if (!lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
         _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
         return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
@@ -260,12 +249,7 @@ public class MusicService : IMusicService
   {
     try
     {
-      using var scope = _serviceLocator.CreateScope();
-      var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
-      var embedService = scope.ServiceProvider.GetRequiredService<IEmbedService>();
-      var guild = user.Guild;
-
-      if (!lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      if (!_lavaNode.TryGetPlayer(user.Guild, out var lavaPlayer))
       {
         _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
         return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
@@ -277,7 +261,7 @@ public class MusicService : IMusicService
         return CommandResponse.CommandNotSuccessful("Not playing anything");
       }
 
-      var embed = await embedService.GenerateMusicNowPlayingEmbedAsync(lavaPlayer.Track, user, textChannel);
+      var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(lavaPlayer.Track, user, textChannel);
       if (embed == null)
       {
         _logger.LogError("Unable to generate embed");
@@ -288,8 +272,8 @@ public class MusicService : IMusicService
     }
     catch (Exception exception)
     {
-      Console.WriteLine(exception);
-      throw;
+      _logger.LogError(exception);
+      return CommandResponse.CommandNotSuccessful(exception);
     }
   }
 
@@ -297,10 +281,8 @@ public class MusicService : IMusicService
   {
     try
     {
-      using var scope = _serviceLocator.CreateScope();
-      var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
 
-      if (!lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
         _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
         return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
@@ -323,10 +305,68 @@ public class MusicService : IMusicService
         return CommandResponse.CommandNotSuccessful("Unable to apply filter. Wrong filter provided");
       }
     }
-    catch (Exception e)
+    catch (Exception exception)
     {
-      Console.WriteLine(e);
-      throw;
+      _logger.LogError(exception);
+      return CommandResponse.CommandNotSuccessful(exception);
+    }
+  }
+
+  public async Task<CommandResponse> GetLyricsFromGeniusAsync(IGuild guild)
+  {
+    try
+    {
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      {
+        _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+      }
+
+      var lyrics = await lavaPlayer.Track.FetchLyricsFromGeniusAsync();
+      if (!string.IsNullOrEmpty(lyrics))
+      {
+        return CommandResponse.CommandSuccessful(lyrics);
+      }
+
+      return CommandResponse.CommandNotSuccessful(
+        new Exception($"Unable to get lyrics for title: {lavaPlayer.Track.Title}"));
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      return CommandResponse.CommandNotSuccessful(exception);
+    }
+  }
+  
+  public async Task<CommandResponse> GetLyricsFromOvhAsync(IGuild guild)
+  {
+    try
+    {
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      {
+        _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+      }
+
+      if (lavaPlayer.PlayerState != PlayerState.Playing)
+      {
+        _logger.LogDebug("Cannot execute command, player is not playing");
+        return CommandResponse.CommandNotSuccessful("Cannot execute command, player is not playing");
+      }
+
+      var lyrics = await lavaPlayer.Track.FetchLyricsFromOvhAsync();
+      if (!string.IsNullOrEmpty(lyrics))
+      {
+        return CommandResponse.CommandSuccessful(lyrics);
+      }
+
+      return CommandResponse.CommandNotSuccessful(
+        new Exception($"Unable to get lyrics for title: {lavaPlayer.Track.Title}"));
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      return CommandResponse.CommandNotSuccessful(exception);
     }
   }
 
@@ -387,4 +427,5 @@ public class MusicService : IMusicService
   {
     return !string.IsNullOrEmpty(searchResponse.Playlist.Name);
   }
+  
 }

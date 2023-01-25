@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Docker.DotNet;
+using Docker.DotNet.Models;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,34 +18,70 @@ namespace Howbot.Worker;
 /// </summary>
 public class Worker : BackgroundService
 {
+  private readonly IDiscordClientService _discordClientService;
+  private readonly IServiceProvider _serviceProvider;
   private readonly ILoggerAdapter<Worker> _logger;
-  private readonly IServiceLocator _serviceLocator;
-  // private readonly WorkerSettings _settings;
-
-  public Worker(ILoggerAdapter<Worker> logger, IServiceLocator serviceLocator)
+  
+  public Worker(IDiscordClientService discordClientService, IServiceProvider serviceProvider, ILoggerAdapter<Worker> logger)
   {
+    _discordClientService = discordClientService;
+    _serviceProvider = serviceProvider;
     _logger = logger;
-    _serviceLocator = serviceLocator;
   }
 
   protected override async Task ExecuteAsync(CancellationToken cancellationToken)
   {
-    _logger.LogInformation("Worker service starting..");
-
-    using var scope = _serviceLocator.CreateScope();
-    var discordClientService = scope.ServiceProvider.GetRequiredService<IDiscordClientService>();
-    var configuration = scope.ServiceProvider.GetRequiredService<Configuration>();
-
-    if (!(await discordClientService.LoginDiscordBotAsync(configuration.DiscordToken)))
+    try
     {
-      _logger.LogCritical("Unable to login to discord with provided token."); // New exception type? (DiscordLoginException)
-      await this.StopAsync(cancellationToken); // Stop worker, cannot continue without being authenticated
-    }
-
-    await discordClientService.StartDiscordBotAsync();
-
-    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+      _logger.LogInformation("Worker service starting..");
     
-    _logger.LogInformation("Worker service stopped!");
+      _logger.LogDebug("Initializing howbot services..");
+    
+      InitializeHowbotServices();
+    
+      if (!(await _discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken)))
+      {
+        _logger.LogCritical("Unable to login to discord with provided token."); // New exception type? (DiscordLoginException)
+        
+        await this.StopAsync(cancellationToken); // Stop worker, cannot continue without being authenticated
+        
+        _logger.LogInformation("Worker service stopped!");
+        
+        return;
+      }
+      
+      await _discordClientService.StartDiscordBotAsync();
+
+      // Run worker service indefinitely until cancellationToken is created or process is manually stopped.
+      await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+    
+      _logger.LogInformation("Worker service stopped!");
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception,"An exception has been thrown in the main worker");
+    }
+  }
+
+  private void InitializeHowbotServices()
+  {
+    if (_serviceProvider == null) return;
+    
+    try
+    {
+      _serviceProvider.GetService<IDiscordClientService>().Initialize();
+      _serviceProvider.GetService<IInteractionHandlerService>().Initialize();
+      _serviceProvider.GetService<IDeploymentService>().Initialize();
+      _serviceProvider.GetService<IDockerService>().Initialize();
+      _serviceProvider.GetService<IEmbedService>().Initialize();
+      _serviceProvider.GetService<ILavaNodeService>().Initialize();
+      _serviceProvider.GetService<IMusicService>().Initialize();
+      _serviceProvider.GetService<IVoiceService>().Initialize();
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      throw;
+    }
   }
 }

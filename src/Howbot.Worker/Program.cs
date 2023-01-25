@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Docker.DotNet;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Modules;
 using Howbot.Core.Services;
@@ -36,7 +37,7 @@ public abstract class Program
   /// <returns></returns>
   private static IHostBuilder CreateHostBuilder(string[] args) =>
       Host.CreateDefaultBuilder(args)
-          .ConfigureLogging((context, builder) =>
+          .ConfigureLogging((_, builder) =>
           {
             builder.ClearProviders();
             
@@ -58,9 +59,8 @@ public abstract class Program
             services.AddSingleton(x => new DiscordSocketClient(x.GetRequiredService<Configuration>().DiscordSocketConfig));
             services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<Configuration>().InteractionServiceConfig));
             services.AddSingleton(x => new LavaNode(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<Configuration>().NodeConfiguration, x.GetRequiredService<ILogger<LavaNode>>()));
-
-            services.AddTransient<MusicModule>();
-
+            services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
+            
             // Infrastructure.ContainerSetup
             services.AddDbContext(hostContext.Configuration);
             services.AddRepositories();

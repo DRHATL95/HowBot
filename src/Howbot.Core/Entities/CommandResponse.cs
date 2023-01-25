@@ -53,7 +53,7 @@ public class CommandResponse : BaseEntity
   private CommandResponse(string message)
   {
     Message = message;
-    Success = false;
+    Success = true;
     Exception = null;
   }
 
@@ -71,6 +71,8 @@ public class CommandResponse : BaseEntity
   }
 
   public static CommandResponse CommandSuccessful() => new(true);
+  
+  public static CommandResponse CommandSuccessful(string message) => new(true, message);
 
   public static CommandResponse CommandSuccessful(LavaPlayer<LavaTrack> lavaPlayer) => new(lavaPlayer);
   

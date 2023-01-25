@@ -3,8 +3,6 @@ using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
-using JetBrains.Annotations;
-using Microsoft.Extensions.DependencyInjection;
 using Victoria.Node;
 using Victoria.Player;
 
@@ -12,13 +10,18 @@ namespace Howbot.Core.Services;
 
 public class VoiceService : IVoiceService
 {
+  private readonly LavaNode _lavaNode;
   private readonly ILoggerAdapter<VoiceService> _logger;
-  private readonly IServiceLocator _serviceLocator;
 
-  public VoiceService(ILoggerAdapter<VoiceService> logger, IServiceLocator serviceLocator)
+  public VoiceService(LavaNode lavaNode, ILoggerAdapter<VoiceService> logger)
   {
+    _lavaNode = lavaNode;
     _logger = logger;
-    _serviceLocator = serviceLocator;
+  }
+  
+  public void Initialize()
+  {
+    // TODO:
   }
   
   public async Task<CommandResponse> JoinVoiceAsync(IGuildUser user, ITextChannel textChannel)
@@ -54,28 +57,23 @@ public class VoiceService : IVoiceService
       return null;
     }
     
-    using var scope = _serviceLocator.CreateScope();
-    var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
-
     // Check if bot is already connect
     if (!IsBotAlreadyConnected(textChannel.Guild))
     {
       // Not in voice, join active voice channel
-      return await lavaNode.JoinAsync(voiceState.VoiceChannel, textChannel);
+      return await _lavaNode.JoinAsync(voiceState.VoiceChannel, textChannel);
     }
 
     // Get already created lava player (already connected to voice channel)
-    lavaNode.TryGetPlayer(textChannel.Guild, out var player);
+    _lavaNode.TryGetPlayer(textChannel.Guild, out var player);
     return player;
   }
   
   private bool IsBotAlreadyConnected(IGuild guild)
   {
     if (guild == null) throw new ArgumentNullException(nameof(guild));
-
-    using var scope = _serviceLocator.CreateScope();
-    var lavaNode = scope.ServiceProvider.GetRequiredService<LavaNode>();
     
-    return lavaNode.HasPlayer(guild);
+    return _lavaNode.HasPlayer(guild);
   }
+  
 }

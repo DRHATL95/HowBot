@@ -6,7 +6,7 @@ using Victoria.Player;
 
 namespace Howbot.Core.Interfaces;
 
-public interface IVoiceService
+public interface IVoiceService : IServiceBase
 {
   public Task<CommandResponse> JoinVoiceAsync(IGuildUser user, ITextChannel textChannel);
 }

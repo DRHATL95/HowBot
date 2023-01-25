@@ -6,7 +6,7 @@ using Victoria.Responses.Search;
 
 namespace Howbot.Core.Interfaces;
 
-public interface IMusicService
+public interface IMusicService : IServiceBase
 {
   public Task<CommandResponse> PlayBySearchTypeAsync(SearchType searchType, string searchRequest, IGuildUser user,
     IVoiceState voiceState, ITextChannel textChannel);
@@ -17,4 +17,7 @@ public interface IMusicService
   public Task<CommandResponse> ChangeVolumeAsync(IGuild guild, int? newVolume);
   public Task<CommandResponse> NowPlayingAsync(IGuildUser user, ITextChannel textChannel);
   public Task<CommandResponse> ApplyAudioFilterAsync<T>(IGuild guild, T filter);
+  public Task<CommandResponse> GetLyricsFromGeniusAsync(IGuild guild);
+  public Task<CommandResponse> GetLyricsFromOvhAsync(IGuild guild);
+
 }
