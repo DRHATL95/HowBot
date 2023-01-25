@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
@@ -12,12 +14,16 @@ namespace Howbot.Core.Services;
 public class LavaNodeService : ILavaNodeService
 {
   private readonly LavaNode _lavaNode;
+  private readonly IEmbedService _embedService;
   private readonly ILoggerAdapter<LavaNodeService> _logger;
+  private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
 
-  public LavaNodeService(LavaNode lavaNode, ILoggerAdapter<LavaNodeService> logger)
+  public LavaNodeService(LavaNode lavaNode, IEmbedService embedService, ILoggerAdapter<LavaNodeService> logger)
   {
     _lavaNode = lavaNode;
+    _embedService = embedService;
     _logger = logger;
+    _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
   }
   
   public void Initialize()
@@ -76,14 +82,24 @@ public class LavaNodeService : ILavaNodeService
     return Task.CompletedTask;
   }
 
-  private Task LavaNodeOnOnTrackEnd(TrackEndEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackEndEventArg)
+  private async Task LavaNodeOnOnTrackEnd(TrackEndEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackEndEventArg)
   {
-    var guild = trackEndEventArg.Player.TextChannel.Guild;
-    
-    _logger.LogDebug("Track [{TrackName}] has stopped playing in Guild {GuildTag}", 
-      trackEndEventArg.Track.Title, GuildHelper.GetGuildTag(guild));
+    if (trackEndEventArg.Reason is not TrackEndReason.Finished)
+      return;
 
-    return Task.CompletedTask;
+    var lavaPlayer = trackEndEventArg.Player;
+    if (lavaPlayer != null)
+    {
+      if (!lavaPlayer.Vueue.TryDequeue(out var lavaTrack))
+      {
+        _logger.LogInformation("Lava player queue is empty. Attempting to disconnect now");
+        await this.InitiateDisconnectLogicAsync(lavaPlayer as LavaPlayer, TimeSpan.FromSeconds(30));
+        return;
+      }
+      
+      _logger.LogDebug("Track has ended. Playing next song in queue.");
+      await lavaPlayer.PlayAsync(lavaTrack);
+    }
   }
 
   private Task LavaNodeOnOnTrackStart(TrackStartEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackStartEventArg)
@@ -97,4 +113,26 @@ public class LavaNodeService : ILavaNodeService
   }
 
   #endregion
+
+  private async Task InitiateDisconnectLogicAsync(LavaPlayer lavaPlayer, TimeSpan timeSpan)
+  {
+    if (_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value))
+    {
+      value = new CancellationTokenSource();
+      _disconnectTokens.TryAdd(lavaPlayer.VoiceChannel.Id, value);
+    }
+    else if (value.IsCancellationRequested)
+    {
+      _disconnectTokens.TryUpdate(lavaPlayer.VoiceChannel.Id, new CancellationTokenSource(), value);
+      value = _disconnectTokens[lavaPlayer.VoiceChannel.Id];
+    }
+    
+    _logger.LogInformation("Disconnecting from voice channel in {Seconds}", timeSpan.Seconds);
+
+    var isCancelled = SpinWait.SpinUntil(() => value.IsCancellationRequested, timeSpan);
+    if (isCancelled) return;
+
+    await _lavaNode.LeaveAsync(lavaPlayer.VoiceChannel);
+    _logger.LogDebug("Howbot has disconnected from voice channel.");
+  }
 }

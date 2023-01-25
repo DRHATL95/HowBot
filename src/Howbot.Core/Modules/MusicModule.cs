@@ -13,12 +13,14 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 {
   private readonly IVoiceService _voiceService;
   private readonly IMusicService _musicService;
+  private readonly IEmbedService _embedService;
   private readonly ILoggerAdapter<MusicModule> _logger;
 
-  public MusicModule(IVoiceService voiceService, IMusicService musicService, ILoggerAdapter<MusicModule> logger)
+  public MusicModule(IVoiceService voiceService, IMusicService musicService, IEmbedService embedService, ILoggerAdapter<MusicModule> logger)
   {
     _voiceService = voiceService;
     _musicService = musicService;
+    _embedService = embedService;
     _logger = logger;
   }
 
@@ -97,8 +99,15 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       }
       else
       {
-        _logger.LogDebug("Else");
-        // Should create embed somewhere after this point
+        if (commandResponse.LavaPlayer != null)
+        {
+          var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(commandResponse.LavaPlayer.Track, Context.User as IGuildUser, Context.Channel as ITextChannel);
+          await ModifyOriginalResponseAsync(properties => properties.Embeds = new Optional<Embed[]>(new []{ embed as Embed, }));
+        }
+        else
+        {
+          _logger.LogInformation("Song has successfully started playing.");
+        }
       }
     }
     catch (Exception exception)
