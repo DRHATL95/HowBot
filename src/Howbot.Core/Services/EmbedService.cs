@@ -73,4 +73,9 @@ public class EmbedService : IEmbedService
       .WithText(user.Username)
       .WithIconUrl(authorFooterThumbnail);
   }
+
+  public void Initialize()
+  {
+    // TODO:
+  }
 }

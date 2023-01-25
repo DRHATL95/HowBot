@@ -2,23 +2,17 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Howbot.Core.Interfaces;
 using Victoria.Node;
-using Victoria.WebSocket;
 
 namespace Howbot.Core.Settings;
 
 public class Configuration
 {
-  private readonly ILoggerAdapter<Configuration> _logger;
-  private readonly TimeSpan _socketReconnectDelay = TimeSpan.FromSeconds(30);
-
-  private const string DiscordTokenDev = "DiscordTokenDEV";
-  private const string DiscordTokenProd = "DiscordTokenPROD";
-  private const string LavalinkPassword = "LavalinkServerPassword";
-  private const int SocketReconnectAttempts = 3;
+  private const string DiscordTokenDev = "DiscordTokenDev";
+  private const string DiscordTokenProd = "DiscordTokenProd";
+  private const string LavalinkPassword = "DiscordLavalinkServerPassword";
   
-  public string DiscordToken
+  public static string DiscordToken
   {
     get
     {
@@ -26,12 +20,11 @@ public class Configuration
     }
   }
 
-  public GatewayIntents GatewayIntents
+  private static GatewayIntents GatewayIntents
   {
     get
     {
-      // TODO: dhoward - Update to appropriate privileges
-      return GatewayIntents.AllUnprivileged;
+      return GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
     }
   }
 
@@ -41,11 +34,16 @@ public class Configuration
     {
       return new DiscordSocketConfig()
       {
-        GatewayIntents = GatewayIntents, AlwaysDownloadUsers = false, LogLevel = LogSeverity.Debug, LogGatewayIntentWarnings = false
+        AlwaysDownloadUsers = true,
+        GatewayIntents = GatewayIntents,
+        LogLevel = LogSeverity.Debug,
+        LogGatewayIntentWarnings = false,
+        UseInteractionSnowflakeDate = false,
       };
     }
   }
   
+  // LavaNode/Lavalink config
   public NodeConfiguration NodeConfiguration
   {
     get
@@ -54,21 +52,12 @@ public class Configuration
       {
         Port = 2333, // TODO: dhoward - Move to web.config or .env
         Hostname = "localhost", // TODO: dhoward - Move to web.config or .env
-        Authorization = this.GetLavaLinkPassword(),
+        Authorization = GetLavaLinkPassword(),
         SelfDeaf = true,
         EnableResume = true,
-        SocketConfiguration = this.WebSocketConfiguration
+        // SocketConfiguration = this.WebSocketConfiguration
       };
     }
-  }
-  
-  private WebSocketConfiguration WebSocketConfiguration
-  {
-    get =>
-      new()
-      {
-        ReconnectAttempts = SocketReconnectAttempts, ReconnectDelay = _socketReconnectDelay // 30 seconds
-      };
   }
 
   public InteractionServiceConfig InteractionServiceConfig
@@ -76,19 +65,11 @@ public class Configuration
     get =>
       new()
       {
-        // AutoServiceScopes = true,
-        // DefaultRunMode = RunMode.Async,
-        
-        LogLevel = this.IsDebug() ? LogSeverity.Debug : LogSeverity.Error
+        LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error
       };
   }
 
-  public Configuration(ILoggerAdapter<Configuration> logger)
-  {
-    _logger = logger;
-  }
-
-  public bool IsDebug()
+  public static bool IsDebug()
   {
     #if DEBUG
       return true;
@@ -97,11 +78,11 @@ public class Configuration
     #endif
   }
 
-  private string GetDiscordToken()
+  private static string GetDiscordToken()
   {
     string token = null;
 
-    if (this.IsDebug())
+    if (IsDebug())
     {
       // First attempt to get the token from the current hosted process.
       token = Environment.GetEnvironmentVariable(DiscordTokenDev, EnvironmentVariableTarget.Process);
@@ -131,11 +112,11 @@ public class Configuration
     return token;
   }
 
-  private string GetLavaLinkPassword()
+  private static string GetLavaLinkPassword()
   {
     string token = null;
 
-    if (this.IsDebug())
+    if (IsDebug())
     {
       // See GetDiscordToken
       token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Process);
@@ -144,8 +125,6 @@ public class Configuration
       {
         token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
                 Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
-
-        _logger.LogDebug("TOKEN: {Token}", token);
         
         return token ?? string.Empty;
       }

@@ -5,6 +5,7 @@ namespace Howbot.Core.Services;
 
 /// <summary>
 /// A wrapper around ServiceScopeFactory to make it easier to fake out with MOQ.
+/// Entity Framework requires scope, hence why this class was created. This is only for scoped services though, not singletons
 /// </summary>
 /// <see cref="https://stackoverflow.com/a/53509491/54288"/>
 public sealed class ServiceScopeFactoryLocator : IServiceLocator
@@ -26,9 +27,7 @@ public sealed class ServiceScopeFactoryLocator : IServiceLocator
 
   public IServiceScope CreateScope()
   {
-    // if (_scope == null) comment this out to avoid {"Cannot access a disposed object.\r\nObject name: 'IServiceProvider'."}
-    _scope = _factory.CreateScope();
-    return _scope;
+    return _scope ??= _factory.CreateScope();
   }
 
   public void Dispose()

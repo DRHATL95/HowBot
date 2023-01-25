@@ -37,7 +37,7 @@ public abstract class Program
   /// <returns></returns>
   private static IHostBuilder CreateHostBuilder(string[] args) =>
       Host.CreateDefaultBuilder(args)
-          .ConfigureLogging((context, builder) =>
+          .ConfigureLogging((_, builder) =>
           {
             builder.ClearProviders();
             
@@ -60,9 +60,7 @@ public abstract class Program
             services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<Configuration>().InteractionServiceConfig));
             services.AddSingleton(x => new LavaNode(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<Configuration>().NodeConfiguration, x.GetRequiredService<ILogger<LavaNode>>()));
             services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
-
-            services.AddTransient<MusicModule>();
-
+            
             // Infrastructure.ContainerSetup
             services.AddDbContext(hostContext.Configuration);
             services.AddRepositories();

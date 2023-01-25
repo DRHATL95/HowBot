@@ -11,20 +11,29 @@ namespace Howbot.Core.Services;
 
 public class LavaNodeService : ILavaNodeService
 {
+  private readonly LavaNode _lavaNode;
   private readonly ILoggerAdapter<LavaNodeService> _logger;
 
-  public LavaNodeService(ILoggerAdapter<LavaNodeService> logger, LavaNode lavaNode)
+  public LavaNodeService(LavaNode lavaNode, ILoggerAdapter<LavaNodeService> logger)
   {
+    _lavaNode = lavaNode;
     _logger = logger;
+  }
+  
+  public void Initialize()
+  {
+    if (_lavaNode == null) return;
     
     // Hook-up lava node events
-    lavaNode.OnTrackStart += LavaNodeOnOnTrackStart;
-    lavaNode.OnTrackEnd += LavaNodeOnOnTrackEnd;
-    lavaNode.OnTrackException += LavaNodeOnOnTrackException;
-    lavaNode.OnStatsReceived += LavaNodeOnOnStatsReceived;
-    lavaNode.OnWebSocketClosed += LavaNodeOnOnWebSocketClosed;
-    lavaNode.OnTrackStuck += LavaNodeOnOnTrackStuck;
+    _lavaNode.OnTrackStart += LavaNodeOnOnTrackStart;
+    _lavaNode.OnTrackEnd += LavaNodeOnOnTrackEnd;
+    _lavaNode.OnTrackException += LavaNodeOnOnTrackException;
+    _lavaNode.OnStatsReceived += LavaNodeOnOnStatsReceived;
+    _lavaNode.OnWebSocketClosed += LavaNodeOnOnWebSocketClosed;
+    _lavaNode.OnTrackStuck += LavaNodeOnOnTrackStuck;
   }
+
+  #region Lava Node Events
 
   private Task LavaNodeOnOnTrackStuck(TrackStuckEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackStuckEventArg)
   {
@@ -86,4 +95,6 @@ public class LavaNodeService : ILavaNodeService
 
     return Task.CompletedTask;
   }
+
+  #endregion
 }

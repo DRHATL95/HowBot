@@ -17,47 +17,63 @@ public class DockerService : IDockerService
     _serviceLocator = serviceLocator;
   }
 
+#pragma warning disable CS1998
   public async Task<IList<ContainerListResponse>> ListAllContainers()
+#pragma warning restore CS1998
   {
     using var scope = _serviceLocator.CreateScope();
-    var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
+    // var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
 
-    return await dockerClient.Containers.ListContainersAsync(new ContainersListParameters());
+    return new List<ContainerListResponse>();
+
+    // return await dockerClient.Containers.ListContainersAsync(new ContainersListParameters());
   }
 
+#pragma warning disable CS1998
   public async Task<IList<ImagesListResponse>> ListAllImages()
+#pragma warning restore CS1998
   {
     using var scope = _serviceLocator.CreateScope();
-    var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
+    // var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
 
-    return await dockerClient.Images.ListImagesAsync(new ImagesListParameters());
+    return new List<ImagesListResponse>();
+
+    // return await dockerClient.Images.ListImagesAsync(new ImagesListParameters());
   }
 
+#pragma warning disable CS1998
   public async Task<ImageInspectResponse> GetImageByImageName(string imageName)
+#pragma warning restore CS1998
   {
     using var scope = _serviceLocator.CreateScope();
-    var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
+    // var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
 
-    return await dockerClient.Images.InspectImageAsync(imageName);
+    return new ImageInspectResponse();
+
+    // return await dockerClient.Images.InspectImageAsync(imageName);
   }
 
+#pragma warning disable CS1998
   public async Task<ContainerInspectResponse> GetContainerByContainerName(string containerId)
+#pragma warning restore CS1998
   {
     using var scope = _serviceLocator.CreateScope();
-    var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
+    // var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
 
-    return await dockerClient.Containers.InspectContainerAsync(containerId);
+    return new ContainerInspectResponse();
+
+    // return await dockerClient.Containers.InspectContainerAsync(containerId);
   }
 
   public async Task<bool> BuildImageByImageName(string imageName)
   {
     using var scope = _serviceLocator.CreateScope();
-    var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
+    // var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
 
     if (await DoesImageExist(imageName)) return true;
 
-    await dockerClient.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = imageName },
-      new AuthConfig(), new Progress<JSONMessage>());
+    /*await dockerClient.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = imageName },
+      new AuthConfig(), new Progress<JSONMessage>());*/
 
     return true;
   }
@@ -65,12 +81,12 @@ public class DockerService : IDockerService
   public async Task<bool> BuildImageByImageName(string imageName, string tagName)
   {
     using var scope = _serviceLocator.CreateScope();
-    var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
+    // var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
 
     if (await DoesImageExist(imageName)) return true;
 
-    await dockerClient.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = imageName, Tag = tagName},
-      new AuthConfig(), new Progress<JSONMessage>());
+    /*await dockerClient.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = imageName, Tag = tagName},
+      new AuthConfig(), new Progress<JSONMessage>());*/
 
     return true;
   }
@@ -78,10 +94,15 @@ public class DockerService : IDockerService
   private async Task<bool> DoesImageExist(string imageName, string tagName = "latest")
   {
     using var scope = _serviceLocator.CreateScope();
-    var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
+    // var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
 
     var images = await ListAllImages();
 
     return images.Any(i => i.RepoTags.Contains($"{imageName}:{tagName}"));
+  }
+
+  public void Initialize()
+  {
+    // TODO:
   }
 }

@@ -1,6 +1,7 @@
 ﻿using Howbot.Core.Interfaces;
 using Howbot.Core.Services;
 using Howbot.Infrastructure.Data;
+using Howbot.Infrastructure.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,7 @@ public static class ServiceCollectionSetupExtensions
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
     services.AddSingleton<IDockerService, DockerService>();
     services.AddSingleton<IDeploymentService, DeploymentService>();
-    // services.AddTransient<IHttpService, HttpService>();
+    
+    services.AddTransient<IHttpService, HttpService>();
   }
 }
