@@ -22,7 +22,7 @@
     <PackageVersion Include="Docker.DotNet" Version="3.125.12" />
     <PackageVersion Include="FastEndpoints" Version="5.3.2" />
     <PackageVersion Include="FastEndpoints.ApiExplorer" Version="2.0.1" />
-    <PackageVersion Include="FastEndpoints.Swagger" Version="5.2.1" />
+    <PackageVersion Include="FastEndpoints.Swagger" Version="5.7.1" />
     <PackageVersion Include="FastEndpoints.Swagger.Swashbuckle" Version="2.0.1" />
     <PackageVersion Include="MediatR" Version="11.1.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.2" />
