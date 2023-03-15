@@ -32,7 +32,7 @@ public class VoiceService : IVoiceService
       {
         var lavaPlayer = await this.JoinGuildVoiceChannelAsync(voiceState, textChannel);
 
-        return CommandResponse.CommandSuccessful(lavaPlayer);
+        return lavaPlayer == null ? CommandResponse.CommandNotSuccessful(new Exception("Exception thrown creating lava player while joining voice channel")) : CommandResponse.CommandSuccessful(lavaPlayer);
       }
     }
     catch (Exception exception)
@@ -41,7 +41,35 @@ public class VoiceService : IVoiceService
       return CommandResponse.CommandNotSuccessful(exception);
     }
 
-    return CommandResponse.CommandNotSuccessful();
+    return CommandResponse.CommandNotSuccessful("Unable to join voice channel.");
+  }
+
+  public async Task<CommandResponse> LeaveVoiceChannelAsync(IGuildUser user)
+  {
+    try
+    {
+      if (user is not IVoiceState voiceState)
+      {
+        return CommandResponse.CommandNotSuccessful("Unable to leave voice channel");
+      }
+
+      // Get lava player instance
+      if(!_lavaNode.HasPlayer(user.Guild))
+      {
+        _logger.LogDebug("Cannot leave voice, not in voice channel.");
+        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+      }
+        
+      _logger.LogDebug("Leaving voice channel");
+      await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
+      return CommandResponse.CommandSuccessful();
+
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception, "Exception has been thrown executing command [{CommandName}]", nameof(LeaveVoiceChannelAsync));
+      return CommandResponse.CommandNotSuccessful(exception);
+    }
   }
   
   private async Task<LavaPlayer<LavaTrack>> JoinGuildVoiceChannelAsync(IVoiceState voiceState, ITextChannel textChannel)

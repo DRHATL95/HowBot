@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Howbot.Core.Interfaces;
 using Victoria.Node;
 using Victoria.Node.EventArgs;
 using Victoria.Player;
+using Victoria.Responses.Search;
 
 namespace Howbot.Core.Services;
 
@@ -15,14 +17,16 @@ public class LavaNodeService : ILavaNodeService
 {
   private readonly LavaNode _lavaNode;
   private readonly IEmbedService _embedService;
+  private readonly IMusicService _musicService;
   private readonly ILoggerAdapter<LavaNodeService> _logger;
   private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
 
-  public LavaNodeService(LavaNode lavaNode, IEmbedService embedService, ILoggerAdapter<LavaNodeService> logger)
+  public LavaNodeService(LavaNode lavaNode, IEmbedService embedService, IMusicService musicService, ILoggerAdapter<LavaNodeService> logger)
   {
     _lavaNode = lavaNode;
     _embedService = embedService;
     _logger = logger;
+    _musicService = musicService;
     _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
   }
   
@@ -41,16 +45,26 @@ public class LavaNodeService : ILavaNodeService
 
   #region Lava Node Events
 
+  /// <summary>
+  /// LavaNode event handler for when a track gets stuck.
+  /// </summary>
+  /// <param name="trackStuckEventArg"></param>
+  /// <returns></returns>
   private Task LavaNodeOnOnTrackStuck(TrackStuckEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackStuckEventArg)
   {
     var guild = GuildHelper.GetGuildTag(trackStuckEventArg.Player.TextChannel.Guild);
     
-    _logger.LogInformation("Requested track [{TrackTitle}] for Guild {GuildTag} is stuck", 
+    _logger.LogWarning("Requested track [{TrackTitle}] for Guild {GuildTag} is stuck", 
       trackStuckEventArg.Track.Title, guild);
 
     return Task.CompletedTask;
   }
 
+  /// <summary>
+  /// LavaNode websocket event handler for when the socket is closed unexpectedly.
+  /// </summary>
+  /// <param name="arg"></param>
+  /// <returns></returns>
   private Task LavaNodeOnOnWebSocketClosed(WebSocketClosedEventArg arg)
   {
     _logger.LogInformation("Discord websocket has closed for the following reason: {Reason}", arg.Reason);
@@ -58,6 +72,11 @@ public class LavaNodeService : ILavaNodeService
     return Task.CompletedTask;
   }
 
+  /// <summary>
+  /// LavaNode event handler for when stats are received from the server.
+  /// </summary>
+  /// <param name="arg"></param>
+  /// <returns></returns>
   private Task LavaNodeOnOnStatsReceived(StatsEventArg arg)
   {
     StringBuilder stringBuilder = new StringBuilder();
@@ -73,6 +92,11 @@ public class LavaNodeService : ILavaNodeService
     return Task.CompletedTask;
   }
 
+  /// <summary>
+  /// LavaNode event handler for when an exception has been thrown.
+  /// </summary>
+  /// <param name="trackExceptionEventArg"></param>
+  /// <returns></returns>
   private Task LavaNodeOnOnTrackException(TrackExceptionEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackExceptionEventArg)
   {
     var exception = new Exception(trackExceptionEventArg.Exception.Message);
@@ -82,6 +106,11 @@ public class LavaNodeService : ILavaNodeService
     return Task.CompletedTask;
   }
 
+  /// <summary>
+  /// LavaNode event handler for when track ends.
+  /// TODO: in the future, will check for radio mode set
+  /// </summary>
+  /// <param name="trackEndEventArg"></param>
   private async Task LavaNodeOnOnTrackEnd(TrackEndEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackEndEventArg)
   {
     if (trackEndEventArg.Reason is not TrackEndReason.Finished)
@@ -102,6 +131,11 @@ public class LavaNodeService : ILavaNodeService
     }
   }
 
+  /// <summary>
+  /// LavaNode event handler for when track starts
+  /// </summary>
+  /// <param name="trackStartEventArg"></param>
+  /// <returns></returns>
   private Task LavaNodeOnOnTrackStart(TrackStartEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackStartEventArg)
   {
     var guild = trackStartEventArg.Player.TextChannel.Guild;
@@ -116,21 +150,20 @@ public class LavaNodeService : ILavaNodeService
 
   private async Task InitiateDisconnectLogicAsync(LavaPlayer lavaPlayer, TimeSpan timeSpan)
   {
-    if (_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value))
-    {
+    if (!_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value)) {
       value = new CancellationTokenSource();
       _disconnectTokens.TryAdd(lavaPlayer.VoiceChannel.Id, value);
     }
-    else if (value.IsCancellationRequested)
-    {
+    else if (value.IsCancellationRequested) {
       _disconnectTokens.TryUpdate(lavaPlayer.VoiceChannel.Id, new CancellationTokenSource(), value);
       value = _disconnectTokens[lavaPlayer.VoiceChannel.Id];
     }
     
-    _logger.LogInformation("Disconnecting from voice channel in {Seconds}", timeSpan.Seconds);
-
+    await lavaPlayer.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
     var isCancelled = SpinWait.SpinUntil(() => value.IsCancellationRequested, timeSpan);
-    if (isCancelled) return;
+    if (isCancelled) {
+      return;
+    }
 
     await _lavaNode.LeaveAsync(lavaPlayer.VoiceChannel);
     _logger.LogDebug("Howbot has disconnected from voice channel.");

@@ -11,12 +11,21 @@ public class Configuration
   private const string DiscordTokenDev = "DiscordTokenDev";
   private const string DiscordTokenProd = "DiscordTokenProd";
   private const string LavalinkPassword = "DiscordLavalinkServerPassword";
+  private const string YouTube = "Youtube";
   
   public static string DiscordToken
   {
     get
     {
       return GetDiscordToken() ?? string.Empty;
+    }
+  }
+
+  public string YouTubeToken
+  {
+    get
+    {
+      return GetYouTubeToken() ?? string.Empty;
     }
   }
 
@@ -76,6 +85,40 @@ public class Configuration
     #else
       return false;
     #endif
+  }
+
+  private static string GetYouTubeToken()
+  {
+    string token = null;
+
+    if (IsDebug())
+    {
+      // First attempt to get the token from the current hosted process.
+      token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Process);
+      // ReSharper disable once InvertIf
+      if (string.IsNullOrEmpty(token))
+      {
+        token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.User) ??
+                Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Machine);
+
+        return token ?? string.Empty;
+      }
+    }
+    else
+    {
+      // First attempt to get the token from the current hosted process.
+      token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Process);
+      // ReSharper disable once InvertIf
+      if (string.IsNullOrEmpty(token))
+      {
+        token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.User) ??
+                Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Machine);
+
+        return token ?? string.Empty;
+      }
+    }
+
+    return token;
   }
 
   private static string GetDiscordToken()

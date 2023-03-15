@@ -24,6 +24,8 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     _logger = logger;
   }
 
+  #region Music Module Slash Commands
+
   [SlashCommand(Constants.Commands.JoinCommandName, Constants.Commands.JoinCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(Permissions.Bot.GuildBotVoiceCommandPermission)]
@@ -186,7 +188,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [SlashCommand("seek", "Seek something", true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.SeekCommandName, Constants.Commands.SeekCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
@@ -221,7 +223,10 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [SlashCommand("skip", "skip either to next track or a valid number of tracks in the queue", true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.SkipCommandName, Constants.Commands.SkipCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
   public async Task SkipCommandAsync(int? tracksToSkip = null)
   {
     try
@@ -252,7 +257,10 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [SlashCommand("volume", "Change volume", true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.VolumeCommandName, Constants.Commands.VolumeCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
   public async Task VolumeCommandAsync(int? newVolume = 0)
   {
     try
@@ -283,7 +291,10 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [SlashCommand("np", "Gets an embed of the current playing track", true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.NowPlayingCommandName, Constants.Commands.NowPlayingCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
   public async Task NowPlayingCommandAsync()
   {
     try
@@ -318,7 +329,10 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [SlashCommand("genius", "Gets lyrics for current playing track from Genius", true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.GeniusCommandName, Constants.Commands.GeniusCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
   public async Task GetLyricsFromGeniusAsync()
   {
     try
@@ -352,7 +366,10 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [SlashCommand("ovo", "Gets lyrics for current playing track from Ovh lyrics")]
+  [SlashCommand(Constants.Commands.OvhCommandName, Constants.Commands.OvhCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
   public async Task GetLyricsFromOvhAsync()
   {
     try
@@ -385,4 +402,32 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       throw;
     }
   }
+
+  [SlashCommand(Constants.Commands.LeaveCommandName, Constants.Commands.LeaveCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
+  public async Task LeaveVoiceChannelCommandAsync()
+  {
+    await DeferAsync();
+
+    var commandResponse = await _voiceService.LeaveVoiceChannelAsync(Context.User as IGuildUser);
+
+    if (!commandResponse.Success)
+    {
+      _logger.LogCommandFailed(nameof(LeaveVoiceChannelCommandAsync));
+
+      if (commandResponse.Exception != null) throw commandResponse.Exception;
+      
+      if (!string.IsNullOrEmpty(commandResponse.Message)) _logger.LogDebug(commandResponse.Message);
+
+      await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+    }
+    else
+    {
+      await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+    }
+  }
+
+  #endregion  
 }

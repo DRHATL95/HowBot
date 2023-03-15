@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Google.Apis.YouTube.v3;
 using Howbot.Core.Entities;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Victoria;
@@ -18,13 +22,18 @@ public class MusicService : IMusicService
   private readonly IVoiceService _voiceService;
   private readonly IEmbedService _embedService;
   private readonly LavaNode _lavaNode;
+  private readonly YouTubeService _youTubeService;
   private readonly ILoggerAdapter<MusicService> _logger;
-  public MusicService(IVoiceService voiceService, IEmbedService embedService, LavaNode lavaNode, ILoggerAdapter<MusicService> logger)
+  private readonly ConcurrentDictionary<ulong, bool> _guildRadioModeFlag; // TODO: Better way to handle this
+
+  public MusicService(IVoiceService voiceService, IEmbedService embedService, LavaNode lavaNode, YouTubeService youTubeService, ILoggerAdapter<MusicService> logger)
   {
     _voiceService = voiceService;
     _embedService = embedService;
     _lavaNode = lavaNode;
+    _youTubeService = youTubeService;
     _logger = logger;
+    _guildRadioModeFlag = new ConcurrentDictionary<ulong, bool>();
   }
   
   public void Initialize()
@@ -398,7 +407,7 @@ public class MusicService : IMusicService
   {
     var originalQueueSize = lavaPlayer.Vueue.Count;
 
-    if (IsSearchResponsePlaylist(searchResponse))
+    if (MusicHelper.IsSearchResponsePlaylist(searchResponse))
     {
       _logger.LogDebug("Adding {TrackCount} songs to queue", searchResponse.Tracks.Count);
       lavaPlayer.Vueue.Enqueue(searchResponse.Tracks);
@@ -423,9 +432,49 @@ public class MusicService : IMusicService
     }
   }
 
-  private static bool IsSearchResponsePlaylist(SearchResponse searchResponse)
+  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(ulong guildId, string videoId, int count = 1)
   {
-    return !string.IsNullOrEmpty(searchResponse.Playlist.Name);
+    var searchListRequest = _youTubeService.Search.List("snippet");
+    
+    searchListRequest.Type = "video";
+    // For some reason if I want 1 result, I have to set the max results to 2?
+    // TODO: Investigate
+    searchListRequest.MaxResults = (count == 1) ? 2 : count;
+    searchListRequest.RelatedToVideoId = videoId;
+
+    var response = await searchListRequest.ExecuteAsync();
+
+    if (count <= 1)
+    {
+      return new[] { response.Items[0].Id.VideoId };
+    }
+
+    return response.Items.Select(item => item.Id.VideoId).ToList();
+
   }
-  
+
+  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoTitle(ulong guildId, string videoId, int count = 1)
+  {
+    var searchListRequest = _youTubeService.Search.List("snippet");
+    
+    searchListRequest.Type = "video";
+    // For some reason if I want 1 result, I have to set the max results to 2?
+    // TODO: Investigate
+    searchListRequest.MaxResults = (count == 1) ? 2 : count;
+    searchListRequest.RelatedToVideoId = videoId;
+
+    var response = await searchListRequest.ExecuteAsync();
+
+    if (count <= 1)
+    {
+      return new[] { response.Items[0].Snippet.Title };
+    }
+
+    return response.Items.Select(item => item.Snippet.Title).ToList();
+  }
+
+  public bool EnableRadioModeForGuild(ulong guildId)
+  {
+    return _guildRadioModeFlag.ContainsKey(guildId) ? _guildRadioModeFlag.TryUpdate(guildId, true, false) : _guildRadioModeFlag.TryAdd(guildId, true);
+  }
 }
