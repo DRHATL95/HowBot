@@ -7,6 +7,8 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Victoria.Node;
+using Victoria.Player;
 
 namespace Howbot.Core.Services;
 
@@ -16,12 +18,14 @@ public class InteractionHandlerService : IInteractionHandlerService
   private readonly InteractionService _interactionService;
   private readonly IServiceProvider _serviceProvider;
   private readonly ILoggerAdapter<InteractionHandlerService> _logger;
+  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
 
-  public InteractionHandlerService(DiscordSocketClient discordSocketClient, InteractionService interactionService, IServiceProvider serviceProvider, ILoggerAdapter<InteractionHandlerService> logger)
+  public InteractionHandlerService(DiscordSocketClient discordSocketClient, InteractionService interactionService, IServiceProvider serviceProvider, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, ILoggerAdapter<InteractionHandlerService> logger)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;
     _serviceProvider = serviceProvider;
+    _lavaNode = lavaNode;
     _logger = logger;
   }
   

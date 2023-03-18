@@ -11,10 +11,9 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Modules;
 using Howbot.Core.Settings;
-using JetBrains.Annotations;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
+using Victoria.Player;
 
 namespace Howbot.Core.Services;
 
@@ -23,10 +22,10 @@ public class DiscordClientService : IDiscordClientService
   private readonly DiscordSocketClient _discordSocketClient;
   private readonly IServiceProvider _serviceProvider;
   private readonly InteractionService _interactionService;
-  private readonly LavaNode _lavaNode;
+  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
   private readonly ILoggerAdapter<DiscordClientService> _logger;
 
-  public DiscordClientService(DiscordSocketClient discordSocketClient, IServiceProvider serviceProvider, InteractionService interactionService, LavaNode lavaNode, ILoggerAdapter<DiscordClientService> logger)
+  public DiscordClientService(DiscordSocketClient discordSocketClient, IServiceProvider serviceProvider, InteractionService interactionService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, ILoggerAdapter<DiscordClientService> logger)
   {
     _discordSocketClient = discordSocketClient;
     _serviceProvider = serviceProvider;
@@ -106,6 +105,7 @@ public class DiscordClientService : IDiscordClientService
     try
     {
       await _interactionService.AddModuleAsync(typeof(MusicModule), _serviceProvider);
+      await _interactionService.AddModuleAsync(typeof(GeneralModule), _serviceProvider);
     }
     catch (FileNotFoundException exception)
     {
@@ -184,7 +184,7 @@ public class DiscordClientService : IDiscordClientService
         _logger.LogDebug("Registering commands globally");
         await _interactionService.RegisterCommandsGloballyAsync();
       }
-      
+
       _logger.LogDebug("Successfully registered commands to discord bot");
 
       if (!_lavaNode.IsConnected)

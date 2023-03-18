@@ -7,7 +7,6 @@ using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
 using Howbot.Core;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Modules;
 using Howbot.Core.Services;
 using Howbot.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
+using Victoria.Player;
 
 namespace Howbot.Worker;
 
@@ -61,9 +61,15 @@ public abstract class Program
             services.AddSingleton<Configuration>();
             services.AddSingleton(x => new DiscordSocketClient(x.GetRequiredService<Configuration>().DiscordSocketConfig));
             services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<Configuration>().InteractionServiceConfig));
-            services.AddSingleton(x => new LavaNode(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<Configuration>().NodeConfiguration, x.GetRequiredService<ILogger<LavaNode>>()));
-            services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
-            services.AddSingleton(x => new YouTubeService(new BaseClientService.Initializer(){ ApiKey = x.GetRequiredService<Configuration>().YouTubeToken,  ApplicationName = Constants.BotName }));
+            services.AddSingleton(provider =>
+            {
+              var discordClient = provider.GetRequiredService<DiscordSocketClient>();
+              var nodeConfig = provider.GetRequiredService<Configuration>().NodeConfiguration;
+              var logger = provider.GetRequiredService<ILogger<LavaNode<Player<LavaTrack>, LavaTrack>>>();
+              return new LavaNode<Player<LavaTrack>, LavaTrack>(discordClient, nodeConfig, logger);
+            });
+            // services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
+            services.AddSingleton(x => new YouTubeService(new BaseClientService.Initializer { ApiKey = x.GetRequiredService<Configuration>().YouTubeToken,  ApplicationName = Constants.BotName }));
             
             // Infrastructure.ContainerSetup
             services.AddDbContext(hostContext.Configuration);

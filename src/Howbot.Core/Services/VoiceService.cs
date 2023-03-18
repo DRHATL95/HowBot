@@ -10,10 +10,10 @@ namespace Howbot.Core.Services;
 
 public class VoiceService : IVoiceService
 {
-  private readonly LavaNode _lavaNode;
+  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
   private readonly ILoggerAdapter<VoiceService> _logger;
 
-  public VoiceService(LavaNode lavaNode, ILoggerAdapter<VoiceService> logger)
+  public VoiceService(LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, ILoggerAdapter<VoiceService> logger)
   {
     _lavaNode = lavaNode;
     _logger = logger;
@@ -72,7 +72,7 @@ public class VoiceService : IVoiceService
     }
   }
   
-  private async Task<LavaPlayer<LavaTrack>> JoinGuildVoiceChannelAsync(IVoiceState voiceState, ITextChannel textChannel)
+  private async Task<Player<LavaTrack>> JoinGuildVoiceChannelAsync(IVoiceState voiceState, ITextChannel textChannel)
   {
     // Parameter error handling
     if (voiceState == null) throw new ArgumentNullException(nameof(voiceState));

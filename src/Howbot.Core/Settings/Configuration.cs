@@ -3,6 +3,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Victoria.Node;
+using Victoria.WebSocket;
 
 namespace Howbot.Core.Settings;
 
@@ -41,7 +42,7 @@ public class Configuration
   {
     get
     {
-      return new DiscordSocketConfig()
+      return new DiscordSocketConfig
       {
         AlwaysDownloadUsers = true,
         GatewayIntents = GatewayIntents,
@@ -49,6 +50,14 @@ public class Configuration
         LogGatewayIntentWarnings = false,
         UseInteractionSnowflakeDate = false,
       };
+    }
+  }
+
+  private WebSocketConfiguration WebSocketConfiguration
+  {
+    get
+    {
+      return new WebSocketConfiguration { BufferSize = 1024 };
     }
   }
   
@@ -64,7 +73,7 @@ public class Configuration
         Authorization = GetLavaLinkPassword(),
         SelfDeaf = true,
         EnableResume = true,
-        // SocketConfiguration = this.WebSocketConfiguration
+        SocketConfiguration = this.WebSocketConfiguration
       };
     }
   }
@@ -157,22 +166,17 @@ public class Configuration
 
   private static string GetLavaLinkPassword()
   {
-    string token = null;
-
-    if (IsDebug())
-    {
       // See GetDiscordToken
-      token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Process);
-      
-      if (string.IsNullOrEmpty(token))
-      {
-        token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
-                Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
-        
-        return token ?? string.Empty;
-      }
-    }
+      string token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Process);
 
-    return token;
+      if (!string.IsNullOrEmpty(token))
+      {
+        return token;
+      }
+
+      token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
+              Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
+        
+      return token ?? string.Empty;
   }
 }

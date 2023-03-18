@@ -15,7 +15,7 @@ public class CommandResponse : BaseEntity
   
   [CanBeNull] public IEmbed Embed { get; }
   
-  [CanBeNull] public LavaPlayer<LavaTrack> LavaPlayer { get; init; }
+  [CanBeNull] public Player<LavaTrack> LavaPlayer { get; init; }
 
   private CommandResponse()
   {
@@ -32,13 +32,7 @@ public class CommandResponse : BaseEntity
     Exception = null;
   }
 
-  private CommandResponse(LavaPlayer lavaPlayer)
-  {
-    Success = true;
-    LavaPlayer = lavaPlayer;
-  }
-
-  private CommandResponse(LavaPlayer<LavaTrack> lavaPlayer)
+  private CommandResponse(Player<LavaTrack> lavaPlayer)
   {
     Success = true;
     LavaPlayer = lavaPlayer;
@@ -74,10 +68,8 @@ public class CommandResponse : BaseEntity
   
   public static CommandResponse CommandSuccessful(string message) => new(true, message);
 
-  public static CommandResponse CommandSuccessful(LavaPlayer<LavaTrack> lavaPlayer) => new(lavaPlayer);
+  public static CommandResponse CommandSuccessful(Player<LavaTrack> lavaPlayer) => new(lavaPlayer);
   
-  public static CommandResponse CommandSuccessful(LavaPlayer lavaPlayer) => new(lavaPlayer);
-
   public static CommandResponse CommandSuccessful(IEmbed embed) => new(embed);
 
   public static CommandResponse CommandNotSuccessful() => new(false);

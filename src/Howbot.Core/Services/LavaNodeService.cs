@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Victoria.Node;
@@ -15,13 +17,13 @@ namespace Howbot.Core.Services;
 
 public class LavaNodeService : ILavaNodeService
 {
-  private readonly LavaNode _lavaNode;
+  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
   private readonly IEmbedService _embedService;
   private readonly IMusicService _musicService;
   private readonly ILoggerAdapter<LavaNodeService> _logger;
   private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
 
-  public LavaNodeService(LavaNode lavaNode, IEmbedService embedService, IMusicService musicService, ILoggerAdapter<LavaNodeService> logger)
+  public LavaNodeService(LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, IEmbedService embedService, IMusicService musicService, ILoggerAdapter<LavaNodeService> logger)
   {
     _lavaNode = lavaNode;
     _embedService = embedService;
@@ -50,7 +52,7 @@ public class LavaNodeService : ILavaNodeService
   /// </summary>
   /// <param name="trackStuckEventArg"></param>
   /// <returns></returns>
-  private Task LavaNodeOnOnTrackStuck(TrackStuckEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackStuckEventArg)
+  private Task LavaNodeOnOnTrackStuck(TrackStuckEventArg<Player<LavaTrack>, LavaTrack> trackStuckEventArg)
   {
     var guild = GuildHelper.GetGuildTag(trackStuckEventArg.Player.TextChannel.Guild);
     
@@ -97,7 +99,7 @@ public class LavaNodeService : ILavaNodeService
   /// </summary>
   /// <param name="trackExceptionEventArg"></param>
   /// <returns></returns>
-  private Task LavaNodeOnOnTrackException(TrackExceptionEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackExceptionEventArg)
+  private Task LavaNodeOnOnTrackException(TrackExceptionEventArg<Player<LavaTrack>, LavaTrack> trackExceptionEventArg)
   {
     var exception = new Exception(trackExceptionEventArg.Exception.Message);
     
@@ -111,7 +113,7 @@ public class LavaNodeService : ILavaNodeService
   /// TODO: in the future, will check for radio mode set
   /// </summary>
   /// <param name="trackEndEventArg"></param>
-  private async Task LavaNodeOnOnTrackEnd(TrackEndEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackEndEventArg)
+  private async Task LavaNodeOnOnTrackEnd(TrackEndEventArg<Player<LavaTrack>, LavaTrack> trackEndEventArg)
   {
     if (trackEndEventArg.Reason is not TrackEndReason.Finished)
       return;
@@ -119,10 +121,20 @@ public class LavaNodeService : ILavaNodeService
     var lavaPlayer = trackEndEventArg.Player;
     if (lavaPlayer != null)
     {
+      // set last played track
+      lavaPlayer.LastPlayed ??= trackEndEventArg.Track;
+      
       if (!lavaPlayer.Vueue.TryDequeue(out var lavaTrack))
       {
+        _logger.LogInformation("Player queue is empty but we are in radio mode!");
+        if (trackEndEventArg.Player.RadioMode())
+        {
+          await this.PlayRadioTrack(lavaPlayer);
+          return;
+        }
+        
         _logger.LogInformation("Lava player queue is empty. Attempting to disconnect now");
-        await this.InitiateDisconnectLogicAsync(lavaPlayer as LavaPlayer, TimeSpan.FromSeconds(30));
+        await this.InitiateDisconnectLogicAsync(lavaPlayer, TimeSpan.FromSeconds(30));
         return;
       }
       
@@ -136,19 +148,21 @@ public class LavaNodeService : ILavaNodeService
   /// </summary>
   /// <param name="trackStartEventArg"></param>
   /// <returns></returns>
-  private Task LavaNodeOnOnTrackStart(TrackStartEventArg<LavaPlayer<LavaTrack>, LavaTrack> trackStartEventArg)
+  private async Task LavaNodeOnOnTrackStart(TrackStartEventArg<Player<LavaTrack>, LavaTrack> trackStartEventArg)
   {
     var guild = trackStartEventArg.Player.TextChannel.Guild;
+    var textChannel = trackStartEventArg.Player.TextChannel;
     
     _logger.LogDebug("Track [{TrackName}] has started playing in Guild {GuildTag}", 
       trackStartEventArg.Track.Title, GuildHelper.GetGuildTag(guild));
 
-    return Task.CompletedTask;
+    var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(trackStartEventArg.Track, trackStartEventArg.Player.Author, textChannel);
+    await textChannel.SendMessageAsync(embed: embed as Embed);
   }
 
   #endregion
 
-  private async Task InitiateDisconnectLogicAsync(LavaPlayer lavaPlayer, TimeSpan timeSpan)
+  private async Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan)
   {
     if (!_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value)) {
       value = new CancellationTokenSource();
@@ -167,5 +181,25 @@ public class LavaNodeService : ILavaNodeService
 
     await _lavaNode.LeaveAsync(lavaPlayer.VoiceChannel);
     _logger.LogDebug("Howbot has disconnected from voice channel.");
+  }
+
+  private async Task PlayRadioTrack(Player<LavaTrack> lavaPlayer)
+  {
+    ArgumentNullException.ThrowIfNull(lavaPlayer);
+
+    if (lavaPlayer.LastPlayed != null)
+    {
+      if ((await _musicService.GetYoutubeRecommendedVideoId(lavaPlayer.LastPlayed.Id, Constants.RadioSearchLength)) is List<string> result && result.Any())
+      {
+        var videoId = result.First();
+        var videoUrl = Constants.YouTubeBaseShortUrl + videoId;
+
+        var searchResult = await _lavaNode.SearchAsync(SearchType.Direct, videoUrl);
+        if (searchResult.Tracks.Any())
+        {
+          await lavaPlayer.PlayAsync(searchResult.Tracks.First());
+        }
+      }
+    }
   }
 }

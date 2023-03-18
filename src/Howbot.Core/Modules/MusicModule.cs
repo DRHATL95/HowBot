@@ -4,7 +4,8 @@ using Discord;
 using Discord.Interactions;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
+using Victoria.Node;
+using Victoria.Player;
 using Victoria.Responses.Search;
 
 namespace Howbot.Core.Modules;
@@ -14,13 +15,15 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   private readonly IVoiceService _voiceService;
   private readonly IMusicService _musicService;
   private readonly IEmbedService _embedService;
+  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
   private readonly ILoggerAdapter<MusicModule> _logger;
 
-  public MusicModule(IVoiceService voiceService, IMusicService musicService, IEmbedService embedService, ILoggerAdapter<MusicModule> logger)
+  public MusicModule(IVoiceService voiceService, IMusicService musicService, IEmbedService embedService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, ILoggerAdapter<MusicModule> logger)
   {
     _voiceService = voiceService;
     _musicService = musicService;
     _embedService = embedService;
+    _lavaNode = lavaNode;
     _logger = logger;
   }
 
@@ -68,7 +71,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync(true);
+      await DeferAsync();
 
       if (string.IsNullOrEmpty(searchRequest))
       {
@@ -101,15 +104,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       }
       else
       {
-        if (commandResponse.LavaPlayer != null)
-        {
-          var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(commandResponse.LavaPlayer.Track, Context.User as IGuildUser, Context.Channel as ITextChannel);
-          await ModifyOriginalResponseAsync(properties => properties.Embeds = new Optional<Embed[]>(new []{ embed as Embed, }));
-        }
-        else
-        {
-          _logger.LogInformation("Song has successfully started playing.");
-        }
+        await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
       }
     }
     catch (Exception exception)
@@ -429,5 +424,30 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
+  [SlashCommand("radio", "Play songs related to last played song", true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
+  public async Task RadioCommandAsync()
+  {
+    if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+    {
+      await RespondAsync("There is no player for this channel.");
+      return;
+    }
+
+    if (player.RadioMode())
+    {
+      _logger.LogDebug("Disabling radio");
+      player.DisableRadioMode();
+      await RespondAsync("Radio disabled");
+    }
+    else
+    {
+      player.EnableRadioMode();
+      await RespondAsync("Radio enabled");
+    }
+  }
+  
   #endregion  
 }

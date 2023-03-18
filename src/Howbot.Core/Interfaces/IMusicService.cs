@@ -20,8 +20,6 @@ public interface IMusicService : IServiceBase
   public Task<CommandResponse> ApplyAudioFilterAsync<T>(IGuild guild, T filter);
   public Task<CommandResponse> GetLyricsFromGeniusAsync(IGuild guild);
   public Task<CommandResponse> GetLyricsFromOvhAsync(IGuild guild);
-  public Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(ulong guildId, string videoId, int count = 1);
+  public Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1);
   public Task<IEnumerable<string>> GetYoutubeRecommendedVideoTitle(ulong guildId, string videoId, int count = 1);
-  public bool EnableRadioModeForGuild(ulong guildId);
-
 }

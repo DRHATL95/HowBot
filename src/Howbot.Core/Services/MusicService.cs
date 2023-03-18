@@ -21,19 +21,17 @@ public class MusicService : IMusicService
 {
   private readonly IVoiceService _voiceService;
   private readonly IEmbedService _embedService;
-  private readonly LavaNode _lavaNode;
+  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
   private readonly YouTubeService _youTubeService;
   private readonly ILoggerAdapter<MusicService> _logger;
-  private readonly ConcurrentDictionary<ulong, bool> _guildRadioModeFlag; // TODO: Better way to handle this
 
-  public MusicService(IVoiceService voiceService, IEmbedService embedService, LavaNode lavaNode, YouTubeService youTubeService, ILoggerAdapter<MusicService> logger)
+  public MusicService(IVoiceService voiceService, IEmbedService embedService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, YouTubeService youTubeService, ILoggerAdapter<MusicService> logger)
   {
     _voiceService = voiceService;
     _embedService = embedService;
     _lavaNode = lavaNode;
     _youTubeService = youTubeService;
     _logger = logger;
-    _guildRadioModeFlag = new ConcurrentDictionary<ulong, bool>();
   }
   
   public void Initialize()
@@ -70,7 +68,7 @@ public class MusicService : IMusicService
         return CommandResponse.CommandNotSuccessful("No results found for search");
       }
 
-      await this.PlayTrack(voiceServiceResponse.LavaPlayer, searchResponse, user.Guild);
+      await this.PlayTrack(voiceServiceResponse.LavaPlayer, searchResponse, user);
       return CommandResponse.CommandSuccessful(voiceServiceResponse.LavaPlayer);
     }
     catch (Exception exception)
@@ -381,9 +379,9 @@ public class MusicService : IMusicService
 
   #endregion
 
-  private async Task PlayTrack(LavaPlayer<LavaTrack> lavaPlayer, SearchResponse searchResponse, IGuild guild)
+  private async Task PlayTrack(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse, IGuildUser user)
   {
-    this.AddToPlayerQueue(lavaPlayer, searchResponse, guild);
+    this.AddToPlayerQueue(lavaPlayer, searchResponse, user.Guild);
     
     // Check current player state
     if (lavaPlayer.PlayerState is PlayerState.Playing || (lavaPlayer.PlayerState is PlayerState.Paused &&
@@ -400,6 +398,11 @@ public class MusicService : IMusicService
       return;
     }
 
+    lavaPlayer.Author = user;
+    // lavaPlayer.EnableRadioMode();
+
+    _logger.LogDebug("Enabling radio mode..");
+
     await lavaPlayer.PlayAsync(lavaTrack);
   }
 
@@ -414,8 +417,8 @@ public class MusicService : IMusicService
     }
     else
     {
-      var lavaTrack = searchResponse.Tracks.Count > 1
-        ? searchResponse.Tracks.First()
+      var lavaTrack = searchResponse.Tracks.Count >= 1
+        ? searchResponse.Tracks.Last()
         : throw new IndexOutOfRangeException(nameof(searchResponse.Tracks));
       
       lavaPlayer.Vueue.Enqueue(lavaTrack);
@@ -432,7 +435,7 @@ public class MusicService : IMusicService
     }
   }
 
-  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(ulong guildId, string videoId, int count = 1)
+  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
   {
     var searchListRequest = _youTubeService.Search.List("snippet");
     
@@ -450,7 +453,6 @@ public class MusicService : IMusicService
     }
 
     return response.Items.Select(item => item.Id.VideoId).ToList();
-
   }
 
   public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoTitle(ulong guildId, string videoId, int count = 1)
@@ -471,10 +473,5 @@ public class MusicService : IMusicService
     }
 
     return response.Items.Select(item => item.Snippet.Title).ToList();
-  }
-
-  public bool EnableRadioModeForGuild(ulong guildId)
-  {
-    return _guildRadioModeFlag.ContainsKey(guildId) ? _guildRadioModeFlag.TryUpdate(guildId, true, false) : _guildRadioModeFlag.TryAdd(guildId, true);
   }
 }

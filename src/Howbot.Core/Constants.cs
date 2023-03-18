@@ -5,15 +5,15 @@ public abstract record Constants
   // Discord Development Server (DevTest2)
   public const ulong DiscordDevelopmentGuildId = 656305202185633810;
   public const string BotName = "Howbot";
+  public const string YouTubeBaseShortUrl = "https://youtu.be/";
+  public const int RadioSearchLength = 2;
 
   public readonly struct Commands
   {
     // Join Command
     public const string JoinCommandName = "join";
     public const string JoinCommandDescription = "Join a valid server voice channel, otherwise nothing.";
-
-    #region Play Command
-
+    
     // Play Command
     public const string PlayCommandName = "play";
     public const string PlayCommandDescription = "Plays a track from a given search query. Optionally, can choose different search providers.";
@@ -23,9 +23,7 @@ public abstract record Constants
     public const string PlaySearchRequestArgumentDescription = "Search request used for search provider.";
     public const string PlaySearchTypeArgumentName = "search_type";
     public const string PlaySearchTypeArgumentDescription = "Optional search provider for finding audio response with provided search request.";
-
-    #endregion
-
+    
     // Pause Command
     public const string PauseCommandName = "pause";
     public const string PauseCommandDescription = "Pauses a currently playing song, otherwise nothing.";
@@ -61,8 +59,11 @@ public abstract record Constants
     
     // Leave Command
     public const string LeaveCommandName = "leave";
-
     public const string LeaveCommandDescription =
-      "Leaves the current voice channel and removes any songs from the queue";
+      "Leaves the current voice channel and removes any songs from the queue.";
+    
+    // Ping Command
+    public const string PingCommandName = "ping";
+    public const string PingCommandDescription = "Ping the Discord websocket API.";
   }
 }
