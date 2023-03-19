@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  lavalink:
+    image: fredboat/lavalink:latest
+  howbot:
+    build: .
+    depends_on:
+      - lavalink
