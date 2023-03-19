@@ -5,22 +5,23 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
 using Victoria.Player;
 
 namespace Howbot.Core.Services;
 
-public class InteractionHandlerService : IInteractionHandlerService
+public class InteractionHandlerService : ServiceBase<InteractionHandlerService>, IInteractionHandlerService
 {
   private readonly DiscordSocketClient _discordSocketClient;
   private readonly InteractionService _interactionService;
-  private readonly IServiceProvider _serviceProvider;
-  private readonly ILoggerAdapter<InteractionHandlerService> _logger;
   private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
+  private readonly ILoggerAdapter<InteractionHandlerService> _logger;
+  private readonly IServiceProvider _serviceProvider;
 
-  public InteractionHandlerService(DiscordSocketClient discordSocketClient, InteractionService interactionService, IServiceProvider serviceProvider, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, ILoggerAdapter<InteractionHandlerService> logger)
+  public InteractionHandlerService(DiscordSocketClient discordSocketClient, InteractionService interactionService,
+    IServiceProvider serviceProvider, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode,
+    ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;
@@ -28,16 +29,31 @@ public class InteractionHandlerService : IInteractionHandlerService
     _lavaNode = lavaNode;
     _logger = logger;
   }
-  
-  public void Initialize()
+
+  public new void Initialize()
   {
+    if (_discordSocketClient == null)
+    {
+      return;
+    }
+
+    if (_interactionService == null)
+    {
+      return;
+    }
+
+    if (_logger.IsLogLevelEnabled(LogLevel.Debug))
+    {
+      _logger.LogDebug("{ServiceName} is initializing..", nameof(InteractionHandlerService));
+    }
+
     _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
-    
+
     _interactionService.Log += InteractionServiceOnLog;
   }
 
   #region Interaction Service Events
-  
+
   private Task InteractionServiceOnLog(LogMessage logMessage)
   {
     try
@@ -52,7 +68,7 @@ public class InteractionHandlerService : IInteractionHandlerService
       {
         _logger.Log(logLevel, (logMessage.Message ?? string.Empty));
       }
-      
+
       return Task.CompletedTask;
     }
     catch (Exception exception)
@@ -76,12 +92,12 @@ public class InteractionHandlerService : IInteractionHandlerService
         {
           case InteractionCommandError.UnknownCommand:
             _logger.LogError(Messages.Errors.InteractionUnknownCommandLog);
-            
+
             await socketInteraction.RespondAsync(Messages.Errors.InteractionUnknownCommand, ephemeral: true);
             break;
           case InteractionCommandError.ConvertFailed:
             _logger.LogError(Messages.Errors.InteractionConvertFailedLog);
-            
+
             await socketInteraction.RespondAsync(Messages.Errors.InteractionConvertFailed, ephemeral: true);
             break;
           case InteractionCommandError.BadArgs:

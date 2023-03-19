@@ -1,20 +1,13 @@
-﻿using System;
-using Howbot.Core.Entities;
-using Howbot.Core.Interfaces;
+﻿using Howbot.Core.Interfaces;
 
 namespace Howbot.Core.Services;
 
-public class DeploymentService : IDeploymentService
+public class DeploymentService : ServiceBase<DeploymentService>, IDeploymentService
 {
   private readonly ILoggerAdapter<DeploymentService> _logger;
 
-  public DeploymentService(ILoggerAdapter<DeploymentService> logger)
+  public DeploymentService(ILoggerAdapter<DeploymentService> logger) : base(logger)
   {
     _logger = logger;
-  }
-  
-  public void Initialize()
-  {
-    _logger.LogDebug("{ServiceName} is being initialized", nameof(DeploymentService));
   }
 }

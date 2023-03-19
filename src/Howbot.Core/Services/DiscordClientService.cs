@@ -17,15 +17,17 @@ using Victoria.Player;
 
 namespace Howbot.Core.Services;
 
-public class DiscordClientService : IDiscordClientService
+public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordClientService
 {
   private readonly DiscordSocketClient _discordSocketClient;
-  private readonly IServiceProvider _serviceProvider;
   private readonly InteractionService _interactionService;
   private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
   private readonly ILoggerAdapter<DiscordClientService> _logger;
+  private readonly IServiceProvider _serviceProvider;
 
-  public DiscordClientService(DiscordSocketClient discordSocketClient, IServiceProvider serviceProvider, InteractionService interactionService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, ILoggerAdapter<DiscordClientService> logger)
+  public DiscordClientService(DiscordSocketClient discordSocketClient, IServiceProvider serviceProvider,
+    InteractionService interactionService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode,
+    ILoggerAdapter<DiscordClientService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _serviceProvider = serviceProvider;
@@ -34,9 +36,14 @@ public class DiscordClientService : IDiscordClientService
     _logger = logger;
   }
 
-  public void Initialize()
+  public new void Initialize()
   {
     if (_discordSocketClient == null) return;
+
+    if (_logger.IsLogLevelEnabled(LogLevel.Debug))
+    {
+      _logger.LogDebug("{ServiceName} is initializing..", nameof(DiscordClientService));
+    }
 
     _discordSocketClient.Log += DiscordSocketClientOnLog;
     _discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
@@ -57,7 +64,7 @@ public class DiscordClientService : IDiscordClientService
     try
     {
       await _discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
-      
+
       return true;
     }
     catch (Exception exception)
@@ -78,16 +85,16 @@ public class DiscordClientService : IDiscordClientService
           // Only check after 3 seconds.
           Thread.Sleep(3000);
       });
-    
+
       // Will signal ready state. Must be called only when bot has finished logging in.
       await _discordSocketClient.StartAsync();
-      
+
       // Only in debug, set bots online presence to offline
       if (Configuration.IsDebug())
       {
         await _discordSocketClient.SetStatusAsync(UserStatus.Invisible);
       }
-    
+
       // Add modules dynamically to discord bot
       await this.AddModulesToDiscordBotAsync();
 
@@ -109,7 +116,8 @@ public class DiscordClientService : IDiscordClientService
     }
     catch (FileNotFoundException exception)
     {
-      _logger.LogError(exception, "Unable to find the assembly. Value: {AssemblyName}", Assembly.GetEntryAssembly()?.ToString());
+      _logger.LogError(exception, "Unable to find the assembly. Value: {AssemblyName}",
+        Assembly.GetEntryAssembly()?.ToString());
       throw;
     }
   }
@@ -128,32 +136,34 @@ public class DiscordClientService : IDiscordClientService
       LogSeverity.Debug => LogLevel.Debug,
       _ => LogLevel.Information
     };
-    
+
     _logger.Log(severity, arg.Message);
 
     return Task.CompletedTask;
   }
-  
+
   private Task DiscordSocketClientOnUserJoined(SocketGuildUser arg)
   {
     _logger.LogDebug("{GuildUserName} has joined Guild {GuildTag}", arg.Username, GuildHelper.GetGuildTag(arg.Guild));
 
     return Task.CompletedTask;
   }
-  
+
   private Task DiscordSocketClientOnSlashCommandExecuted(SocketSlashCommand arg)
   {
     var guild = _discordSocketClient.Guilds.FirstOrDefault(x => x.Id == arg.GuildId);
     if (guild == null)
     {
-      _logger.LogError(new Exception(), "Unable to look-up guild for event [{EventName}]", nameof(DiscordSocketClientOnSlashCommandExecuted));
+      _logger.LogError(new Exception(), "Unable to look-up guild for event [{EventName}]",
+        nameof(DiscordSocketClientOnSlashCommandExecuted));
     }
-    
-    _logger.LogDebug("Command [{CommandName}] has been executed in Guild {GuildTag}", arg.CommandName, GuildHelper.GetGuildTag(guild));
+
+    _logger.LogDebug("Command [{CommandName}] has been executed in Guild {GuildTag}", arg.CommandName,
+      GuildHelper.GetGuildTag(guild));
 
     return Task.CompletedTask;
   }
-  
+
   private Task DiscordSocketClientOnDisconnected(Exception arg)
   {
     _logger.LogDebug("{Username} has disconnected from socket", Constants.BotName);
@@ -190,9 +200,9 @@ public class DiscordClientService : IDiscordClientService
       if (!_lavaNode.IsConnected)
       {
         _logger.LogDebug("Connecting to lavalink server");
-          
+
         await _lavaNode.ConnectAsync();
-        
+
         _logger.LogDebug("Successfully connected to lavalink server");
       }
     }

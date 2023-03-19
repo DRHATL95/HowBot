@@ -1,6 +1,4 @@
-﻿
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Docker.DotNet;
@@ -18,10 +16,11 @@ public class DockerServiceTests
   private static IDockerService /*, Mock<IServiceLocator>*/ Factory()
   {
     var serviceLocator = new Mock<IServiceLocator>();
+    var logger = new Mock<ILoggerAdapter<DockerService>>();
 
     _ = SetupCreateScope(serviceLocator);
 
-    var dockerService = new DockerService(serviceLocator.Object);
+    var dockerService = new DockerService(serviceLocator.Object, logger.Object);
 
     return dockerService;
   }
@@ -40,7 +39,7 @@ public class DockerServiceTests
 
     return SetupCustomInjection(serviceProvider);
   }
-  
+
   private static Tuple<Mock<IDockerClient>> SetupCustomInjection(Mock<IServiceProvider> serviceProvider)
   {
     // GetRequiredService is an extension method, but GetService is not
@@ -57,14 +56,14 @@ public class DockerServiceTests
   public async Task DockerServiceTests_ListAllContainers_ReturnsIListContainerListResponse()
   {
     var dockerService = Factory();
-    
+
     var mockDockerService = new Mock<IDockerService>();
     mockDockerService
       .Setup(service => service.ListAllContainers().Result)
       .Returns(new List<ContainerListResponse>());
 
     var result = await dockerService.ListAllContainers();
-    
+
     Assert.True(result.Count > 0);
   }
 
@@ -79,7 +78,7 @@ public class DockerServiceTests
       .Returns(new List<ImagesListResponse>());
 
     var result = await dockerService.ListAllImages();
-    
+
     Assert.True(result.Count > 0);
   }
 
@@ -94,7 +93,7 @@ public class DockerServiceTests
       .Returns(new ImageInspectResponse());
 
     var result = await dockerService.GetImageByImageName("fredboat/lavalink");
-    
+
     Assert.NotNull(result);
   }
 
@@ -109,7 +108,7 @@ public class DockerServiceTests
       .Returns(true);
 
     var success = await dockerService.BuildImageByImageName("fredboat/lavalink");
-    
+
     Assert.True(success);
   }
 
@@ -124,7 +123,7 @@ public class DockerServiceTests
       .Returns(true);
 
     var result = await dockerService.BuildImageByImageName("fredboat/lavalink", "latest");
-    
+
     Assert.True(result);
   }
 }

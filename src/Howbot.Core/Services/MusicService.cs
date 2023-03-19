@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,7 +7,6 @@ using Google.Apis.YouTube.v3;
 using Howbot.Core.Entities;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
 using Victoria;
 using Victoria.Node;
 using Victoria.Player;
@@ -17,15 +15,17 @@ using Victoria.Responses.Search;
 
 namespace Howbot.Core.Services;
 
-public class MusicService : IMusicService
+public class MusicService : ServiceBase<MusicService>, IMusicService
 {
-  private readonly IVoiceService _voiceService;
   private readonly IEmbedService _embedService;
   private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
-  private readonly YouTubeService _youTubeService;
   private readonly ILoggerAdapter<MusicService> _logger;
+  private readonly IVoiceService _voiceService;
+  private readonly YouTubeService _youTubeService;
 
-  public MusicService(IVoiceService voiceService, IEmbedService embedService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, YouTubeService youTubeService, ILoggerAdapter<MusicService> logger)
+  public MusicService(IVoiceService voiceService, IEmbedService embedService,
+    LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, YouTubeService youTubeService,
+    ILoggerAdapter<MusicService> logger) : base(logger)
   {
     _voiceService = voiceService;
     _embedService = embedService;
@@ -33,15 +33,105 @@ public class MusicService : IMusicService
     _youTubeService = youTubeService;
     _logger = logger;
   }
-  
-  public void Initialize()
+
+  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
   {
-    // TODO: 
+    var searchListRequest = _youTubeService.Search.List("snippet");
+
+    searchListRequest.Type = "video";
+    // For some reason if I want 1 result, I have to set the max results to 2?
+    // TODO: Investigate
+    searchListRequest.MaxResults = (count == 1) ? 2 : count;
+    searchListRequest.RelatedToVideoId = videoId;
+
+    var response = await searchListRequest.ExecuteAsync();
+
+    if (count <= 1)
+    {
+      return new[] { response.Items[0].Id.VideoId };
+    }
+
+    return response.Items.Select(item => item.Id.VideoId).ToList();
+  }
+
+  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoTitle(ulong guildId, string videoId, int count = 1)
+  {
+    var searchListRequest = _youTubeService.Search.List("snippet");
+
+    searchListRequest.Type = "video";
+    // For some reason if I want 1 result, I have to set the max results to 2?
+    // TODO: Investigate
+    searchListRequest.MaxResults = (count == 1) ? 2 : count;
+    searchListRequest.RelatedToVideoId = videoId;
+
+    var response = await searchListRequest.ExecuteAsync();
+
+    if (count <= 1)
+    {
+      return new[] { response.Items[0].Snippet.Title };
+    }
+
+    return response.Items.Select(item => item.Snippet.Title).ToList();
+  }
+
+  private async Task PlayTrack(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse, IGuildUser user)
+  {
+    AddToPlayerQueue(lavaPlayer, searchResponse);
+
+    // Check current player state
+    if (lavaPlayer.PlayerState is PlayerState.Playing || (lavaPlayer.PlayerState is PlayerState.Paused &&
+                                                          (lavaPlayer.Vueue.Count > 0 || lavaPlayer.Track != null)))
+    {
+      // Already playing or paused but has current track
+      _logger.LogDebug("Already playing something.");
+      return;
+    }
+
+    if (!lavaPlayer.Vueue.TryDequeue(out var lavaTrack))
+    {
+      _logger.LogDebug("Unable to dequeue lava player");
+      return;
+    }
+
+    // Update command author, used for Embeds
+    lavaPlayer.Author = user;
+
+    await lavaPlayer.PlayAsync(lavaTrack);
+  }
+
+  private void AddToPlayerQueue(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse)
+  {
+    var originalQueueSize = lavaPlayer.Vueue.Count;
+
+    if (MusicHelper.IsSearchResponsePlaylist(searchResponse))
+    {
+      _logger.LogDebug("Adding {TrackCount} songs to queue", searchResponse.Tracks.Count);
+      lavaPlayer.Vueue.Enqueue(searchResponse.Tracks);
+    }
+    else
+    {
+      var lavaTrack = searchResponse.Tracks.Count >= 1
+        ? searchResponse.Tracks.First()
+        : throw new IndexOutOfRangeException(nameof(searchResponse.Tracks));
+
+      lavaPlayer.Vueue.Enqueue(lavaTrack);
+    }
+
+    if (originalQueueSize == 0)
+    {
+      _logger.LogDebug("Added 1 track to the queue", originalQueueSize);
+    }
+    else
+    {
+      var totalTracksAdded = lavaPlayer.Vueue.Count - originalQueueSize;
+      _logger.LogDebug("Added {Count} tracks to the queue", totalTracksAdded);
+    }
   }
 
   #region Music Module Commands
 
-  public async Task<CommandResponse> PlayBySearchTypeAsync(SearchType searchType, string searchRequest, IGuildUser user, IVoiceState voiceState, ITextChannel textChannel)
+  public async Task<CommandResponse> PlayBySearchTypeAsync(SearchType searchType, string searchRequest, IGuildUser user,
+    IVoiceState voiceState, ITextChannel textChannel)
   {
     try
     {
@@ -121,7 +211,7 @@ public class MusicService : IMusicService
         _logger.LogDebug("Cannot resume a track that isn't paused or stopped.");
         return CommandResponse.CommandNotSuccessful("Unable to resume a track that's not stopped or paused.");
       }
-      
+
       _logger.LogDebug("Resuming track.");
       await lavaPlayer.ResumeAsync();
 
@@ -151,7 +241,7 @@ public class MusicService : IMusicService
           _logger.LogDebug(Messages.Debug.ClientQueueOutOfBounds);
           return CommandResponse.CommandNotSuccessful(Messages.Responses.BotSkipQueueOutOfBounds);
         }
-        
+
         // Skipped ahead multiple places in queue
         _logger.LogDebug("Song before skip: [{SongName} - {Artist}]", lavaPlayer.Track.Title, lavaPlayer.Track.Author);
         _logger.LogDebug("Skipping {Count} tracks in queue", numberOfTracks);
@@ -220,7 +310,7 @@ public class MusicService : IMusicService
     {
       // Since second param is optional, if 0 do nothing but return command success
       if (!newVolume.HasValue) return CommandResponse.CommandSuccessful();
-      
+
       if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
         _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
@@ -239,10 +329,10 @@ public class MusicService : IMusicService
         _logger.LogDebug("Volumes are the same, doing nothing");
         return CommandResponse.CommandNotSuccessful();
       }
-      
+
       _logger.LogDebug("Setting player volume to {Volume}", newVolume.Value);
       await lavaPlayer.SetVolumeAsync(newVolume.Value);
-      
+
       return CommandResponse.CommandSuccessful();
     }
     catch (Exception exception)
@@ -288,7 +378,6 @@ public class MusicService : IMusicService
   {
     try
     {
-
       if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
         _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
@@ -344,7 +433,7 @@ public class MusicService : IMusicService
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
-  
+
   public async Task<CommandResponse> GetLyricsFromOvhAsync(IGuild guild)
   {
     try
@@ -378,100 +467,4 @@ public class MusicService : IMusicService
   }
 
   #endregion
-
-  private async Task PlayTrack(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse, IGuildUser user)
-  {
-    this.AddToPlayerQueue(lavaPlayer, searchResponse, user.Guild);
-    
-    // Check current player state
-    if (lavaPlayer.PlayerState is PlayerState.Playing || (lavaPlayer.PlayerState is PlayerState.Paused &&
-                                                          (lavaPlayer.Vueue.Count > 0 || lavaPlayer.Track != null)))
-    {
-      // Already playing or paused but has current track
-      _logger.LogDebug("Already playing something.");
-      return;
-    }
-
-    if (!lavaPlayer.Vueue.TryDequeue(out var lavaTrack))
-    {
-      _logger.LogDebug("Unable to dequeue lava player");
-      return;
-    }
-
-    lavaPlayer.Author = user;
-    // lavaPlayer.EnableRadioMode();
-
-    _logger.LogDebug("Enabling radio mode..");
-
-    await lavaPlayer.PlayAsync(lavaTrack);
-  }
-
-  private void AddToPlayerQueue(LavaPlayer<LavaTrack> lavaPlayer, SearchResponse searchResponse, IGuild guild)
-  {
-    var originalQueueSize = lavaPlayer.Vueue.Count;
-
-    if (MusicHelper.IsSearchResponsePlaylist(searchResponse))
-    {
-      _logger.LogDebug("Adding {TrackCount} songs to queue", searchResponse.Tracks.Count);
-      lavaPlayer.Vueue.Enqueue(searchResponse.Tracks);
-    }
-    else
-    {
-      var lavaTrack = searchResponse.Tracks.Count >= 1
-        ? searchResponse.Tracks.Last()
-        : throw new IndexOutOfRangeException(nameof(searchResponse.Tracks));
-      
-      lavaPlayer.Vueue.Enqueue(lavaTrack);
-    }
-
-    if (originalQueueSize == 0)
-    {
-      _logger.LogDebug("Added 1 track to the queue", originalQueueSize);
-    }
-    else
-    {
-      var totalTracksAdded = lavaPlayer.Vueue.Count - originalQueueSize;
-      _logger.LogDebug("Added {Count} tracks to the queue", totalTracksAdded);
-    }
-  }
-
-  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
-  {
-    var searchListRequest = _youTubeService.Search.List("snippet");
-    
-    searchListRequest.Type = "video";
-    // For some reason if I want 1 result, I have to set the max results to 2?
-    // TODO: Investigate
-    searchListRequest.MaxResults = (count == 1) ? 2 : count;
-    searchListRequest.RelatedToVideoId = videoId;
-
-    var response = await searchListRequest.ExecuteAsync();
-
-    if (count <= 1)
-    {
-      return new[] { response.Items[0].Id.VideoId };
-    }
-
-    return response.Items.Select(item => item.Id.VideoId).ToList();
-  }
-
-  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoTitle(ulong guildId, string videoId, int count = 1)
-  {
-    var searchListRequest = _youTubeService.Search.List("snippet");
-    
-    searchListRequest.Type = "video";
-    // For some reason if I want 1 result, I have to set the max results to 2?
-    // TODO: Investigate
-    searchListRequest.MaxResults = (count == 1) ? 2 : count;
-    searchListRequest.RelatedToVideoId = videoId;
-
-    var response = await searchListRequest.ExecuteAsync();
-
-    if (count <= 1)
-    {
-      return new[] { response.Items[0].Snippet.Title };
-    }
-
-    return response.Items.Select(item => item.Snippet.Title).ToList();
-  }
 }

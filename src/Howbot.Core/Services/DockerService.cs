@@ -1,20 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Docker.DotNet;
 using Docker.DotNet.Models;
 using Howbot.Core.Interfaces;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Howbot.Core.Services;
 
-public class DockerService : IDockerService
+public class DockerService : ServiceBase<DockerService>, IDockerService
 {
+  private readonly ILoggerAdapter<DockerService> _logger;
   private readonly IServiceLocator _serviceLocator;
-  public DockerService(IServiceLocator serviceLocator)
+
+  public DockerService(IServiceLocator serviceLocator, ILoggerAdapter<DockerService> logger) : base(logger)
   {
     _serviceLocator = serviceLocator;
+    _logger = logger;
   }
 
 #pragma warning disable CS1998
@@ -99,10 +99,5 @@ public class DockerService : IDockerService
     var images = await ListAllImages();
 
     return images.Any(i => i.RepoTags.Contains($"{imageName}:{tagName}"));
-  }
-
-  public void Initialize()
-  {
-    // TODO:
   }
 }

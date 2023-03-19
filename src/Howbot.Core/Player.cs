@@ -1,4 +1,6 @@
-﻿using Discord;
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using Discord;
 using JetBrains.Annotations;
 using Victoria.Player;
 using Victoria.WebSocket;
@@ -7,21 +9,23 @@ namespace Howbot.Core;
 
 public class Player<T> : LavaPlayer<T> where T : LavaTrack
 {
-  private bool IsRadioMode { get; set; }
-  public IGuildUser Author { get; set; }
-  [CanBeNull] public LavaTrack LastPlayed { get; set; }
-  
-  public Player(WebSocketClient socketClient, IVoiceChannel voiceChannel, ITextChannel textChannel) : base(socketClient, voiceChannel, textChannel) { }
-
-  public bool RadioMode() => IsRadioMode;
-
-  public void EnableRadioMode()
+  // Constructor
+  public Player(WebSocketClient socketClient, IVoiceChannel voiceChannel, ITextChannel textChannel) : base(socketClient,
+    voiceChannel, textChannel)
   {
-    IsRadioMode = true;
+    RecentlyPlayed = new Collection<LavaTrack>();
   }
 
-  public void DisableRadioMode()
+  public bool IsRadioMode { get; set; }
+  public IGuildUser Author { get; set; }
+
+  [CanBeNull] public LavaTrack LastPlayed { get; set; }
+
+  // TODO: Message queue implementation
+  public ICollection<LavaTrack> RecentlyPlayed { get; set; }
+
+  public void ToggleRadioMode()
   {
-    IsRadioMode = false;
+    IsRadioMode = !IsRadioMode;
   }
 }

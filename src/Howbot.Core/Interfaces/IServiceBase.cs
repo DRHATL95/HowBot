@@ -1,7 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.DependencyInjection;
-
-namespace Howbot.Core.Interfaces;
+﻿namespace Howbot.Core.Interfaces;
 
 public interface IServiceBase
 {
