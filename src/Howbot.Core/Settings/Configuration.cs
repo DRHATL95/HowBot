@@ -3,6 +3,7 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Victoria.Node;
+using Victoria.WebSocket;
 
 namespace Howbot.Core.Settings;
 
@@ -11,12 +12,21 @@ public class Configuration
   private const string DiscordTokenDev = "DiscordTokenDev";
   private const string DiscordTokenProd = "DiscordTokenProd";
   private const string LavalinkPassword = "DiscordLavalinkServerPassword";
+  private const string YouTube = "Youtube";
   
   public static string DiscordToken
   {
     get
     {
       return GetDiscordToken() ?? string.Empty;
+    }
+  }
+
+  public string YouTubeToken
+  {
+    get
+    {
+      return GetYouTubeToken() ?? string.Empty;
     }
   }
 
@@ -32,7 +42,7 @@ public class Configuration
   {
     get
     {
-      return new DiscordSocketConfig()
+      return new DiscordSocketConfig
       {
         AlwaysDownloadUsers = true,
         GatewayIntents = GatewayIntents,
@@ -40,6 +50,14 @@ public class Configuration
         LogGatewayIntentWarnings = false,
         UseInteractionSnowflakeDate = false,
       };
+    }
+  }
+
+  private WebSocketConfiguration WebSocketConfiguration
+  {
+    get
+    {
+      return new WebSocketConfiguration { BufferSize = 1024 };
     }
   }
   
@@ -55,7 +73,7 @@ public class Configuration
         Authorization = GetLavaLinkPassword(),
         SelfDeaf = true,
         EnableResume = true,
-        // SocketConfiguration = this.WebSocketConfiguration
+        SocketConfiguration = this.WebSocketConfiguration
       };
     }
   }
@@ -76,6 +94,40 @@ public class Configuration
     #else
       return false;
     #endif
+  }
+
+  private static string GetYouTubeToken()
+  {
+    string token = null;
+
+    if (IsDebug())
+    {
+      // First attempt to get the token from the current hosted process.
+      token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Process);
+      // ReSharper disable once InvertIf
+      if (string.IsNullOrEmpty(token))
+      {
+        token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.User) ??
+                Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Machine);
+
+        return token ?? string.Empty;
+      }
+    }
+    else
+    {
+      // First attempt to get the token from the current hosted process.
+      token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Process);
+      // ReSharper disable once InvertIf
+      if (string.IsNullOrEmpty(token))
+      {
+        token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.User) ??
+                Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Machine);
+
+        return token ?? string.Empty;
+      }
+    }
+
+    return token;
   }
 
   private static string GetDiscordToken()
@@ -114,22 +166,17 @@ public class Configuration
 
   private static string GetLavaLinkPassword()
   {
-    string token = null;
-
-    if (IsDebug())
-    {
       // See GetDiscordToken
-      token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Process);
-      
-      if (string.IsNullOrEmpty(token))
-      {
-        token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
-                Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
-        
-        return token ?? string.Empty;
-      }
-    }
+      string token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Process);
 
-    return token;
+      if (!string.IsNullOrEmpty(token))
+      {
+        return token;
+      }
+
+      token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
+              Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
+        
+      return token ?? string.Empty;
   }
 }

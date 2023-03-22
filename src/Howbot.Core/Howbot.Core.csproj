@@ -10,6 +10,7 @@
     <PackageReference Include="Discord.Net.Interactions" />
     <PackageReference Include="Discord.Net.WebSocket" />
     <PackageReference Include="Docker.DotNet" />
+    <PackageReference Include="Google.Apis.YouTube.v3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Victoria" />
   </ItemGroup>

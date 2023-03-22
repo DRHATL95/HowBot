@@ -19,8 +19,6 @@ public class LoggerAdapter<T> : ILoggerAdapter<T>
 
   public void Log(LogLevel severity, string message, params object[] args)
   {
-    if (string.IsNullOrEmpty(message)) throw new ArgumentNullException(nameof(message));
-    
     _logger.Log(severity, message, args);
   }
 

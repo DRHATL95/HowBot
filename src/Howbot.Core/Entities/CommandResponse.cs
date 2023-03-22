@@ -7,16 +7,6 @@ namespace Howbot.Core.Entities;
 
 public class CommandResponse : BaseEntity
 {
-  public bool Success { get; }
-  
-  public string Message { get; }
-
-  [CanBeNull] public Exception Exception { get; }
-  
-  [CanBeNull] public IEmbed Embed { get; }
-  
-  [CanBeNull] public LavaPlayer<LavaTrack> LavaPlayer { get; init; }
-
   private CommandResponse()
   {
     Message = string.Empty;
@@ -32,13 +22,7 @@ public class CommandResponse : BaseEntity
     Exception = null;
   }
 
-  private CommandResponse(LavaPlayer lavaPlayer)
-  {
-    Success = true;
-    LavaPlayer = lavaPlayer;
-  }
-
-  private CommandResponse(LavaPlayer<LavaTrack> lavaPlayer)
+  private CommandResponse(Player<LavaTrack> lavaPlayer)
   {
     Success = true;
     LavaPlayer = lavaPlayer;
@@ -70,13 +54,21 @@ public class CommandResponse : BaseEntity
     Exception = exception;
   }
 
+  public bool Success { get; }
+
+  public string Message { get; }
+
+  [CanBeNull] public Exception Exception { get; }
+
+  [CanBeNull] public IEmbed Embed { get; }
+
+  [CanBeNull] public Player<LavaTrack> LavaPlayer { get; init; }
+
   public static CommandResponse CommandSuccessful() => new(true);
-  
+
   public static CommandResponse CommandSuccessful(string message) => new(true, message);
 
-  public static CommandResponse CommandSuccessful(LavaPlayer<LavaTrack> lavaPlayer) => new(lavaPlayer);
-  
-  public static CommandResponse CommandSuccessful(LavaPlayer lavaPlayer) => new(lavaPlayer);
+  public static CommandResponse CommandSuccessful(Player<LavaTrack> lavaPlayer) => new(lavaPlayer);
 
   public static CommandResponse CommandSuccessful(IEmbed embed) => new(embed);
 

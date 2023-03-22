@@ -2,7 +2,7 @@
 
 namespace Howbot.Core;
 
-public struct Permissions
+public abstract record Permissions
 {
   public struct Bot
   {

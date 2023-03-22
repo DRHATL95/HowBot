@@ -2,10 +2,12 @@
 
 namespace Howbot.Core.Services;
 
-public class DeploymentService : IDeploymentService
+public class DeploymentService : ServiceBase<DeploymentService>, IDeploymentService
 {
-  public void Initialize()
+  private readonly ILoggerAdapter<DeploymentService> _logger;
+
+  public DeploymentService(ILoggerAdapter<DeploymentService> logger) : base(logger)
   {
-    // TODO:
+    _logger = logger;
   }
 }
