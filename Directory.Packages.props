@@ -23,7 +23,7 @@
     <PackageVersion Include="Docker.DotNet" Version="3.125.13" />
     <PackageVersion Include="FastEndpoints" Version="5.3.2" />
     <PackageVersion Include="FastEndpoints.ApiExplorer" Version="2.0.1" />
-    <PackageVersion Include="FastEndpoints.Swagger" Version="5.2.1" />
+    <PackageVersion Include="FastEndpoints.Swagger" Version="5.8.1" />
     <PackageVersion Include="FastEndpoints.Swagger.Swashbuckle" Version="2.0.1" />
     <PackageVersion Include="Google.Apis.YouTube.v3" Version="1.60.0.2945" />
     <PackageVersion Include="MediatR" Version="11.1.0" />
