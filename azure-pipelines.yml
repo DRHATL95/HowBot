@@ -32,7 +32,7 @@ steps:
   inputs:
     command: 'publish'
     publishWebProjects: false
-    projects: 'src/Howbot.Worker/'
+    projects: '**/*.csproj'
     arguments: '--runtime ubuntu-22.04'
 
 - task: PublishBuildArtifacts@1
