@@ -50,8 +50,8 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     _lavaNode.OnWebSocketClosed += LavaNodeOnOnWebSocketClosed;
     _lavaNode.OnTrackStuck += LavaNodeOnOnTrackStuck;
   }
-
-  private async Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan)
+  
+  public async Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan)
   {
     if (!_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value))
     {
