@@ -128,7 +128,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync(ephemeral: true);
+      await DeferAsync();
 
       var commandResponse = await _musicService.PauseTrackAsync(Context.Guild);
 
@@ -162,7 +162,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync(ephemeral: true);
+      await DeferAsync();
 
       var commandResponse = await _musicService.ResumeTrackAsync(Context.Guild);
 
@@ -193,14 +193,27 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(Permissions.Bot.GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(Permissions.User.GuildUserVoicePlayCommandPermission)]
-  public async Task SeekCommandAsync(TimeSpan timeToSeek)
+  public async Task SeekCommandAsync(int hours = 0, int minutes = 0, int seconds = 0, TimeSpan? timeToSeek = null)
   {
     try
     {
-      await DeferAsync(ephemeral: true);
+      await DeferAsync();
 
-      var commandResponse = await _musicService.SeekTrackAsync(Context.Guild, timeToSeek);
+      if (hours == 0 && minutes == 0 && seconds == 0 && timeToSeek == null)
+        throw new ArgumentNullException(nameof(timeToSeek));
 
+      CommandResponse commandResponse;
+      
+      if (timeToSeek.HasValue)
+      {
+        commandResponse = await _musicService.SeekTrackAsync(Context.Guild, timeToSeek.Value);
+      }
+      else
+      {
+        TimeSpan timeSpan = new TimeSpan(hours, minutes, seconds);
+        commandResponse = await _musicService.SeekTrackAsync(Context.Guild, timeSpan);
+      }
+      
       if (!commandResponse.Success)
       {
         _logger.LogCommandFailed(nameof(SeekCommandAsync));
@@ -232,7 +245,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync(ephemeral: true);
+      await DeferAsync();
 
       var commandResponse = await _musicService.SkipTrackAsync(Context.Guild, tracksToSkip ?? 0);
 
@@ -301,7 +314,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync(ephemeral: true);
+      await DeferAsync();
 
       var commandResponse =
         await _musicService.NowPlayingAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
