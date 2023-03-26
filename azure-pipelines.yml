@@ -27,6 +27,14 @@ steps:
     msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: 'src/Howbot.Worker/'
+    arguments: '--runtime ubuntu-22.04'
+
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(build.artifactStagingDirectory)'
