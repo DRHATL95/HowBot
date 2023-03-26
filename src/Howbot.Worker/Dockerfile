@@ -4,7 +4,7 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/runtime:7.0 AS build
 WORKDIR /src
 COPY ["src/Howbot.Worker/Howbot.Worker.csproj", "src/Howbot.Worker/"]
-RUN dotnet restore "src/Howbot.Worker/Howbot.Worker.csproj"
+RUN dotnet restore "src/Howbot.Worker/Howbot.Worker.csproj" 
 COPY . .
 WORKDIR "/src/src/Howbot.Worker"
 RUN dotnet build "Howbot.Worker.csproj" -c Release -o /app/build
