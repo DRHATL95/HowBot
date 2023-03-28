@@ -35,7 +35,10 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
 
   public new void Initialize()
   {
-    if (_lavaNode == null) return;
+    if (_lavaNode == null)
+    {
+      return;
+    }
 
     if (_logger.IsLogLevelEnabled(LogLevel.Debug))
     {
@@ -50,7 +53,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     _lavaNode.OnWebSocketClosed += LavaNodeOnOnWebSocketClosed;
     _lavaNode.OnTrackStuck += LavaNodeOnOnTrackStuck;
   }
-  
+
   public async Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan)
   {
     if (!_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value))
@@ -81,8 +84,8 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
 
     if (lavaPlayer.LastPlayed != null)
     {
-      if ((await _musicService.GetYoutubeRecommendedVideoId(lavaPlayer.LastPlayed.Id, Constants.RadioSearchLength)) is
-          List<string> result && result.Any())
+      if (await _musicService.GetYoutubeRecommendedVideoId(lavaPlayer.LastPlayed.Id, Constants.RadioSearchLength) is
+            List<string> result && result.Any())
       {
         var videoId = result.First();
         var videoUrl = Constants.YouTubeBaseShortUrl + videoId;
@@ -113,7 +116,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   #region Lava Node Events
 
   /// <summary>
-  /// LavaNode event handler for when a track gets stuck.
+  ///   LavaNode event handler for when a track gets stuck.
   /// </summary>
   /// <param name="trackStuckEventArg"></param>
   /// <returns></returns>
@@ -128,7 +131,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   }
 
   /// <summary>
-  /// LavaNode websocket event handler for when the socket is closed unexpectedly.
+  ///   LavaNode websocket event handler for when the socket is closed unexpectedly.
   /// </summary>
   /// <param name="arg"></param>
   /// <returns></returns>
@@ -140,7 +143,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   }
 
   /// <summary>
-  /// LavaNode event handler for when stats are received from the server.
+  ///   LavaNode event handler for when stats are received from the server.
   /// </summary>
   /// <param name="arg"></param>
   /// <returns></returns>
@@ -152,7 +155,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   }
 
   /// <summary>
-  /// LavaNode event handler for when an exception has been thrown.
+  ///   LavaNode event handler for when an exception has been thrown.
   /// </summary>
   /// <param name="trackExceptionEventArg"></param>
   /// <returns></returns>
@@ -167,14 +170,16 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   }
 
   /// <summary>
-  /// LavaNode event handler for when track ends.
-  /// TODO: in the future, will check for radio mode set
+  ///   LavaNode event handler for when track ends.
+  ///   TODO: in the future, will check for radio mode set
   /// </summary>
   /// <param name="trackEndEventArg"></param>
   private async Task LavaNodeOnOnTrackEnd(TrackEndEventArg<Player<LavaTrack>, LavaTrack> trackEndEventArg)
   {
     if (trackEndEventArg.Reason is not TrackEndReason.Finished)
+    {
       return;
+    }
 
     var lavaPlayer = trackEndEventArg.Player;
     if (lavaPlayer != null)
@@ -187,12 +192,12 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
         _logger.LogInformation("Player queue is empty but we are in radio mode!");
         if (trackEndEventArg.Player.IsRadioMode)
         {
-          await this.PlayRadioTrack(lavaPlayer);
+          await PlayRadioTrack(lavaPlayer);
           return;
         }
 
         _logger.LogInformation("Lava player queue is empty. Attempting to disconnect now");
-        await this.InitiateDisconnectLogicAsync(lavaPlayer, TimeSpan.FromSeconds(30));
+        await InitiateDisconnectLogicAsync(lavaPlayer, TimeSpan.FromSeconds(30));
         return;
       }
 
@@ -202,7 +207,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   }
 
   /// <summary>
-  /// LavaNode event handler for when track starts
+  ///   LavaNode event handler for when track starts
   /// </summary>
   /// <param name="trackStartEventArg"></param>
   /// <returns></returns>

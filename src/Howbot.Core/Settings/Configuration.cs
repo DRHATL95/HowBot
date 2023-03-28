@@ -13,87 +13,47 @@ public class Configuration
   private const string DiscordTokenProd = "DiscordTokenProd";
   private const string LavalinkPassword = "DiscordLavalinkServerPassword";
   private const string YouTube = "Youtube";
-  
-  public static string DiscordToken
-  {
-    get
-    {
-      return GetDiscordToken() ?? string.Empty;
-    }
-  }
 
-  public string YouTubeToken
-  {
-    get
-    {
-      return GetYouTubeToken() ?? string.Empty;
-    }
-  }
+  public static string DiscordToken => GetDiscordToken() ?? string.Empty;
 
-  private static GatewayIntents GatewayIntents
-  {
-    get
-    {
-      return GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
-    }
-  }
+  public string YouTubeToken => GetYouTubeToken() ?? string.Empty;
 
-  public DiscordSocketConfig DiscordSocketConfig
-  {
-    get
-    {
-      return new DiscordSocketConfig
-      {
-        AlwaysDownloadUsers = true,
-        GatewayIntents = GatewayIntents,
-        LogLevel = LogSeverity.Debug,
-        LogGatewayIntentWarnings = false,
-        UseInteractionSnowflakeDate = false,
-      };
-    }
-  }
+  private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
-  private WebSocketConfiguration WebSocketConfiguration
-  {
-    get
+  public DiscordSocketConfig DiscordSocketConfig =>
+    new DiscordSocketConfig
     {
-      return new WebSocketConfiguration { BufferSize = 1024 };
-    }
-  }
-  
+      AlwaysDownloadUsers = true,
+      GatewayIntents = GatewayIntents,
+      LogLevel = LogSeverity.Debug,
+      LogGatewayIntentWarnings = false,
+      UseInteractionSnowflakeDate = false
+    };
+
+  private WebSocketConfiguration WebSocketConfiguration => new WebSocketConfiguration { BufferSize = 1024 };
+
   // LavaNode/Lavalink config
-  public NodeConfiguration NodeConfiguration
-  {
-    get
+  public NodeConfiguration NodeConfiguration =>
+    new NodeConfiguration
     {
-      return new NodeConfiguration
-      {
-        Port = 2333, // TODO: dhoward - Move to web.config or .env
-        Hostname = "localhost", // TODO: dhoward - Move to web.config or .env
-        Authorization = GetLavaLinkPassword(),
-        SelfDeaf = true,
-        EnableResume = true,
-        SocketConfiguration = this.WebSocketConfiguration
-      };
-    }
-  }
+      Port = 2333, // TODO: dhoward - Move to web.config or .env
+      Hostname = "localhost", // TODO: dhoward - Move to web.config or .env
+      Authorization = GetLavaLinkPassword(),
+      SelfDeaf = true,
+      EnableResume = true,
+      SocketConfiguration = WebSocketConfiguration
+    };
 
-  public InteractionServiceConfig InteractionServiceConfig
-  {
-    get =>
-      new()
-      {
-        LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error
-      };
-  }
+  public InteractionServiceConfig InteractionServiceConfig =>
+    new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
   public static bool IsDebug()
   {
-    #if DEBUG
-      return true;
-    #else
+#if DEBUG
+    return true;
+#else
       return false;
-    #endif
+#endif
   }
 
   private static string GetYouTubeToken()
@@ -166,17 +126,17 @@ public class Configuration
 
   private static string GetLavaLinkPassword()
   {
-      // See GetDiscordToken
-      string token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Process);
+    // See GetDiscordToken
+    var token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Process);
 
-      if (!string.IsNullOrEmpty(token))
-      {
-        return token;
-      }
+    if (!string.IsNullOrEmpty(token))
+    {
+      return token;
+    }
 
-      token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
-              Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
-        
-      return token ?? string.Empty;
+    token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
+            Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
+
+    return token ?? string.Empty;
   }
 }

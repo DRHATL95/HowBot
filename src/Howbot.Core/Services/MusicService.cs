@@ -41,7 +41,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     searchListRequest.Type = "video";
     // For some reason if I want 1 result, I have to set the max results to 2?
     // TODO: Investigate
-    searchListRequest.MaxResults = (count == 1) ? 2 : count;
+    searchListRequest.MaxResults = count == 1 ? 2 : count;
     searchListRequest.RelatedToVideoId = videoId;
 
     var response = await searchListRequest.ExecuteAsync();
@@ -61,7 +61,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     searchListRequest.Type = "video";
     // For some reason if I want 1 result, I have to set the max results to 2?
     // TODO: Investigate
-    searchListRequest.MaxResults = (count == 1) ? 2 : count;
+    searchListRequest.MaxResults = count == 1 ? 2 : count;
     searchListRequest.RelatedToVideoId = videoId;
 
     var response = await searchListRequest.ExecuteAsync();
@@ -158,7 +158,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         return CommandResponse.CommandNotSuccessful("No results found for search");
       }
 
-      await this.PlayTrack(voiceServiceResponse.LavaPlayer, searchResponse, user);
+      await PlayTrack(voiceServiceResponse.LavaPlayer, searchResponse, user);
       return CommandResponse.CommandSuccessful(voiceServiceResponse.LavaPlayer);
     }
     catch (Exception exception)
@@ -245,7 +245,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         // Skipped ahead multiple places in queue
         _logger.LogDebug("Song before skip: [{SongName} - {Artist}]", lavaPlayer.Track.Title, lavaPlayer.Track.Author);
         _logger.LogDebug("Skipping {Count} tracks in queue", numberOfTracks);
-        lavaPlayer.Vueue.RemoveRange(0, (lavaPlayer.Vueue.Count - 1));
+        lavaPlayer.Vueue.RemoveRange(0, lavaPlayer.Vueue.Count - 1);
         _logger.LogDebug("Song after skip: [{SongName} - {Artist}]", lavaPlayer.Track.Title, lavaPlayer.Track.Author);
 
         _logger.LogDebug(Messages.Debug.NowPlaying);
@@ -309,7 +309,10 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     try
     {
       // Since second param is optional, if 0 do nothing but return command success
-      if (!newVolume.HasValue) return CommandResponse.CommandSuccessful();
+      if (!newVolume.HasValue)
+      {
+        return CommandResponse.CommandSuccessful();
+      }
 
       if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
@@ -395,11 +398,9 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         await lavaPlayer.ApplyFilterAsync(audioFilter);
         return CommandResponse.CommandSuccessful();
       }
-      else
-      {
-        _logger.LogError("Unable to apply filter. Incorrect filter provided.");
-        return CommandResponse.CommandNotSuccessful("Unable to apply filter. Wrong filter provided");
-      }
+
+      _logger.LogError("Unable to apply filter. Incorrect filter provided.");
+      return CommandResponse.CommandNotSuccessful("Unable to apply filter. Wrong filter provided");
     }
     catch (Exception exception)
     {

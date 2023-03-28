@@ -66,7 +66,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
       }
       else
       {
-        _logger.Log(logLevel, (logMessage.Message ?? string.Empty));
+        _logger.Log(logLevel, logMessage.Message ?? string.Empty);
       }
 
       return Task.CompletedTask;

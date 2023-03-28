@@ -20,14 +20,25 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
   public async Task<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavaTrack lavaTrack, IGuildUser user,
     ITextChannel textChannel)
   {
-    if (lavaTrack == null) throw new ArgumentNullException(nameof(lavaTrack));
-    if (user == null) throw new ArgumentNullException(nameof(user));
-    if (textChannel == null) throw new ArgumentNullException(nameof(textChannel));
+    if (lavaTrack == null)
+    {
+      throw new ArgumentNullException(nameof(lavaTrack));
+    }
+
+    if (user == null)
+    {
+      throw new ArgumentNullException(nameof(user));
+    }
+
+    if (textChannel == null)
+    {
+      throw new ArgumentNullException(nameof(textChannel));
+    }
 
     try
     {
       var trackArtwork = await lavaTrack.FetchArtworkAsync();
-      var trackDescription = (lavaTrack.Position > TimeSpan.Zero)
+      var trackDescription = lavaTrack.Position > TimeSpan.Zero
         ? $"By: {lavaTrack.Author} ({lavaTrack.Position:hh\\:mm\\:ss}/{lavaTrack.Duration:hh\\:mm\\:ss})"
         : $"By: {lavaTrack.Author} | {lavaTrack.Duration:hh\\:mm\\:ss}";
 
@@ -36,7 +47,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
         .WithTitle(":musical_note: Now Playing :musical_note:")
         .WithUrl(lavaTrack.Url)
         .WithThumbnailUrl(trackArtwork)
-        .AddField(new EmbedFieldBuilder() { IsInline = false, Name = lavaTrack.Title, Value = trackDescription })
+        .AddField(new EmbedFieldBuilder { IsInline = false, Name = lavaTrack.Title, Value = trackDescription })
         .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user) ?? new EmbedFooterBuilder())
         .WithCurrentTimestamp()
         .Build();

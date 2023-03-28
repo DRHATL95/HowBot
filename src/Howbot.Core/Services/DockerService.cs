@@ -70,7 +70,10 @@ public class DockerService : ServiceBase<DockerService>, IDockerService
     using var scope = _serviceLocator.CreateScope();
     // var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
 
-    if (await DoesImageExist(imageName)) return true;
+    if (await DoesImageExist(imageName))
+    {
+      return true;
+    }
 
     /*await dockerClient.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = imageName },
       new AuthConfig(), new Progress<JSONMessage>());*/
@@ -83,7 +86,10 @@ public class DockerService : ServiceBase<DockerService>, IDockerService
     using var scope = _serviceLocator.CreateScope();
     // var dockerClient = scope.ServiceProvider.GetService<IDockerClient>();
 
-    if (await DoesImageExist(imageName)) return true;
+    if (await DoesImageExist(imageName))
+    {
+      return true;
+    }
 
     /*await dockerClient.Images.CreateImageAsync(new ImagesCreateParameters() { FromImage = imageName, Tag = tagName},
       new AuthConfig(), new Progress<JSONMessage>());*/

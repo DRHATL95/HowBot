@@ -9,6 +9,9 @@ public abstract record Messages
     public const string BotTrackPaused = "Current track has been paused.";
     public const string RadioModeEnabled = "Radio mode enabled.";
     public const string RadioModeDisabled = "Radio mode disabled";
+    public const string UserVoiceConnectionRequired = "You must be in a voice channel to use this command.";
+    public const string GeneralCommandFailed = "Command did not run successfully.";
+    public const string NoPlayerInVoiceChannelResponse = "There is no player for this voice channel.";
   }
 
   public readonly struct Debug

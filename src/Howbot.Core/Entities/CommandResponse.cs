@@ -64,17 +64,38 @@ public class CommandResponse : BaseEntity
 
   [CanBeNull] public Player<LavaTrack> LavaPlayer { get; init; }
 
-  public static CommandResponse CommandSuccessful() => new(true);
+  public static CommandResponse CommandSuccessful()
+  {
+    return new(true);
+  }
 
-  public static CommandResponse CommandSuccessful(string message) => new(true, message);
+  public static CommandResponse CommandSuccessful(string message)
+  {
+    return new(true, message);
+  }
 
-  public static CommandResponse CommandSuccessful(Player<LavaTrack> lavaPlayer) => new(lavaPlayer);
+  public static CommandResponse CommandSuccessful(Player<LavaTrack> lavaPlayer)
+  {
+    return new(lavaPlayer);
+  }
 
-  public static CommandResponse CommandSuccessful(IEmbed embed) => new(embed);
+  public static CommandResponse CommandSuccessful(IEmbed embed)
+  {
+    return new(embed);
+  }
 
-  public static CommandResponse CommandNotSuccessful() => new(false);
+  public static CommandResponse CommandNotSuccessful()
+  {
+    return new(false);
+  }
 
-  public static CommandResponse CommandNotSuccessful(string message) => new(false, message);
+  public static CommandResponse CommandNotSuccessful(string message)
+  {
+    return new(false, message);
+  }
 
-  public static CommandResponse CommandNotSuccessful(Exception exception) => new(exception);
+  public static CommandResponse CommandNotSuccessful(Exception exception)
+  {
+    return new(exception);
+  }
 }

@@ -3,8 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Discord.Commands;
-using Discord.Rest;
 using Howbot.Core.Interfaces;
 
 namespace Howbot.Core.Modules;
@@ -27,10 +25,12 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
     {
       var replyMessage = await Context.Channel.SendMessageAsync("Ping?");
 
-      int latency = Context.Client.Latency;
-      string message = $"Pong! Bot WebSocket latency {latency}ms. Discord API latency {(DateTimeOffset.UtcNow - replyMessage.CreatedAt).TotalMilliseconds}ms";
-      
-      var editedMessage = await Context.Channel.SendMessageAsync(message, messageReference: new MessageReference(replyMessage.Id, replyMessage.Channel.Id));
+      var latency = Context.Client.Latency;
+      var message =
+        $"Pong! Bot WebSocket latency {latency}ms. Discord API latency {(DateTimeOffset.UtcNow - replyMessage.CreatedAt).TotalMilliseconds}ms";
+
+      var editedMessage = await Context.Channel.SendMessageAsync(message,
+        messageReference: new MessageReference(replyMessage.Id, replyMessage.Channel.Id));
 
       await replyMessage.DeleteAsync();
     }
@@ -45,14 +45,10 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   public async Task HelpCommandAsync()
   {
     var commands = _interactionService.SlashCommands;
-    string commandList = string.Join("\n", commands.Select(c => $"`/{c.Name}`: {c.Description}"));
-    
-    EmbedBuilder embedBuilder = new EmbedBuilder
-    {
-      Title = "Command List",
-      Description = commandList
-    };
-    
+    var commandList = string.Join("\n", commands.Select(c => $"`/{c.Name}`: {c.Description}"));
+
+    var embedBuilder = new EmbedBuilder { Title = "Command List", Description = commandList };
+
     await RespondAsync(embeds: new[] { embedBuilder.Build() });
   }
 }

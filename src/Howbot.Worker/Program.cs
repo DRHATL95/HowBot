@@ -33,12 +33,13 @@ public abstract class Program
   }
 
   /// <summary>
-  /// Create the main host builder used to host the service
+  ///   Create the main host builder used to host the service
   /// </summary>
   /// <param name="args">The arguments provided when running</param>
   /// <returns></returns>
-  private static IHostBuilder CreateHostBuilder(string[] args) =>
-    Host.CreateDefaultBuilder(args)
+  private static IHostBuilder CreateHostBuilder(string[] args)
+  {
+    return Host.CreateDefaultBuilder(args)
       .ConfigureLogging((_, builder) =>
       {
         builder.ClearProviders();
@@ -84,4 +85,5 @@ public abstract class Program
 
         services.AddHostedService<Worker>();
       });
+  }
 }

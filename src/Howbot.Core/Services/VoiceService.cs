@@ -28,7 +28,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
     {
       if (user is IVoiceState voiceState)
       {
-        var lavaPlayer = await this.JoinGuildVoiceChannelAsync(voiceState, textChannel);
+        var lavaPlayer = await JoinGuildVoiceChannelAsync(voiceState, textChannel);
 
         return lavaPlayer == null
           ? CommandResponse.CommandNotSuccessful(
@@ -77,8 +77,15 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
   private async Task<Player<LavaTrack>> JoinGuildVoiceChannelAsync(IVoiceState voiceState, ITextChannel textChannel)
   {
     // Parameter error handling
-    if (voiceState == null) throw new ArgumentNullException(nameof(voiceState));
-    if (textChannel == null) throw new ArgumentNullException(nameof(textChannel));
+    if (voiceState == null)
+    {
+      throw new ArgumentNullException(nameof(voiceState));
+    }
+
+    if (textChannel == null)
+    {
+      throw new ArgumentNullException(nameof(textChannel));
+    }
 
     // Check if user is in a voice channel
     if (voiceState.VoiceChannel == null)
@@ -102,7 +109,10 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 
   private bool IsBotAlreadyConnected(IGuild guild)
   {
-    if (guild == null) throw new ArgumentNullException(nameof(guild));
+    if (guild == null)
+    {
+      throw new ArgumentNullException(nameof(guild));
+    }
 
     return _lavaNode.HasPlayer(guild);
   }

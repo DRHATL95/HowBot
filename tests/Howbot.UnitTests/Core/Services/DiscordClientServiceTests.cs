@@ -19,7 +19,7 @@ public class DiscordClientServiceTest
 
     return SetupCustomInjection(serviceProvider);
   }
-  
+
   private static Mock<IRepository> SetupCustomInjection(Mock<IServiceProvider> serviceProvider)
   {
     // GetRequiredService is an extension method, but GetService is not

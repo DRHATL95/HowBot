@@ -21,12 +21,13 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 {
   private readonly DiscordSocketClient _discordSocketClient;
   private readonly InteractionService _interactionService;
-  private readonly ILavaNodeService _lavaNodeService;
   private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
+  private readonly ILavaNodeService _lavaNodeService;
   private readonly ILoggerAdapter<DiscordClientService> _logger;
   private readonly IServiceProvider _serviceProvider;
 
-  public DiscordClientService(DiscordSocketClient discordSocketClient, ILavaNodeService lavaNodeService, IServiceProvider serviceProvider,
+  public DiscordClientService(DiscordSocketClient discordSocketClient, ILavaNodeService lavaNodeService,
+    IServiceProvider serviceProvider,
     InteractionService interactionService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode,
     ILoggerAdapter<DiscordClientService> logger) : base(logger)
   {
@@ -40,7 +41,10 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   public new void Initialize()
   {
-    if (_discordSocketClient == null) return;
+    if (_discordSocketClient == null)
+    {
+      return;
+    }
 
     if (_logger.IsLogLevelEnabled(LogLevel.Debug))
     {
@@ -61,7 +65,10 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   public async ValueTask<bool> LoginDiscordBotAsync(string discordToken)
   {
-    if (string.IsNullOrEmpty(discordToken)) throw new ArgumentNullException(nameof(discordToken));
+    if (string.IsNullOrEmpty(discordToken))
+    {
+      throw new ArgumentNullException(nameof(discordToken));
+    }
 
     try
     {
@@ -85,7 +92,9 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       {
         while (_discordSocketClient.LoginState != LoginState.LoggedIn)
           // Only check after 3 seconds.
+        {
           Thread.Sleep(3000);
+        }
       });
 
       // Will signal ready state. Must be called only when bot has finished logging in.
@@ -98,7 +107,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       }
 
       // Add modules dynamically to discord bot
-      await this.AddModulesToDiscordBotAsync();
+      await AddModulesToDiscordBotAsync();
 
       return true;
     }
@@ -235,29 +244,36 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
     return Task.CompletedTask;
   }
-  
+
   private async Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
-    if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id) return;
+    if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id)
+    {
+      return;
+    }
 
-    if (!_lavaNode.TryGetPlayer(oldVoiceState.VoiceChannel.Guild, out var player)) return;
-    
+    if (!_lavaNode.TryGetPlayer(oldVoiceState.VoiceChannel.Guild, out var player))
+    {
+      return;
+    }
+
     // Get the voice channel the bot is in
     var voiceChannel = _discordSocketClient.Guilds
       .Select(g => g.VoiceChannels.FirstOrDefault(vc => vc.Users.Any(u => u.Id == _discordSocketClient.CurrentUser.Id)))
       .FirstOrDefault();
 
-    if (voiceChannel != null && !voiceChannel.Users.Any(x => x.Id != _discordSocketClient.CurrentUser.Id && x.VoiceChannel != null))
+    if (voiceChannel != null &&
+        !voiceChannel.Users.Any(x => x.Id != _discordSocketClient.CurrentUser.Id && x.VoiceChannel != null))
     {
       await Task.Run(() =>
       {
-          // Leave the voice channel automatically when no one else is in voice
-          _lavaNodeService.InitiateDisconnectLogicAsync(player, TimeSpan.FromSeconds(30));
+        // Leave the voice channel automatically when no one else is in voice
+        _lavaNodeService.InitiateDisconnectLogicAsync(player, TimeSpan.FromSeconds(30));
       });
     }
   }
-  
+
   #endregion
 }

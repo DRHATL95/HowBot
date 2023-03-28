@@ -5,14 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ardalis.GuardClauses" />
-    <PackageReference Include="DigitalOcean.API" />
-    <PackageReference Include="Discord.Net.Interactions" />
-    <PackageReference Include="Discord.Net.WebSocket" />
-    <PackageReference Include="Docker.DotNet" />
-    <PackageReference Include="Google.Apis.YouTube.v3" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <PackageReference Include="Victoria" />
+    <PackageReference Include="Ardalis.GuardClauses"/>
+    <PackageReference Include="DigitalOcean.API"/>
+    <PackageReference Include="Discord.Net.Interactions"/>
+    <PackageReference Include="Discord.Net.WebSocket"/>
+    <PackageReference Include="Docker.DotNet"/>
+    <PackageReference Include="Google.Apis.YouTube.v3"/>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
+    <PackageReference Include="Victoria"/>
   </ItemGroup>
 
 </Project>

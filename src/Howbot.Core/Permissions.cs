@@ -13,9 +13,9 @@ public abstract record Permissions
     public const GuildPermission GuildBotVoiceCommandPermission =
       GuildBaseBotPermission | GuildPermission.Connect;
 
-    public const GuildPermission GuildBotVoicePlayCommandPermission = GuildBotVoiceCommandPermission | GuildPermission.Speak;
+    public const GuildPermission GuildBotVoicePlayCommandPermission =
+      GuildBotVoiceCommandPermission | GuildPermission.Speak;
 
-    
     #endregion
 
     #region Non-Guild Permissions
@@ -35,7 +35,8 @@ public abstract record Permissions
     public const GuildPermission GuildUserVoiceCommandPermission =
       GuildBaseUserApplicationCommandPermission | GuildPermission.Connect;
 
-    public const GuildPermission GuildUserVoicePlayCommandPermission = GuildUserVoiceCommandPermission | GuildPermission.Speak;
+    public const GuildPermission GuildUserVoicePlayCommandPermission =
+      GuildUserVoiceCommandPermission | GuildPermission.Speak;
 
     #endregion
 

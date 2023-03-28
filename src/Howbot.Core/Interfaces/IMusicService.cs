@@ -11,6 +11,7 @@ public interface IMusicService : IServiceBase
 {
   public Task<CommandResponse> PlayBySearchTypeAsync(SearchType searchType, string searchRequest, IGuildUser user,
     IVoiceState voiceState, ITextChannel textChannel);
+
   public Task<CommandResponse> PauseTrackAsync(IGuild guild);
   public Task<CommandResponse> ResumeTrackAsync(IGuild guild);
   public Task<CommandResponse> SkipTrackAsync(IGuild guild, int numberOfTracks);
