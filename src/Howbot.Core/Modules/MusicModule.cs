@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Howbot.Core.Entities;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Preconditions;
 using Victoria.Node;
@@ -68,7 +69,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception thrown executing command [{CommandName}]", nameof(JoinCommandAsync));
+      _logger.LogError(exception, nameof(JoinCommandAsync));
       throw;
     }
   }
@@ -82,7 +83,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
     string searchRequest,
     [Summary(PlaySearchTypeArgumentName, PlaySearchTypeArgumentDescription)]
-    SearchType? searchType = null)
+    SearchType searchType = SearchType.YouTube)
   {
     try
     {
@@ -94,34 +95,16 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
         return;
       }
 
-      CommandResponse commandResponse;
       var user = Context.User as IGuildUser;
       var voiceState = Context.User as IVoiceState;
       var channel = Context.Channel as ITextChannel;
 
-      if (!searchType.HasValue)
-      {
-        // Default to YouTube
-        commandResponse =
-          await _musicService.PlayBySearchTypeAsync(SearchType.YouTube, searchRequest, user, voiceState, channel);
-      }
-      else
-      {
-        commandResponse =
-          await _musicService.PlayBySearchTypeAsync(searchType.Value, searchRequest, user, voiceState, channel);
-      }
+      var commandResponse =
+        await _musicService.PlayBySearchTypeAsync(searchType, searchRequest, user, voiceState, channel);
 
       if (!commandResponse.Success)
       {
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogInformation(commandResponse.Message);
-        }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
@@ -132,7 +115,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception thrown playing song");
+      _logger.LogError(exception, nameof(PlayCommandAsync));
       throw;
     }
   }
@@ -152,17 +135,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       if (!commandResponse.Success)
       {
-        _logger.LogCommandFailed(nameof(PauseCommandAsync));
-
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogDebug(commandResponse.Message);
-        }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
@@ -173,7 +146,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Error has been thrown");
+      _logger.LogError(exception, nameof(PauseCommandAsync));
       throw;
     }
   }
@@ -193,29 +166,18 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       if (!commandResponse.Success)
       {
-        _logger.LogCommandFailed(nameof(ResumeCommandAsync));
-
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogDebug(commandResponse.Message);
-        }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
       else
       {
-        // TODO: Embed or ReplyAsync
         await ModifyOriginalResponseAsync(properties => properties.Content = "Resuming track");
       }
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(ResumeCommandAsync));
       throw;
     }
   }
@@ -225,54 +187,46 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  public async Task SeekCommandAsync(int hours = 0, int minutes = 0, int seconds = 0, TimeSpan? timeToSeek = null)
+  public async Task SeekCommandAsync(int hours = 0, int minutes = 0, int seconds = 0, TimeSpan timeToSeek = new())
   {
     try
     {
       await DeferAsync();
 
-      if (hours == 0 && minutes == 0 && seconds == 0 && timeToSeek == null)
+      if (hours == 0 && minutes == 0 && seconds == 0 && timeToSeek == default)
       {
+        await ModifyOriginalResponseAsync(
+          properties => properties.Content = "You have entered an invalid time to seek.");
+
         throw new ArgumentNullException(nameof(timeToSeek));
       }
 
       CommandResponse commandResponse;
 
-      if (timeToSeek.HasValue)
+      if (timeToSeek != default)
       {
-        commandResponse = await _musicService.SeekTrackAsync(Context.Guild, timeToSeek.Value);
+        commandResponse = await _musicService.SeekTrackAsync(Context.Guild, timeToSeek);
       }
       else
       {
-        var timeSpan = new TimeSpan(hours, minutes, seconds);
-        commandResponse = await _musicService.SeekTrackAsync(Context.Guild, timeSpan);
+        timeToSeek = new TimeSpan(hours, minutes, seconds);
+        commandResponse = await _musicService.SeekTrackAsync(Context.Guild, timeToSeek);
       }
 
       if (!commandResponse.Success)
       {
-        _logger.LogCommandFailed(nameof(SeekCommandAsync));
-
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogDebug(commandResponse.Message);
-        }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
       else
       {
-        // TODO: Embed or RespondAsync
-        await ModifyOriginalResponseAsync(properties => properties.Content = "Seeking to desired location");
+        await ModifyOriginalResponseAsync(properties => properties.Content = $"Seeking to {timeToSeek:g}");
       }
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(SeekCommandAsync));
       throw;
     }
   }
@@ -292,17 +246,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       if (!commandResponse.Success)
       {
-        _logger.LogCommandFailed(nameof(SkipCommandAsync));
-
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogDebug(commandResponse.Message);
-        }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
@@ -313,7 +257,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(SkipCommandAsync));
       throw;
     }
   }
@@ -323,38 +267,28 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  public async Task VolumeCommandAsync(int? newVolume = 0)
+  public async Task VolumeCommandAsync(int newVolume = 0)
   {
     try
     {
-      await DeferAsync(true);
+      await DeferAsync();
 
-      var commandResponse = await _musicService.ChangeVolumeAsync(Context.Guild, newVolume ?? 0);
+      var commandResponse = await _musicService.ChangeVolumeAsync(Context.Guild, newVolume);
 
       if (!commandResponse.Success)
       {
-        _logger.LogCommandFailed(nameof(VolumeCommandAsync));
-
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogDebug(commandResponse.Message);
-        }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
       else
       {
-        await ModifyOriginalResponseAsync(properties => properties.Content = "Changing volume");
+        await ModifyOriginalResponseAsync(properties => properties.Content = $"Changing volume to {newVolume}");
       }
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(VolumeCommandAsync));
       throw;
     }
   }
@@ -376,17 +310,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       if (!commandResponse.Success)
       {
-        _logger.LogCommandFailed(nameof(NowPlayingCommandAsync));
-
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogDebug(commandResponse.Message);
-        }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
@@ -396,12 +320,15 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
         {
           await ModifyOriginalResponseAsync(properties => properties.Embed = commandResponse.Embed as Embed);
         }
-        // await ModifyOriginalResponseAsync(properties => properties.Content = "Skipping to spot in queue");
+        else
+        {
+          await ModifyOriginalResponseAsync(properties => properties.Content = "Now playing your song!");
+        }
       }
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(NowPlayingCommandAsync));
       throw;
     }
   }
@@ -411,6 +338,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
+  [RequireOwner]
   public async Task GetLyricsFromGeniusAsync()
   {
     try
@@ -421,17 +349,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       if (!commandResponse.Success)
       {
-        _logger.LogCommandFailed(nameof(GetLyricsFromGeniusAsync));
-
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogDebug(commandResponse.Message);
-        }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
@@ -445,7 +363,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(GetLyricsFromGeniusAsync));
       throw;
     }
   }
@@ -455,6 +373,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
+  [RequireOwner]
   public async Task GetLyricsFromOvhAsync()
   {
     try
@@ -465,17 +384,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       if (!commandResponse.Success)
       {
-        _logger.LogCommandFailed(nameof(GetLyricsFromGeniusAsync));
-
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogDebug(commandResponse.Message);
-        }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
         await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
@@ -489,7 +398,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(GetLyricsFromOvhAsync));
       throw;
     }
   }
@@ -501,29 +410,27 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireGuildUserInVoiceChannel]
   public async Task LeaveVoiceChannelCommandAsync()
   {
-    await DeferAsync();
-
-    var commandResponse = await _voiceService.LeaveVoiceChannelAsync(Context.User as IGuildUser);
-
-    if (!commandResponse.Success)
+    try
     {
-      _logger.LogCommandFailed(nameof(LeaveVoiceChannelCommandAsync));
+      await DeferAsync();
 
-      if (commandResponse.Exception != null)
+      var commandResponse = await _voiceService.LeaveVoiceChannelAsync(Context.User as IGuildUser);
+
+      if (!commandResponse.Success)
       {
-        throw commandResponse.Exception;
-      }
+        ModuleHelper.HandleCommandFailed(commandResponse, _logger);
 
-      if (!string.IsNullOrEmpty(commandResponse.Message))
+        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+      }
+      else
       {
-        _logger.LogDebug(commandResponse.Message);
+        await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
       }
-
-      await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
     }
-    else
+    catch (Exception exception)
     {
-      await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+      _logger.LogError(exception, nameof(LeaveVoiceChannelCommandAsync));
+      throw;
     }
   }
 
@@ -534,19 +441,27 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireGuildUserInVoiceChannel]
   public async Task RadioCommandAsync()
   {
-    if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+    try
     {
-      _logger.LogError("Unable to get lava player for voice channel.");
-      await RespondAsync(NoPlayerInVoiceChannelResponse);
-      return;
+      if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+      {
+        _logger.LogError("Unable to get lava player for voice channel.");
+        await RespondAsync(NoPlayerInVoiceChannelResponse);
+        return;
+      }
+
+      _logger.LogInformation("Radio mode toggled.");
+      player.ToggleRadioMode();
+
+      var response = player.IsRadioMode ? RadioModeEnabled : RadioModeDisabled;
+
+      await RespondAsync(response);
     }
-
-    _logger.LogInformation("Radio mode toggled.");
-    player.ToggleRadioMode();
-
-    var response = player.IsRadioMode ? RadioModeEnabled : RadioModeDisabled;
-
-    await RespondAsync(response);
+    catch (Exception exception)
+    {
+      _logger.LogError(exception, nameof(RadioCommandAsync));
+      throw;
+    }
   }
 
   #endregion

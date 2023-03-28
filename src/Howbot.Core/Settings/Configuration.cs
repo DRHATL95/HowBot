@@ -21,7 +21,7 @@ public class Configuration
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
   public DiscordSocketConfig DiscordSocketConfig =>
-    new DiscordSocketConfig
+    new()
     {
       AlwaysDownloadUsers = true,
       GatewayIntents = GatewayIntents,
@@ -30,11 +30,11 @@ public class Configuration
       UseInteractionSnowflakeDate = false
     };
 
-  private WebSocketConfiguration WebSocketConfiguration => new WebSocketConfiguration { BufferSize = 1024 };
+  private WebSocketConfiguration WebSocketConfiguration => new() { BufferSize = 1024 };
 
   // LavaNode/Lavalink config
   public NodeConfiguration NodeConfiguration =>
-    new NodeConfiguration
+    new()
     {
       Port = 2333, // TODO: dhoward - Move to web.config or .env
       Hostname = "localhost", // TODO: dhoward - Move to web.config or .env
