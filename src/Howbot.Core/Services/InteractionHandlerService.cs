@@ -50,6 +50,23 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
 
     _interactionService.Log += InteractionServiceOnLog;
+    _interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
+  }
+
+  private async Task InteractionServiceOnInteractionExecuted(ICommandInfo commandInfo,
+    IInteractionContext interactionContext, IResult result)
+  {
+    if (result.IsSuccess)
+    {
+      return;
+    }
+
+    _logger.LogWarning("Slash command did not execute successfully!");
+
+    if (!string.IsNullOrEmpty(result.ErrorReason))
+    {
+      await interactionContext.Interaction.RespondAsync(result.ErrorReason);
+    }
   }
 
   #region Interaction Service Events

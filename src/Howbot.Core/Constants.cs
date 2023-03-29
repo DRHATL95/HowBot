@@ -7,6 +7,7 @@ public abstract record Constants
   public const string BotName = "Howbot";
   public const string YouTubeBaseShortUrl = "https://youtu.be/";
   public const int RadioSearchLength = 2;
+  public const int ApplicationTimeoutInMs = 3000;
 
   public readonly struct Commands
   {

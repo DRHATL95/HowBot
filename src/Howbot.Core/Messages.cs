@@ -22,7 +22,10 @@ public abstract record Messages
     public const string ClientNotConnectedToVoiceChannel =
       "Client is not connected to voice channel. Unable to execute command.";
 
-    public const string ClientQueueOutOfBounds = "Requested number of tracks to skip exceeds queue count";
+    public const string ClientQueueOutOfBounds = "Requested number of tracks to skip exceeds queue count.";
+
+    // Discord Client Service
+    public const string DiscordSockerClientConnected = "{Username} has connected to the web socket.";
   }
 
   public readonly struct Errors
@@ -53,5 +56,8 @@ public abstract record Messages
 
     public const string InteractionNull = "Something weird happened when trying to run command. Try again";
     public const string InteractionNullLog = "Result error is null when trying to run interaction command";
+
+    public const string DiscordClientLogin = "Unable to login successfully to discord using provided API token.";
+    public const string DiscordStart = "Unable to start discord bot.";
   }
 }

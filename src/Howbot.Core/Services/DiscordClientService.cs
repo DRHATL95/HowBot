@@ -14,6 +14,8 @@ using Howbot.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
 using Victoria.Player;
+using static Howbot.Core.Messages.Debug;
+using static Howbot.Core.Messages.Errors;
 
 namespace Howbot.Core.Services;
 
@@ -26,6 +28,8 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   private readonly ILoggerAdapter<DiscordClientService> _logger;
   private readonly IServiceProvider _serviceProvider;
 
+  private string _loggedInUsername = string.Empty;
+
   public DiscordClientService(DiscordSocketClient discordSocketClient, ILavaNodeService lavaNodeService,
     IServiceProvider serviceProvider,
     InteractionService interactionService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode,
@@ -37,6 +41,18 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _interactionService = interactionService;
     _lavaNode = lavaNode;
     _logger = logger;
+  }
+
+  private string LoggedInUsername
+  {
+    get => string.IsNullOrEmpty(_loggedInUsername) ? Constants.BotName : _loggedInUsername;
+    set
+    {
+      if (!value.Equals(_loggedInUsername, StringComparison.OrdinalIgnoreCase))
+      {
+        _loggedInUsername = value;
+      }
+    }
   }
 
   public new void Initialize()
@@ -78,7 +94,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Unable to login to discord API with token");
+      _logger.LogError(exception, DiscordClientLogin);
       return false;
     }
   }
@@ -93,7 +109,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
         while (_discordSocketClient.LoginState != LoginState.LoggedIn)
           // Only check after 3 seconds.
         {
-          Thread.Sleep(3000);
+          Thread.Sleep(Constants.ApplicationTimeoutInMs);
         }
       });
 
@@ -113,7 +129,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Unable to start discord bot");
+      _logger.LogError(exception, DiscordStart);
       throw;
     }
   }
@@ -177,21 +193,26 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   private Task DiscordSocketClientOnDisconnected(Exception arg)
   {
-    _logger.LogDebug("{Username} has disconnected from socket", Constants.BotName);
+    _logger.LogDebug("{Username} has disconnected from socket", LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnConnected()
   {
-    _logger.LogDebug("{Username} has connected to socket", Constants.BotName);
+    if (_discordSocketClient != null)
+    {
+      LoggedInUsername = _discordSocketClient.CurrentUser.Username;
+    }
+
+    _logger.LogDebug(DiscordSockerClientConnected, LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private async Task DiscordSocketClientOnReady()
   {
-    _logger.LogDebug("{Username} is now in READY state", Constants.BotName);
+    _logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
 
     try
     {
@@ -226,21 +247,21 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   private Task DiscordSocketClientOnLoggedOut()
   {
-    _logger.LogDebug("{Username} has logged out successfully", Constants.BotName);
+    _logger.LogDebug("{Username} has logged out successfully", LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnLoggedIn()
   {
-    _logger.LogDebug("{Username} has logged in successfully", Constants.BotName);
+    _logger.LogDebug("{Username} has logged in successfully", LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnJoinedGuild(SocketGuild arg)
   {
-    _logger.LogDebug("{Username} has joined Guild {GuildTag}", Constants.BotName, GuildHelper.GetGuildTag(arg));
+    _logger.LogDebug("{Username} has joined Guild {GuildTag}", LoggedInUsername, GuildHelper.GetGuildTag(arg));
 
     return Task.CompletedTask;
   }

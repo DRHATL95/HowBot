@@ -18,8 +18,8 @@
     <PackageVersion Include="coverlet.collector" Version="3.2.0"/>
     <PackageVersion Include="DigitalOcean.API" Version="5.2.0"/>
     <PackageVersion Include="Discord.Net.Core" Version="3.9.0"/>
-    <PackageVersion Include="Discord.Net.Interactions" Version="3.9.0"/>
-    <PackageVersion Include="Discord.Net.WebSocket" Version="3.9.0"/>
+    <PackageVersion Include="Discord.Net.Interactions" Version="3.10.0"/>
+    <PackageVersion Include="Discord.Net.WebSocket" Version="3.10.0"/>
     <PackageVersion Include="Docker.DotNet" Version="3.125.13"/>
     <PackageVersion Include="FastEndpoints" Version="5.3.2"/>
     <PackageVersion Include="FastEndpoints.ApiExplorer" Version="2.0.1"/>
@@ -53,7 +53,7 @@
     <PackageVersion Include="SQLite" Version="3.13.0"/>
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
     <PackageVersion Include="Swashbuckle.AspNetCore.Annotations" Version="6.5.0"/>
-    <PackageVersion Include="Victoria" Version="6.0.23.210"/>
+    <PackageVersion Include="Victoria" Version="6.0.1026"/>
     <PackageVersion Include="WebSocketSharp-netstandard" Version="1.0.1"/>
     <PackageVersion Include="xunit" Version="2.4.2"/>
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5"/>
