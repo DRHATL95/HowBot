@@ -34,6 +34,7 @@ steps:
     command: 'publish'
     arguments: '-r ubuntu-22.04-x64 -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/publish --self-contained'
     projects: '$(Build.ArtifactStagingDirectory)/**/*.csproj'
+    publishWebProjects: false
 
 - task: CopyFiles@2
   inputs:
