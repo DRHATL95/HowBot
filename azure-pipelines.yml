@@ -13,6 +13,7 @@ variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  release: 'ubuntu-22.04-x64'
 
 steps:
 - task: NuGetToolInstaller@1
@@ -32,8 +33,8 @@ steps:
   inputs:
     command: 'publish'
     publishWebProjects: false
-    projects: '$(Build.ArtifactStagingDirectory)/Howbot/src/Howbot.Worker/Howbot.Worker.csproj'
-    arguments: '-r ubuntu-22.04-x64 -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/publish --self-contained'
+    projects: '$(Build.ArtifactStagingDirectory)/src/Howbot.Worker/Howbot.Worker.csproj'
+    arguments: '-r $(release) -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/publish --self-contained'
 
 - task: CopyFiles@2
   inputs:
