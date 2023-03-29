@@ -29,12 +29,11 @@ steps:
     configuration: '$(buildConfiguration)'
 
 - task: DotNetCoreCLI@2
-  displayName: 'Create self-contained linux output'
   inputs:
     command: 'publish'
-    arguments: '-r ubuntu-22.04-x64 -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/publish --self-contained'
-    projects: '$(Build.ArtifactStagingDirectory)/**/*.csproj'
     publishWebProjects: false
+    projects: '$(Build.ArtifactStagingDirectory)/Howbot/src/Howbot.Worker/Howbot.Worker.csproj'
+    arguments: '-r ubuntu-22.04-x64 -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/publish --self-contained'
 
 - task: CopyFiles@2
   inputs:
