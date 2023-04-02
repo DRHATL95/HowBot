@@ -25,4 +25,8 @@
     <ProjectReference Include="..\..\src\Howbot.Infrastructure\Howbot.Infrastructure.csproj"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Worker"/>
+  </ItemGroup>
+
 </Project>
