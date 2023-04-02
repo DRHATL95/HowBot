@@ -1,10 +1,7 @@
-﻿using System;
-using Discord;
-using Docker.DotNet;
+﻿using Discord;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Victoria.Player;
 using Xunit;
@@ -13,43 +10,12 @@ namespace Howbot.UnitTests.Core.Services;
 
 public class EmbedServiceTests
 {
-  private static IEmbedService /*, Mock<IServiceLocator>*/ Factory()
+  private static IEmbedService Factory()
   {
-    var serviceLocator = new Mock<IServiceLocator>();
     var logger = new Mock<ILoggerAdapter<EmbedService>>();
-
-    _ = SetupCreateScope(serviceLocator);
-
     var embedService = new EmbedService(logger.Object);
 
     return embedService;
-  }
-
-  private static Tuple<Mock<IEmbedService>> SetupCreateScope(Mock<IServiceLocator> serviceLocator)
-  {
-    var fakeScope = new Mock<IServiceScope>();
-    serviceLocator
-      .Setup(locator => locator.CreateScope())
-      .Returns(fakeScope.Object);
-
-    var serviceProvider = new Mock<IServiceProvider>();
-    fakeScope
-      .Setup(scope => scope.ServiceProvider)
-      .Returns(serviceProvider.Object);
-
-    return SetupCustomInjection(serviceProvider);
-  }
-
-  private static Tuple<Mock<IEmbedService>> SetupCustomInjection(Mock<IServiceProvider> serviceProvider)
-  {
-    // GetRequiredService is an extension method, but GetService is not
-    var dockerClient = new DockerClientConfiguration().CreateClient();
-
-    serviceProvider
-      .Setup(x => x.GetService(typeof(IEmbedService)))
-      .Returns(dockerClient);
-
-    return new Tuple<Mock<IEmbedService>>(new Mock<IEmbedService>());
   }
 
   [Fact]
