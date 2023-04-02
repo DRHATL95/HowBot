@@ -1,5 +1,6 @@
 ﻿using System;
 using Discord;
+using Howbot.Core.Models;
 using JetBrains.Annotations;
 using Victoria.Player;
 

@@ -1,4 +1,4 @@
-﻿namespace Howbot.Core;
+﻿namespace Howbot.Core.Models;
 
 public abstract record Messages
 {

@@ -1,7 +1,9 @@
 ﻿using System;
+using System.IO;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
 using Victoria.Node;
 using Victoria.WebSocket;
 
@@ -16,11 +18,20 @@ public class Configuration
 
   public static string DiscordToken => GetDiscordToken() ?? string.Empty;
 
-  public string YouTubeToken => GetYouTubeToken() ?? string.Empty;
+  public static string YouTubeToken => GetYouTubeToken() ?? string.Empty;
+  
+  public static string PostgresConnectionString => GetPostgresConnectionString() ?? string.Empty;
+  
+  public static IConfigurationRoot SerilogConfiguration => 
+    new ConfigurationBuilder()
+      .SetBasePath(Directory.GetCurrentDirectory())
+      // .AddJsonFile($"config.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
+      .AddJsonFile(path: "serilogconfig.json", optional: false, reloadOnChange: true)
+      .Build();
 
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
-  public DiscordSocketConfig DiscordSocketConfig =>
+  public static DiscordSocketConfig DiscordSocketConfig =>
     new()
     {
       AlwaysDownloadUsers = true,
@@ -30,10 +41,10 @@ public class Configuration
       UseInteractionSnowflakeDate = false
     };
 
-  private WebSocketConfiguration WebSocketConfiguration => new() { BufferSize = 1024 };
+  private static WebSocketConfiguration WebSocketConfiguration => new() { BufferSize = 2048 };
 
   // LavaNode/Lavalink config
-  public NodeConfiguration NodeConfiguration =>
+  public static NodeConfiguration NodeConfiguration =>
     new()
     {
       Port = 2333, // TODO: dhoward - Move to web.config or .env
@@ -136,6 +147,22 @@ public class Configuration
 
     token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
             Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
+
+    return token ?? string.Empty;
+  }
+  
+  private static string GetPostgresConnectionString()
+  {
+    // See GetDiscordToken
+    var token = Environment.GetEnvironmentVariable("PostgresConnectionString", EnvironmentVariableTarget.Process);
+
+    if (!string.IsNullOrEmpty(token))
+    {
+      return token;
+    }
+
+    token = Environment.GetEnvironmentVariable("PostgresConnectionString", EnvironmentVariableTarget.User) ??
+            Environment.GetEnvironmentVariable("PostgresConnectionString", EnvironmentVariableTarget.Machine);
 
     return token ?? string.Empty;
   }

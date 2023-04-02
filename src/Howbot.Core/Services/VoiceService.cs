@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Victoria.Node;
 using Victoria.Player;
 

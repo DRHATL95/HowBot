@@ -7,6 +7,7 @@ using Google.Apis.YouTube.v3;
 using Howbot.Core.Entities;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Victoria;
 using Victoria.Node;
 using Victoria.Player;

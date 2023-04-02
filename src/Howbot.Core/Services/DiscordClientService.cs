@@ -9,13 +9,14 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Howbot.Core.Modules;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
 using Victoria.Player;
-using static Howbot.Core.Messages.Debug;
-using static Howbot.Core.Messages.Errors;
+using static Howbot.Core.Models.Messages.Debug;
+using static Howbot.Core.Models.Messages.Errors;
 
 namespace Howbot.Core.Services;
 

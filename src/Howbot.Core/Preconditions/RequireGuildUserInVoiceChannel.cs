@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using static Howbot.Core.Messages.Responses;
+using static Howbot.Core.Models.Messages.Responses;
 
 namespace Howbot.Core.Preconditions;
 

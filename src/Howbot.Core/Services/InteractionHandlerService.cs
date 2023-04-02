@@ -5,6 +5,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
 using Victoria.Player;

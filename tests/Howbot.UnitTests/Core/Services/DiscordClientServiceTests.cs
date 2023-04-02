@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Howbot.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;

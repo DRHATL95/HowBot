@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 
 namespace Howbot.Core.Modules;
 

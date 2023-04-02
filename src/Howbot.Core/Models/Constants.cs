@@ -1,4 +1,4 @@
-﻿namespace Howbot.Core;
+﻿namespace Howbot.Core.Models;
 
 public abstract record Constants
 {
@@ -6,7 +6,9 @@ public abstract record Constants
   public const ulong DiscordDevelopmentGuildId = 656305202185633810;
   public const string BotName = "Howbot";
   public const string YouTubeBaseShortUrl = "https://youtu.be/";
-  public const int RadioSearchLength = 2;
+  public const string YouTubeBaseLongUrl = "https://www.youtube.com/watch?v=";
+  public const int MaximumUniqueSearchAttempts = 5;
+  public const int RelatedSearchResultsLimit = 3;
   public const int ApplicationTimeoutInMs = 3000;
 
   public readonly struct Commands

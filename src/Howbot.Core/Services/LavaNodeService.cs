@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
 using Victoria.Node.EventArgs;
@@ -35,14 +37,14 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
 
   public new void Initialize()
   {
-    if (_lavaNode == null)
-    {
-      return;
-    }
-
     if (_logger.IsLogLevelEnabled(LogLevel.Debug))
     {
       _logger.LogDebug("{ServiceName} is now initializing..", nameof(LavaNodeService));
+    }
+    
+    if (_lavaNode == null)
+    {
+      return;
     }
 
     // Hook-up lava node events
@@ -78,39 +80,93 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     _logger.LogDebug("Howbot has disconnected from voice channel.");
   }
 
-  private async Task PlayRadioTrack(Player<LavaTrack> lavaPlayer)
+  private async Task Play247Track(Player<LavaTrack> lavaPlayer)
   {
     ArgumentNullException.ThrowIfNull(lavaPlayer);
 
-    if (lavaPlayer.LastPlayed != null)
+    try
     {
-      if (await _musicService.GetYoutubeRecommendedVideoId(lavaPlayer.LastPlayed.Id, Constants.RadioSearchLength) is
-            List<string> result && result.Any())
+      if (lavaPlayer.LastPlayed != null)
       {
-        var videoId = result.First();
-        var videoUrl = Constants.YouTubeBaseShortUrl + videoId;
-
-        var searchResult = await _lavaNode.SearchAsync(SearchType.Direct, videoUrl);
-        if (searchResult.Tracks.Any())
+        var track = await this.GetUniqueRadioTrack(lavaPlayer);
+        if (track != null)
         {
-          // Because the player end event doesn't fire when calling play we need to set last played here
-          lavaPlayer.LastPlayed = lavaPlayer.Track;
-          lavaPlayer.RecentlyPlayed.Add(lavaPlayer.LastPlayed);
-
-          var nextTrack = searchResult.Tracks.First();
-
-          // _logger.LogDebug("Last Track: [{TrackOne}] | Next Track: [{TrackTwo}]", lavaPlayer.LastPlayed, nextTrack);
-
-          await lavaPlayer.PlayAsync(nextTrack);
+          await lavaPlayer.PlayAsync(track);
+        }
+        else
+        {
+          _logger.LogDebug("Unable to find a track to play.");
         }
       }
     }
+    catch (Exception e)
+    {
+      Console.WriteLine(e);
+      throw;
+    }
   }
 
-  private void GetUniqueRadioTrack(List<LavaTrack> recentTracks, LavaTrack requestedTrack)
+  [ItemCanBeNull]
+  // ReSharper disable once CognitiveComplexity
+  private async Task<LavaTrack> GetUniqueRadioTrack(Player<LavaTrack> player, /*List<string> videoIds = null,*/ int attempt = 0)
   {
-    ArgumentNullException.ThrowIfNull(recentTracks);
-    ArgumentNullException.ThrowIfNull(requestedTrack);
+    ArgumentNullException.ThrowIfNull(player);
+    
+    // Recursive base case
+    if (attempt >= Constants.MaximumUniqueSearchAttempts)
+    {
+      _logger.LogDebug("Unable to find a song after {SearchLimit} attempts.", Constants.MaximumUniqueSearchAttempts);
+      return null;
+    }
+    
+    if (player.LastPlayed == null && !player.RecentlyPlayed.Any())
+    {
+      _logger.LogInformation("Unable to find another song, last song is null.");
+      return null;
+    }
+
+    List<string> uniqueVideoIds;
+    
+    if (attempt > 0)
+    {
+      // Recursive pass
+      uniqueVideoIds = (await _musicService.GetYoutubeRecommendedVideoId(player.LastPlayed!.Id, Constants.RelatedSearchResultsLimit + attempt)).ToList();
+    }
+    else
+    {
+      // First pass
+      uniqueVideoIds = (await _musicService.GetYoutubeRecommendedVideoId(player.LastPlayed!.Id, Constants.RelatedSearchResultsLimit)).ToList();
+    }
+    
+    var videoId = uniqueVideoIds.FirstOrDefault(x => player.RecentlyPlayed.Any(y => y.Id != x));
+    if (string.IsNullOrEmpty(videoId))
+    {
+      // Recursive call
+      return await this.GetUniqueRadioTrack(player, ++attempt);
+    }
+    
+    var videoUrl = Constants.YouTubeBaseShortUrl + videoId;
+    var searchResult = await _lavaNode.SearchAsync(SearchType.Direct, videoUrl);
+    if (!searchResult.Tracks.Any())
+    {
+      return null;
+    }
+    
+    var nextTrack = searchResult.Tracks.First();
+    if (player.RecentlyPlayed.Any(x => x.Id == nextTrack.Id))
+    {
+      // Recursive call
+      return await this.GetUniqueRadioTrack(player, ++attempt);
+    }
+    
+    if (MusicHelper.AreTracksSimilar(player.LastPlayed, nextTrack))
+    {
+      // Recursive call
+      return await this.GetUniqueRadioTrack(player, ++attempt);
+    }
+
+    return nextTrack;
+    
   }
 
   #region Lava Node Events
@@ -171,7 +227,6 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
 
   /// <summary>
   ///   LavaNode event handler for when track ends.
-  ///   TODO: in the future, will check for radio mode set
   /// </summary>
   /// <param name="trackEndEventArg"></param>
   private async Task LavaNodeOnOnTrackEnd(TrackEndEventArg<Player<LavaTrack>, LavaTrack> trackEndEventArg)
@@ -186,13 +241,15 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     {
       // set last played track
       lavaPlayer.LastPlayed ??= trackEndEventArg.Track;
+      lavaPlayer.RecentlyPlayed.Add(lavaPlayer.LastPlayed);
 
       if (!lavaPlayer.Vueue.TryDequeue(out var lavaTrack))
       {
-        _logger.LogInformation("Player queue is empty but we are in radio mode!");
-        if (trackEndEventArg.Player.IsRadioMode)
+        if (trackEndEventArg.Player.Is247ModeEnabled)
         {
-          await PlayRadioTrack(lavaPlayer);
+          _logger.LogInformation("Player queue is empty, but 24/7 mode is enabled. Playing next related track.");
+          
+          await Play247Track(lavaPlayer);
           return;
         }
 

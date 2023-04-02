@@ -5,14 +5,15 @@ using Discord.Interactions;
 using Howbot.Core.Entities;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Howbot.Core.Preconditions;
 using Victoria.Node;
 using Victoria.Player;
 using Victoria.Responses.Search;
-using static Howbot.Core.Constants.Commands;
-using static Howbot.Core.Messages.Responses;
-using static Howbot.Core.Permissions.Bot;
-using static Howbot.Core.Permissions.User;
+using static Howbot.Core.Models.Constants.Commands;
+using static Howbot.Core.Models.Messages.Responses;
+using static Howbot.Core.Models.Permissions.Bot;
+using static Howbot.Core.Models.Permissions.User;
 
 namespace Howbot.Core.Modules;
 
@@ -434,11 +435,12 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [SlashCommand("radio", "Play songs related to last played song", true, RunMode.Async)]
+  [SlashCommand("radio", "Plays songs from a radio station by a given genre", true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
+  [RequireOwner]
   public async Task RadioCommandAsync()
   {
     try
@@ -450,16 +452,70 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
         return;
       }
 
-      _logger.LogInformation("Radio mode toggled.");
-      player.ToggleRadioMode();
+      _logger.LogDebug("Playing radio");
 
-      var response = player.IsRadioMode ? RadioModeEnabled : RadioModeDisabled;
-
-      await RespondAsync(response);
+      await RespondAsync("Playing radio");
     }
     catch (Exception exception)
     {
       _logger.LogError(exception, nameof(RadioCommandAsync));
+      throw;
+    }
+  }
+  
+  [SlashCommand("shuffle", "Shuffle the queue", true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
+  [RequireGuildUserInVoiceChannel]
+  public async Task ShuffleCommandAsync()
+  {
+    try
+    {
+      if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+      {
+        _logger.LogError("Unable to get lava player for voice channel.");
+        await RespondAsync(NoPlayerInVoiceChannelResponse);
+        return;
+      }
+
+      _logger.LogDebug("Shuffling all of the songs in the queue.");
+      player.Vueue.Shuffle();
+
+      await RespondAsync("Shuffled the queue.");
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception, nameof(ShuffleCommandAsync));
+      throw;
+    }
+  }
+  
+  [SlashCommand("247", "Toggle 24/7 mode", true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
+  [RequireGuildUserInVoiceChannel]
+  public async Task TwentyFourSevenCommandAsync()
+  {
+    try
+    {
+      if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+      {
+        _logger.LogError("Unable to get lava player for voice channel.");
+        await RespondAsync(NoPlayerInVoiceChannelResponse);
+        return;
+      }
+
+      _logger.LogDebug(player.Is247ModeEnabled ? "Turning off 24/7 mode." : "Turning on 24/7 mode.");
+      
+      await RespondAsync(player.Is247ModeEnabled ? "Turning off 24/7 mode." : "Turning on 24/7 mode.");
+      
+      player.Toggle247Mode();
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception, nameof(TwentyFourSevenCommandAsync));
       throw;
     }
   }
