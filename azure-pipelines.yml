@@ -13,7 +13,6 @@ variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  release: 'ubuntu-22.04-x64'
 
 steps:
 - task: NuGetToolInstaller@1
@@ -28,23 +27,18 @@ steps:
     msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-  
-- task: CmdLine@2
-  inputs:
-    script: |
-      search_dir=$(Build.ArtifactStagingDirectory)
-      
-      for entry in "$search_dir"/*
-      do
-        echo "$entry"
-      done)
 
 - task: DotNetCoreCLI@2
   inputs:
+    command: 'test'
+    projects: '$(System.DefaultWorkingDirectory)/tests/**/*.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Create self-contained linux output'
+  inputs:
     command: 'publish'
-    publishWebProjects: false
-    projects: '$(Build.ArtifactStagingDirectory)/src/Howbot.Worker/Howbot.Worker.csproj'
-    arguments: '-r $(release) -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/publish --self-contained'
+    arguments: '-c Release -r ubuntu-22.04-x64 --self-contained -o $(Build.ArtifactStagingDirectory)/publish'
+    projects: '$(Build.ArtifactStagingDirectory)/**/*.csproj'
 
 - task: CopyFiles@2
   inputs:
