@@ -1,7 +1,9 @@
 ﻿using System;
+using System.IO;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
 using Victoria.Node;
 using Victoria.WebSocket;
 
@@ -13,87 +15,56 @@ public class Configuration
   private const string DiscordTokenProd = "DiscordTokenProd";
   private const string LavalinkPassword = "DiscordLavalinkServerPassword";
   private const string YouTube = "Youtube";
+
+  public static string DiscordToken => GetDiscordToken() ?? string.Empty;
+
+  public static string YouTubeToken => GetYouTubeToken() ?? string.Empty;
   
-  public static string DiscordToken
-  {
-    get
-    {
-      return GetDiscordToken() ?? string.Empty;
-    }
-  }
-
-  public string YouTubeToken
-  {
-    get
-    {
-      return GetYouTubeToken() ?? string.Empty;
-    }
-  }
-
-  private static GatewayIntents GatewayIntents
-  {
-    get
-    {
-      return GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
-    }
-  }
-
-  public DiscordSocketConfig DiscordSocketConfig
-  {
-    get
-    {
-      return new DiscordSocketConfig
-      {
-        AlwaysDownloadUsers = true,
-        GatewayIntents = GatewayIntents,
-        LogLevel = LogSeverity.Debug,
-        LogGatewayIntentWarnings = false,
-        UseInteractionSnowflakeDate = false,
-      };
-    }
-  }
-
-  private WebSocketConfiguration WebSocketConfiguration
-  {
-    get
-    {
-      return new WebSocketConfiguration { BufferSize = 1024 };
-    }
-  }
+  public static string PostgresConnectionString => GetPostgresConnectionString() ?? string.Empty;
   
+  public static IConfigurationRoot SerilogConfiguration => 
+    new ConfigurationBuilder()
+      .SetBasePath(Directory.GetCurrentDirectory())
+      // .AddJsonFile($"config.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
+      .AddJsonFile(path: "serilogconfig.json", optional: false, reloadOnChange: true)
+      .Build();
+
+  private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
+
+  public static DiscordSocketConfig DiscordSocketConfig =>
+    new()
+    {
+      AlwaysDownloadUsers = true,
+      GatewayIntents = GatewayIntents,
+      LogLevel = LogSeverity.Debug,
+      LogGatewayIntentWarnings = false,
+      UseInteractionSnowflakeDate = false
+    };
+
+  private static WebSocketConfiguration WebSocketConfiguration => new() { BufferSize = 2048 };
+
   // LavaNode/Lavalink config
-  public NodeConfiguration NodeConfiguration
-  {
-    get
+  public static NodeConfiguration NodeConfiguration =>
+    new()
     {
-      return new NodeConfiguration
-      {
-        Port = 2333, // TODO: dhoward - Move to web.config or .env
-        Hostname = "localhost", // TODO: dhoward - Move to web.config or .env
-        Authorization = GetLavaLinkPassword(),
-        SelfDeaf = true,
-        EnableResume = true,
-        SocketConfiguration = this.WebSocketConfiguration
-      };
-    }
-  }
+      Port = 2333, // TODO: dhoward - Move to web.config or .env
+      Hostname = "localhost", // TODO: dhoward - Move to web.config or .env
+      Authorization = GetLavaLinkPassword(),
+      SelfDeaf = true,
+      EnableResume = true,
+      SocketConfiguration = WebSocketConfiguration
+    };
 
-  public InteractionServiceConfig InteractionServiceConfig
-  {
-    get =>
-      new()
-      {
-        LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error
-      };
-  }
+  public InteractionServiceConfig InteractionServiceConfig =>
+    new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
   public static bool IsDebug()
   {
-    #if DEBUG
-      return true;
-    #else
+#if DEBUG
+    return true;
+#else
       return false;
-    #endif
+#endif
   }
 
   private static string GetYouTubeToken()
@@ -166,17 +137,33 @@ public class Configuration
 
   private static string GetLavaLinkPassword()
   {
-      // See GetDiscordToken
-      string token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Process);
+    // See GetDiscordToken
+    var token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Process);
 
-      if (!string.IsNullOrEmpty(token))
-      {
-        return token;
-      }
+    if (!string.IsNullOrEmpty(token))
+    {
+      return token;
+    }
 
-      token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
-              Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
-        
-      return token ?? string.Empty;
+    token = Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.User) ??
+            Environment.GetEnvironmentVariable(LavalinkPassword, EnvironmentVariableTarget.Machine);
+
+    return token ?? string.Empty;
+  }
+  
+  private static string GetPostgresConnectionString()
+  {
+    // See GetDiscordToken
+    var token = Environment.GetEnvironmentVariable("PostgresConnectionString", EnvironmentVariableTarget.Process);
+
+    if (!string.IsNullOrEmpty(token))
+    {
+      return token;
+    }
+
+    token = Environment.GetEnvironmentVariable("PostgresConnectionString", EnvironmentVariableTarget.User) ??
+            Environment.GetEnvironmentVariable("PostgresConnectionString", EnvironmentVariableTarget.Machine);
+
+    return token ?? string.Empty;
   }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Interfaces;

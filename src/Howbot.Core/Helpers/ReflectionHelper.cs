@@ -10,7 +10,10 @@ public static class ReflectionHelper
   [CanBeNull]
   public static Assembly GetAssemblyByName(string assemblyName)
   {
-    if (string.IsNullOrEmpty(assemblyName)) throw new ArgumentNullException(nameof(assemblyName));
+    if (string.IsNullOrEmpty(assemblyName))
+    {
+      throw new ArgumentNullException(nameof(assemblyName));
+    }
 
     return AppDomain.CurrentDomain.GetAssemblies()
       .SingleOrDefault(assembly => assembly.GetName().Name == assemblyName);

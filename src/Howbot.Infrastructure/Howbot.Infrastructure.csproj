@@ -5,17 +5,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ardalis.GuardClauses" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Ardalis.GuardClauses"/>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Howbot.Core\Howbot.Core.csproj" />
+    <ProjectReference Include="..\Howbot.Core\Howbot.Core.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Data\Migrations" />
+    <Folder Include="Data\Migrations"/>
   </ItemGroup>
 
 </Project>

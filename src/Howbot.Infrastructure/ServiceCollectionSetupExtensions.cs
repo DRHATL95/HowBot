@@ -10,13 +10,17 @@ namespace Howbot.Infrastructure;
 
 public static class ServiceCollectionSetupExtensions
 {
-  public static void AddDbContext(this IServiceCollection services, IConfiguration configuration) =>
-      services.AddDbContext<AppDbContext>(options =>
-          options.UseNpgsql(
-              configuration.GetConnectionString("DefaultConnection")));
+  public static void AddDbContext(this IServiceCollection services, IConfiguration configuration)
+  {
+    services.AddDbContext<AppDbContext>(options =>
+      options.UseNpgsql(
+        configuration.GetConnectionString("DefaultConnection")));
+  }
 
-  public static void AddRepositories(this IServiceCollection services) =>
-      services.AddScoped<IRepository, EfRepository>();
+  public static void AddRepositories(this IServiceCollection services)
+  {
+    services.AddScoped<IRepository, EfRepository>();
+  }
 
   public static void AddHowbotServices(this IServiceCollection services)
   {
@@ -28,7 +32,7 @@ public static class ServiceCollectionSetupExtensions
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
     services.AddSingleton<IDockerService, DockerService>();
     services.AddSingleton<IDeploymentService, DeploymentService>();
-    
+
     services.AddTransient<IHttpService, HttpService>();
   }
 }

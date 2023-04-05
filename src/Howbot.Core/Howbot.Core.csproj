@@ -11,7 +11,13 @@
     <PackageReference Include="Discord.Net.WebSocket" />
     <PackageReference Include="Docker.DotNet" />
     <PackageReference Include="Google.Apis.YouTube.v3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="Victoria" />
   </ItemGroup>
 

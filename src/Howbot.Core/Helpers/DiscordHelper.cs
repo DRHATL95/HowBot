@@ -6,13 +6,15 @@ namespace Howbot.Core.Helpers;
 
 public static class DiscordHelper
 {
-  
   /// <summary>
-  /// Convert Discord <see cref="LogSeverity"/> to Microsoft Logging <see cref="LogLevel"/>.
+  ///   Convert Discord <see cref="LogSeverity" /> to Microsoft Logging <see cref="LogLevel" />.
   /// </summary>
   /// <param name="logSeverity">Discord logging severity</param>
   /// <returns></returns>
-  /// <exception cref="ArgumentOutOfRangeException">Throws exception if log severity cannot convert to Microsoft logging level</exception>
+  /// <exception cref="ArgumentOutOfRangeException">
+  ///   Throws exception if log severity cannot convert to Microsoft logging
+  ///   level
+  /// </exception>
   public static LogLevel ConvertLogSeverityToLogLevel(LogSeverity logSeverity)
   {
     return logSeverity switch

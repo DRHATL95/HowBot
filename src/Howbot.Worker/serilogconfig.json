@@ -1,7 +1,4 @@
-{
-  "ConnectionStrings": {
-    "DefaultConnection": ""
-  },
+﻿{
   "Serilog": {
     "Using": [ "Serilog.Sinks.Console" ],
     "LevelSwitches": { "controlSwitch": "Verbose" },
@@ -85,8 +82,8 @@
     ],
     "Properties": {
       "Application": "Howbot",
-      "Version": "1.0.0",
-      "Environment": "Development"
+        "Version": "1.0.0",
+        "Environment": "Development"
     },
     "Destructure": [
       {

@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Discord;
-using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Victoria.Node;
 using Victoria.Player;
+using static Howbot.Core.Models.Messages.Responses;
 
 namespace Howbot.Core.Services;
 
@@ -28,7 +29,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
     {
       if (user is IVoiceState voiceState)
       {
-        var lavaPlayer = await this.JoinGuildVoiceChannelAsync(voiceState, textChannel);
+        var lavaPlayer = await JoinGuildVoiceChannelAsync(voiceState, textChannel);
 
         return lavaPlayer == null
           ? CommandResponse.CommandNotSuccessful(
@@ -59,17 +60,16 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
       if (!_lavaNode.HasPlayer(user.Guild))
       {
         _logger.LogDebug("Cannot leave voice, not in voice channel.");
-        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
 
       _logger.LogDebug("Leaving voice channel");
       await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
-      return CommandResponse.CommandSuccessful();
+      return CommandResponse.CommandSuccessful(BotLeaveVoiceConnection);
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception has been thrown executing command [{CommandName}]",
-        nameof(LeaveVoiceChannelAsync));
+      _logger.LogError(exception, "Exception thrown in VoiceService.LeaveVoiceChannelAsync");
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -77,8 +77,8 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
   private async Task<Player<LavaTrack>> JoinGuildVoiceChannelAsync(IVoiceState voiceState, ITextChannel textChannel)
   {
     // Parameter error handling
-    if (voiceState == null) throw new ArgumentNullException(nameof(voiceState));
-    if (textChannel == null) throw new ArgumentNullException(nameof(textChannel));
+    ArgumentNullException.ThrowIfNull(voiceState);
+    ArgumentNullException.ThrowIfNull(textChannel);
 
     // Check if user is in a voice channel
     if (voiceState.VoiceChannel == null)
@@ -102,7 +102,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 
   private bool IsBotAlreadyConnected(IGuild guild)
   {
-    if (guild == null) throw new ArgumentNullException(nameof(guild));
+    ArgumentNullException.ThrowIfNull(guild);
 
     return _lavaNode.HasPlayer(guild);
   }
