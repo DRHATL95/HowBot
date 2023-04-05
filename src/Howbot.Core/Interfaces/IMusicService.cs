@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Entities;
+using Howbot.Core.Models;
 using Victoria.Responses.Search;
 
 namespace Howbot.Core.Interfaces;
@@ -22,5 +23,4 @@ public interface IMusicService : IServiceBase
   public Task<CommandResponse> GetLyricsFromGeniusAsync(IGuild guild);
   public Task<CommandResponse> GetLyricsFromOvhAsync(IGuild guild);
   public Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1);
-  public Task<IEnumerable<string>> GetYoutubeRecommendedVideoTitle(ulong guildId, string videoId, int count = 1);
 }

@@ -8,6 +8,7 @@ using Howbot.Core.Entities;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Serilog;
 using Victoria;
 using Victoria.Node;
 using Victoria.Player;
@@ -53,80 +54,6 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
 
     return response.Items.Select(item => item.Id.VideoId).ToList();
-  }
-
-  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoTitle(ulong guildId, string videoId, int count = 1)
-  {
-    var searchListRequest = _youTubeService.Search.List("snippet");
-
-    searchListRequest.Type = "video";
-    // For some reason if I want 1 result, I have to set the max results to 2?
-    // TODO: Investigate
-    searchListRequest.MaxResults = count == 1 ? 2 : count;
-    searchListRequest.RelatedToVideoId = videoId;
-
-    var response = await searchListRequest.ExecuteAsync();
-
-    if (count <= 1)
-    {
-      return new[] { response.Items[0].Snippet.Title };
-    }
-
-    return response.Items.Select(item => item.Snippet.Title).ToList();
-  }
-
-  private async Task PlayTrack(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse, IGuildUser user)
-  {
-    AddToPlayerQueue(lavaPlayer, searchResponse);
-
-    // Check current player state
-    if (lavaPlayer.PlayerState is PlayerState.Playing || (lavaPlayer.PlayerState is PlayerState.Paused &&
-                                                          (lavaPlayer.Vueue.Count > 0 || lavaPlayer.Track != null)))
-    {
-      // Already playing or paused but has current track
-      _logger.LogDebug("Already playing something.");
-      return;
-    }
-
-    if (!lavaPlayer.Vueue.TryDequeue(out var lavaTrack))
-    {
-      _logger.LogDebug("Unable to dequeue lava player");
-      return;
-    }
-
-    // Update command author, used for Embeds
-    lavaPlayer.Author = user;
-
-    await lavaPlayer.PlayAsync(lavaTrack);
-  }
-
-  private void AddToPlayerQueue(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse)
-  {
-    var originalQueueSize = lavaPlayer.Vueue.Count;
-
-    if (MusicHelper.IsSearchResponsePlaylist(searchResponse))
-    {
-      _logger.LogDebug("Adding {TrackCount} songs to queue", searchResponse.Tracks.Count);
-      lavaPlayer.Vueue.Enqueue(searchResponse.Tracks);
-    }
-    else
-    {
-      var lavaTrack = searchResponse.Tracks.Count >= 1
-        ? searchResponse.Tracks.First()
-        : throw new IndexOutOfRangeException(nameof(searchResponse.Tracks));
-
-      lavaPlayer.Vueue.Enqueue(lavaTrack);
-    }
-
-    if (originalQueueSize == 0)
-    {
-      _logger.LogDebug("Added 1 track to the queue", originalQueueSize);
-    }
-    else
-    {
-      var totalTracksAdded = lavaPlayer.Vueue.Count - originalQueueSize;
-      _logger.LogDebug("Added {Count} tracks to the queue", totalTracksAdded);
-    }
   }
 
   #region Music Module Commands
@@ -469,4 +396,58 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   }
 
   #endregion
+  
+  private async Task PlayTrack(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse, IGuildUser user)
+  {
+    AddToPlayerQueue(lavaPlayer, searchResponse);
+
+    // Check current player state
+    if (lavaPlayer.PlayerState is PlayerState.Playing || (lavaPlayer.PlayerState is PlayerState.Paused &&
+                                                          (lavaPlayer.Vueue.Count > 0 || lavaPlayer.Track != null)))
+    {
+      // Already playing or paused but has current track
+      _logger.LogDebug("Already playing something.");
+      return;
+    }
+
+    if (!lavaPlayer.Vueue.TryDequeue(out var lavaTrack))
+    {
+      _logger.LogDebug("Unable to dequeue lava player");
+      return;
+    }
+
+    // Update command author, used for Embeds
+    lavaPlayer.Author = user;
+
+    await lavaPlayer.PlayAsync(lavaTrack);
+  }
+
+  private void AddToPlayerQueue(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse)
+  {
+    var originalQueueSize = lavaPlayer.Vueue.Count;
+
+    if (MusicHelper.IsSearchResponsePlaylist(searchResponse))
+    {
+      _logger.LogDebug("Adding {TrackCount} songs to queue", searchResponse.Tracks.Count);
+      lavaPlayer.Vueue.Enqueue(searchResponse.Tracks);
+    }
+    else
+    {
+      var lavaTrack = searchResponse.Tracks.Count >= 1
+        ? searchResponse.Tracks.First()
+        : throw new IndexOutOfRangeException(nameof(searchResponse.Tracks));
+
+      lavaPlayer.Vueue.Enqueue(lavaTrack);
+    }
+
+    if (originalQueueSize == 0)
+    {
+      _logger.LogDebug("Added 1 track to the queue", originalQueueSize);
+    }
+    else
+    {
+      var totalTracksAdded = lavaPlayer.Vueue.Count - originalQueueSize;
+      _logger.LogDebug("Added {Count} tracks to the queue", totalTracksAdded);
+    }
+  }
 }

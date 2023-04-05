@@ -5,21 +5,56 @@ using Discord;
 using Discord.Interactions;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Preconditions;
+using static Howbot.Core.Models.Constants.Commands;
+using static Howbot.Core.Models.Permissions.Bot;
+using static Howbot.Core.Models.Permissions.User;
 
 namespace Howbot.Core.Modules;
 
 public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
 {
   private readonly InteractionService _interactionService;
+  private readonly IVoiceService _voiceService;
   private readonly ILoggerAdapter<GeneralModule> _logger;
 
-  public GeneralModule(InteractionService interactionService, ILoggerAdapter<GeneralModule> logger)
+  public GeneralModule(InteractionService interactionService, IVoiceService voiceService, ILoggerAdapter<GeneralModule> logger)
   {
     _interactionService = interactionService;
+    _voiceService = voiceService;
     _logger = logger;
   }
+  
+  [SlashCommand(JoinCommandName, JoinCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildBotVoiceCommandPermission)]
+  [RequireUserPermission(GuildUserVoiceCommandPermission)]
+  [RequireGuildUserInVoiceChannel]
+  public async Task JoinCommandAsync()
+  {
+    try
+    {
+      await DeferAsync();
+      
+      CommandResponse commandResponse = await _voiceService.JoinVoiceAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
+      if (!commandResponse.Success)
+      {
+        if (commandResponse.Exception != null) throw commandResponse.Exception;
+        if (!string.IsNullOrEmpty(commandResponse.Message)) await RespondAsync(commandResponse.Message);
+        
+        _logger.LogCommandFailed(nameof(JoinCommandAsync));
+      }
+      
+      await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      throw;
+    }
+  }
 
-  [SlashCommand(Constants.Commands.PingCommandName, Constants.Commands.PingCommandDescription, true, RunMode.Async)]
+  [SlashCommand(PingCommandName, PingCommandDescription, true, RunMode.Async)]
   public async Task PingCommandAsync()
   {
     try
@@ -42,7 +77,7 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [SlashCommand("help", "See all available commands for the bot", true, RunMode.Async)]
+  [SlashCommand(HelpCommandName, HelpCommandDescription, true, RunMode.Async)]
   public async Task HelpCommandAsync()
   {
     var commands = _interactionService.SlashCommands;

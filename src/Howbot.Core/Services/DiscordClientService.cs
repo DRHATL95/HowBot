@@ -267,34 +267,41 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  private async Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
+  private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
-    if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id)
+    if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id) return Task.CompletedTask;
+    
+    var guild = (oldVoiceState.VoiceChannel ?? newVoiceState.VoiceChannel).Guild;
+    if (guild == null) return Task.CompletedTask;
+    
+    // If the bot is not in a voice channel, don't do anything
+    if (!_lavaNode.HasPlayer(guild))
     {
-      return;
+      return Task.CompletedTask;
     }
-
-    if (!_lavaNode.TryGetPlayer(oldVoiceState.VoiceChannel.Guild, out var player))
+    
+    if (!_lavaNode.TryGetPlayer(guild, out var player))
     {
-      return;
+      return Task.CompletedTask;
     }
 
     // Get the voice channel the bot is in
     var voiceChannel = _discordSocketClient.Guilds
       .Select(g => g.VoiceChannels.FirstOrDefault(vc => vc.Users.Any(u => u.Id == _discordSocketClient.CurrentUser.Id)))
       .FirstOrDefault();
+    
+    // Get list of users in discord voice channel
+    var users = voiceChannel?.Users.Where(x => x.Id != _discordSocketClient.CurrentUser.Id && x.VoiceState != null).ToList();
 
     if (voiceChannel != null &&
         !voiceChannel.Users.Any(x => x.Id != _discordSocketClient.CurrentUser.Id && x.VoiceChannel != null))
     {
-      await Task.Run(() =>
-      {
-        // Leave the voice channel automatically when no one else is in voice
-        _lavaNodeService.InitiateDisconnectLogicAsync(player, TimeSpan.FromSeconds(30));
-      });
+      _ = _lavaNodeService.InitiateDisconnectLogicAsync(player, TimeSpan.FromSeconds(30));
     }
+
+    return Task.CompletedTask;
   }
 
   #endregion

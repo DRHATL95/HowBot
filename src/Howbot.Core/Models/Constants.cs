@@ -74,5 +74,9 @@ public abstract record Constants
     // Ping Command
     public const string PingCommandName = "ping";
     public const string PingCommandDescription = "Ping the Discord websocket API.";
+    
+    // Help Command
+    public const string HelpCommandName = "help";
+    public const string HelpCommandDescription = "See all available commands for the bot.";
   }
 }

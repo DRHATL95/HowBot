@@ -35,46 +35,6 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
   #region Music Module Slash Commands
 
-  [SlashCommand(JoinCommandName, JoinCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoiceCommandPermission)]
-  [RequireUserPermission(GuildUserVoiceCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  public async Task JoinCommandAsync()
-  {
-    try
-    {
-      await DeferAsync();
-
-      var commandResponse =
-        await _voiceService.JoinVoiceAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
-
-      if (!commandResponse.Success)
-      {
-        if (commandResponse.Exception != null)
-        {
-          throw commandResponse.Exception;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          _logger.LogDebug(commandResponse.Message);
-        }
-
-        await ModifyOriginalResponseAsync(properties => properties.Content = "Command did not run successfully.");
-      }
-      else
-      {
-        await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
-      }
-    }
-    catch (Exception exception)
-    {
-      _logger.LogError(exception, nameof(JoinCommandAsync));
-      throw;
-    }
-  }
-
   [SlashCommand(PlayCommandName, PlayCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]

@@ -1,4 +1,4 @@
-﻿namespace Howbot.Core.Modules;
+﻿namespace Howbot.Core.Models;
 
 public static class Emojis
 {

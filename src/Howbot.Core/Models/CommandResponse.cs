@@ -1,12 +1,12 @@
 ﻿using System;
 using Discord;
-using Howbot.Core.Models;
+using Howbot.Core.Entities;
 using JetBrains.Annotations;
 using Victoria.Player;
 
-namespace Howbot.Core.Entities;
+namespace Howbot.Core.Models;
 
-public class CommandResponse : BaseEntity
+public class CommandResponse
 {
   private CommandResponse()
   {

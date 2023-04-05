@@ -1,6 +1,7 @@
 ﻿using System;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 
 namespace Howbot.Core.Helpers;
 

@@ -14,6 +14,7 @@ using Victoria.Node;
 using Victoria.Node.EventArgs;
 using Victoria.Player;
 using Victoria.Responses.Search;
+using static System.Threading.SpinWait;
 
 namespace Howbot.Core.Services;
 
@@ -70,9 +71,10 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     }
 
     await lavaPlayer.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
-    var isCancelled = SpinWait.SpinUntil(() => value.IsCancellationRequested, timeSpan);
+    var isCancelled = SpinUntil(() => value.IsCancellationRequested, timeSpan);
     if (isCancelled)
     {
+      _logger.LogDebug("Auto disconnect cancelled.");
       return;
     }
 
