@@ -45,7 +45,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
     if (_logger.IsLogLevelEnabled(LogLevel.Debug))
     {
-      _logger.LogDebug("{ServiceName} is initializing..", nameof(InteractionHandlerService));
+      _logger.LogDebug("{ServiceName} is initializing..", typeof(InteractionHandlerService).ToString());
     }
 
     _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;

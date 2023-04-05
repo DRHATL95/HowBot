@@ -66,7 +66,7 @@ public class Worker : BackgroundService
   {
     if (_serviceProvider == null)
     {
-      return;
+      throw new NullReferenceException(nameof(_serviceProvider));
     }
 
     try

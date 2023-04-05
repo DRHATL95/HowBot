@@ -55,11 +55,12 @@ public abstract class Program
   private static IHostBuilder CreateHostBuilder(string[] args)
   {
     return Host.CreateDefaultBuilder(args)
-      .ConfigureLogging((_, builder) =>
+      .UseSerilog(((context, configuration) =>
       {
-        builder.ClearProviders();
-        builder.AddSerilog();
-      })
+        configuration
+          .ReadFrom.Configuration(context.Configuration)
+          .Enrich.FromLogContext();
+      }))
       .ConfigureServices((hostContext, services) =>
       {
         services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));

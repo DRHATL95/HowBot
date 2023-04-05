@@ -14,6 +14,9 @@ using Victoria.Node;
 using Victoria.Player;
 using Victoria.Player.Filters;
 using Victoria.Responses.Search;
+using static Howbot.Core.Models.Messages.Debug;
+using static Howbot.Core.Models.Messages.Responses;
+using static Victoria.Player.PlayerState;
 
 namespace Howbot.Core.Services;
 
@@ -106,7 +109,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         return CommandResponse.CommandNotSuccessful("I am not connected to a voice channel");
       }
 
-      if (lavaPlayer.PlayerState is not PlayerState.Playing)
+      if (lavaPlayer.PlayerState is not Playing)
       {
         _logger.LogDebug("Unable to pause, player is not playing");
         return CommandResponse.CommandNotSuccessful("Unable to pause anything. There is nothing playing!");
@@ -115,7 +118,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       _logger.LogDebug("Pausing current track");
       await lavaPlayer.PauseAsync();
 
-      return CommandResponse.CommandSuccessful();
+      return CommandResponse.CommandSuccessful(BotTrackPaused);
     }
     catch (Exception exception)
     {
@@ -134,16 +137,16 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         return CommandResponse.CommandNotSuccessful("I am not connected to a voice channel");
       }
 
-      if (lavaPlayer.PlayerState is not PlayerState.Paused or PlayerState.Stopped)
+      if (lavaPlayer.PlayerState is not Paused or Stopped)
       {
         _logger.LogDebug("Cannot resume a track that isn't paused or stopped.");
         return CommandResponse.CommandNotSuccessful("Unable to resume a track that's not stopped or paused.");
       }
 
-      _logger.LogDebug("Resuming track.");
+      _logger.LogDebug(Resume);
       await lavaPlayer.ResumeAsync();
 
-      return CommandResponse.CommandSuccessful();
+      return CommandResponse.CommandSuccessful(BotTrackResumed);
     }
     catch (Exception exception)
     {
@@ -158,16 +161,16 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
-        _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
-        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
 
       if (numberOfTracks > 0)
       {
         if (numberOfTracks > lavaPlayer.Vueue.Count)
         {
-          _logger.LogDebug(Messages.Debug.ClientQueueOutOfBounds);
-          return CommandResponse.CommandNotSuccessful(Messages.Responses.BotSkipQueueOutOfBounds);
+          _logger.LogDebug(ClientQueueOutOfBounds);
+          return CommandResponse.CommandNotSuccessful(BotSkipQueueOutOfBounds);
         }
 
         // Skipped ahead multiple places in queue
@@ -176,14 +179,14 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         lavaPlayer.Vueue.RemoveRange(0, lavaPlayer.Vueue.Count - 1);
         _logger.LogDebug("Song after skip: [{SongName} - {Artist}]", lavaPlayer.Track.Title, lavaPlayer.Track.Author);
 
-        _logger.LogDebug(Messages.Debug.NowPlaying);
+        _logger.LogDebug(NowPlaying);
         await lavaPlayer.PlayAsync(lavaPlayer.Track);
-        return CommandResponse.CommandSuccessful();
+        return CommandResponse.CommandSuccessful(BotTrackSkipped);
       }
 
-      _logger.LogDebug(Messages.Debug.SkipNextTrack);
+      _logger.LogDebug(SkipNextTrack);
       await lavaPlayer.SkipAsync();
-      return CommandResponse.CommandSuccessful();
+      return CommandResponse.CommandSuccessful(BotTrackSkipped);
     }
     catch (Exception exception)
     {
@@ -198,8 +201,8 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
-        _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
-        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
 
       if (seekPosition.TotalSeconds <= 0)
@@ -223,7 +226,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
       await lavaPlayer.SeekAsync(seekPosition);
 
-      return CommandResponse.CommandSuccessful();
+      return CommandResponse.CommandSuccessful($"Seeking to {seekPosition:g}.");
     }
     catch (Exception exception)
     {
@@ -244,8 +247,8 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
       if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
-        _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
-        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
 
       if (newVolume is < 0 or > 100)
@@ -264,7 +267,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       _logger.LogDebug("Setting player volume to {Volume}", newVolume.Value);
       await lavaPlayer.SetVolumeAsync(newVolume.Value);
 
-      return CommandResponse.CommandSuccessful();
+      return CommandResponse.CommandSuccessful($"Changing volume to {newVolume.Value}.");
     }
     catch (Exception exception)
     {
@@ -279,11 +282,11 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       if (!_lavaNode.TryGetPlayer(user.Guild, out var lavaPlayer))
       {
-        _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
-        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
 
-      if (lavaPlayer.Track == null || lavaPlayer.PlayerState is not PlayerState.Playing)
+      if (lavaPlayer.Track == null || lavaPlayer.PlayerState is not Playing)
       {
         _logger.LogDebug("Not playing anything");
         return CommandResponse.CommandNotSuccessful("Not playing anything");
@@ -311,11 +314,11 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
-        _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
-        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
 
-      if (lavaPlayer.Track == null || lavaPlayer.PlayerState is PlayerState.None)
+      if (lavaPlayer.Track == null || lavaPlayer.PlayerState is None)
       {
         _logger.LogDebug("Cannot apply filter to player. Nothing is playing");
         return CommandResponse.CommandNotSuccessful("Cannot apply filter. Nothing is playing");
@@ -343,8 +346,8 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
-        _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
-        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
 
       var lyrics = await lavaPlayer.Track.FetchLyricsFromGeniusAsync();
@@ -369,11 +372,11 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
       {
-        _logger.LogDebug(Messages.Debug.ClientNotConnectedToVoiceChannel);
-        return CommandResponse.CommandNotSuccessful(Messages.Responses.BotNotConnectedToVoiceResponseMessage);
+        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
 
-      if (lavaPlayer.PlayerState != PlayerState.Playing)
+      if (lavaPlayer.PlayerState != Playing)
       {
         _logger.LogDebug("Cannot execute command, player is not playing");
         return CommandResponse.CommandNotSuccessful("Cannot execute command, player is not playing");
@@ -395,6 +398,53 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
   }
 
+  public CommandResponse ShuffleQueue(IGuild guild)
+  {
+    try
+    {
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      {
+        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
+      }
+      
+      _logger.LogDebug(Shuffle);
+      
+      lavaPlayer.Vueue.Shuffle();
+
+      return CommandResponse.CommandSuccessful(BotShuffleQueue);
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      return CommandResponse.CommandNotSuccessful(exception);
+    }
+  }
+
+  public CommandResponse ToggleTwoFourSeven(IGuild guild)
+  {
+    try
+    {
+      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
+      {
+        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
+        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
+      }
+      
+      _logger.LogDebug(lavaPlayer.Is247ModeEnabled ? TwoFourSevenOff : TwoFourSevenOn);
+      
+      lavaPlayer.Toggle247Mode();
+      
+      var response = lavaPlayer.Is247ModeEnabled ? BotTwoFourSevenOff : BotTwoFourSevenOn;
+      return CommandResponse.CommandSuccessful(response);
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception);
+      return CommandResponse.CommandNotSuccessful(exception);
+    }
+  }
+
   #endregion
   
   private async Task PlayTrack(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse, IGuildUser user)
@@ -402,7 +452,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     AddToPlayerQueue(lavaPlayer, searchResponse);
 
     // Check current player state
-    if (lavaPlayer.PlayerState is PlayerState.Playing || (lavaPlayer.PlayerState is PlayerState.Paused &&
+    if (lavaPlayer.PlayerState is Playing || (lavaPlayer.PlayerState is Paused &&
                                                           (lavaPlayer.Vueue.Count > 0 || lavaPlayer.Track != null)))
     {
       // Already playing or paused but has current track

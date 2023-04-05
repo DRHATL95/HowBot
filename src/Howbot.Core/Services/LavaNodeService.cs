@@ -40,7 +40,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   {
     if (_logger.IsLogLevelEnabled(LogLevel.Debug))
     {
-      _logger.LogDebug("{ServiceName} is now initializing..", nameof(LavaNodeService));
+      _logger.LogDebug("{ServiceName} is initializing..", typeof(LavaNodeService).ToString());
     }
     
     if (_lavaNode == null)

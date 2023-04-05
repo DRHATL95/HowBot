@@ -14,6 +14,6 @@ public class RequireGuildUserInVoiceChannelAttribute : PreconditionAttribute
   {
     return Task.FromResult(context.User is SocketGuildUser { VoiceChannel: { } }
       ? PreconditionResult.FromSuccess()
-      : PreconditionResult.FromError(UserVoiceConnectionRequired));
+      : PreconditionResult.FromError(BotUserVoiceConnectionRequired));
   }
 }

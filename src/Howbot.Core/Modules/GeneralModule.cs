@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Preconditions;
@@ -39,10 +40,7 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
       CommandResponse commandResponse = await _voiceService.JoinVoiceAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
       if (!commandResponse.Success)
       {
-        if (commandResponse.Exception != null) throw commandResponse.Exception;
-        if (!string.IsNullOrEmpty(commandResponse.Message)) await RespondAsync(commandResponse.Message);
-        
-        _logger.LogCommandFailed(nameof(JoinCommandAsync));
+        ModuleHelper.HandleCommandFailed(commandResponse);
       }
       
       await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
@@ -50,6 +48,33 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
     catch (Exception exception)
     {
       _logger.LogError(exception);
+      throw;
+    }
+  }
+  
+  [SlashCommand(LeaveCommandName, LeaveCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
+  [RequireGuildUserInVoiceChannel]
+  public async Task LeaveVoiceChannelCommandAsync()
+  {
+    try
+    {
+      await DeferAsync();
+
+      var commandResponse = await _voiceService.LeaveVoiceChannelAsync(Context.User as IGuildUser);
+
+      if (!commandResponse.Success)
+      {
+        ModuleHelper.HandleCommandFailed(commandResponse);
+      }
+      
+      await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception, nameof(LeaveVoiceChannelCommandAsync));
       throw;
     }
   }

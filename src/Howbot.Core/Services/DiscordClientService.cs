@@ -65,7 +65,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
     if (_logger.IsLogLevelEnabled(LogLevel.Debug))
     {
-      _logger.LogDebug("{ServiceName} is initializing..", nameof(DiscordClientService));
+      _logger.LogDebug("{ServiceName} is initializing..", typeof(DiscordClientService).ToString());
     }
 
     _discordSocketClient.Log += DiscordSocketClientOnLog;
@@ -206,7 +206,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       LoggedInUsername = _discordSocketClient.CurrentUser.Username;
     }
 
-    _logger.LogDebug(DiscordSockerClientConnected, LoggedInUsername);
+    _logger.LogDebug(DiscordSocketClientConnected, LoggedInUsername);
 
     return Task.CompletedTask;
   }

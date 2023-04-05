@@ -87,7 +87,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
 
       return new EmbedBuilder()
         .WithColor(Color.DarkPurple)
-        .WithTitle(":musical_note: Now Playing :musical_note:")
+        .WithTitle("Now Playing")
         .WithUrl(lavaTrack.Url)
         .WithThumbnailUrl(trackArtwork)
         .AddField(new EmbedFieldBuilder { IsInline = false, Name = lavaTrack.Title, Value = trackDescription })
