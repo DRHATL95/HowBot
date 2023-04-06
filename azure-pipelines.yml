@@ -26,11 +26,13 @@ steps:
   inputs:
     restoreSolution: '$(solution)'
     includeNuGetOrg: true
+    
 - task: DotNetCoreCLI@2
   inputs:
     command: 'restore'
     projects: '**/*.csproj'
     includeNuGetOrg: true
+    arguments: '-p:MSBuildVersion=17.0.0'
 - task: DotNetCoreCLI@2
   inputs:
     configuration: '$(buildConfiguration)'
