@@ -32,7 +32,6 @@ steps:
     command: 'restore'
     projects: '**/*.csproj'
     restoreArguments: '-MSBuildVersion:17.3.0'
-    feedsToUse: 'select'
 - task: DotNetCoreCLI@2
   inputs:
     configuration: '$(buildConfiguration)'
