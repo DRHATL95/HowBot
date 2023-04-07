@@ -17,18 +17,22 @@ variables:
   buildRuntime: 'linux-x64'
 
 steps:
-
 - task: UseDotNet@2
   inputs:
     packageType: sdk
     version: 7.x
     installationPath: $(Agent.ToolsDirectory)/dotnet
+- task: MSBuild@1
+  inputs:
+    solution: '**/*.sln'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    msbuildVersion: 'latest'
 - task: NuGetCommand@2
   inputs:
     command: 'restore'
     restoreSolution: '**/*.sln'
     feedsToUse: 'config'
-    nugetConfigPath: '$(System.DefaultWorkingDirectory)'
     noCache: true
 - task: DotNetCoreCLI@2
   inputs:
