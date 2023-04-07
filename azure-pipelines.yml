@@ -46,7 +46,6 @@ steps:
   displayName: "Copy Build Files"
   inputs:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
-    CleanTargetFolder: true
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Build Files as Artifact'
   inputs:
