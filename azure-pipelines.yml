@@ -15,29 +15,28 @@ variables:
   buildConfiguration: 'Release'
   buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
   buildRuntime: 'linux-x64'
+  dotNetVersion: '7.0.100'
 
 steps:
-- task: NuGetToolInstaller@1
+- task: UseDotNet@2
   inputs:
-    versionSpec: 
-    checkLatest: true
+    packageType: runtime
+    version: $(dotNetVersion)
 - task: NuGetCommand@2
   displayName: 'Nuget Restore'
   inputs:
     restoreSolution: '$(solution)'
     includeNuGetOrg: true
-    
 - task: DotNetCoreCLI@2
   inputs:
     command: 'restore'
     projects: '**/*.csproj'
-    restoreArguments: '-MSBuildVersion:17.3.0'
 - task: DotNetCoreCLI@2
   inputs:
     configuration: '$(buildConfiguration)'
     command: 'build'
     projects: '**/*.csproj'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) -MsBuildVersion:17.3 /p:PublishSingleFile=true /p:PublishTrimmed=true /p:SelfContained=true'
+    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:PublishSingleFile=true /p:PublishTrimmed=true /p:SelfContained=true'
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
   inputs:
