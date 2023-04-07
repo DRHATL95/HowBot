@@ -46,7 +46,7 @@ steps:
     configuration: '$(buildConfiguration)'
     command: 'build'
     projects: '$(projects)'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:SelfContained=true'
+    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration)'
 
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
@@ -61,11 +61,7 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: '$(projects)'
-    arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory) -r $(buildRuntime) --self-contained true'
-  env:
-    DiscordTokenProd: $(DiscordTokenProd)
-    DiscordLavalinkServerPassword: $(DiscordLavalinkServerPassword)
-    Youtube: $(Youtube)
+    arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory) -r $(buildRuntime)'
   
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts'
@@ -73,7 +69,3 @@ steps:
     artifactName: 'drop'
     publishLocation: 'Container'
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-  env:
-    DiscordTokenProd: $(DiscordTokenProd)
-    DiscordLavalinkServerPassword: $(DiscordLavalinkServerPassword)
-    Youtube: $(Youtube)
