@@ -27,6 +27,15 @@ steps:
 - task: NuGetToolInstaller@1
   displayName: 'Install NuGet'
 
+- task: MSBuild@1
+  displayName: 'Build solution'
+  inputs:
+    solution: '$(solution)'
+    msbuildVersion: 'latest'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    msbuildArguments: '/t:Restore;Build'
+
 - task: NuGetCommand@2
   displayName: 'Restore NuGet packages'
   inputs:
