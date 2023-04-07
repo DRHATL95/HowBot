@@ -32,20 +32,22 @@ steps:
     versionSpec: 
     checkLatest: true
 
-- task: NuGetCommand@2
-  displayName: 'Restore NuGet packages'
+- task: DotNetCoreCLI@2
   inputs:
     command: 'restore'
-    restoreSolution: '$(solution)'
-    feedsToUse: 'config'
+    projects: '$(projects)'
+    feedsToUse: 'select'
+    vstsFeed: 'dc01251f-6db7-49f6-bc9a-9d6801593051/86e18e22-3346-4974-9b9f-052af44ad855'
+    noCache: true
 
-- task: DotNetCoreCLI@2
-  displayName: 'Build solution'
+- task: VSBuild@1
   inputs:
-    command: 'build'
+    solution: '$(solution)'
+    platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-    projects: '$(solution)'
-    arguments: '--configuration $(buildConfiguration)'
+    clean: true
+    msbuildArchitecture: 'x64'
+    msbuildArgs: '/p:SelfContained=true /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
 
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
