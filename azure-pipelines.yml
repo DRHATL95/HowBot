@@ -42,12 +42,15 @@ steps:
     noCache: true
 
 - task: DotNetCoreCLI@2
-  displayName: 'Build Projects'
   inputs:
     configuration: '$(buildConfiguration)'
     command: 'build'
     projects: '$(projects)'
     arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:PublishSingleFile=true /p:SelfContained=true'
+  env:
+    DiscordTokenProd: $(DiscordTokenProd)
+    DiscordLavalinkServerPassword: $(DiscordLavalinkServerPassword)
+    Youtube: $(Youtube)
 
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
