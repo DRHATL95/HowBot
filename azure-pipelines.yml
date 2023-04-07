@@ -2,12 +2,13 @@
 # Build and test ASP.NET projects.
 # Add steps that publish symbols, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/apps/aspnet/build-aspnet-4
+name: Howbot Build
 
 trigger:
 - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-22.04'
 
 variables:
   solution: '**/*.sln'
@@ -15,9 +16,10 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
-  buildRuntime: 'linux-x64'
+  buildRuntime: 'ubuntu-22.04-x64'
 
 steps:
+
 - task: UseDotNet@2
   displayName: 'Install .NET 7'
   inputs:
