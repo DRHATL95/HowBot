@@ -47,15 +47,6 @@ steps:
     projects: '$(projects)'
     arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:PublishSingleFile=true /p:SelfContained=true'
 
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    clean: true
-    msbuildArchitecture: 'x64'
-    msbuildArgs: '/p:SelfContained=true /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactStagingDirectory)"'
-
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
   inputs:
