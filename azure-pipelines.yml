@@ -60,7 +60,7 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: '$(projects)'
-    arguments: '-c $(buildConfiguration) -o $(buildOutputDirectory) -r $(buildRuntime)'
+    arguments: '-c $(buildConfiguration) -o $(buildOutputDirectory) -r $(buildRuntime) --no-self-contained'
   
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts'
