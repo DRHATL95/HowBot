@@ -2,7 +2,6 @@
 # Build and test ASP.NET projects.
 # Add steps that publish symbols, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/apps/aspnet/build-aspnet-4
-
 trigger:
 - main
 
@@ -11,6 +10,7 @@ pool:
 
 variables:
   solution: '**/*.sln'
+  projects: '**/*.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
@@ -19,44 +19,49 @@ variables:
 steps:
 
 - task: UseDotNet@2
+  displayName: 'Install .NET 7'
   inputs:
     packageType: sdk
-    version: 7.x
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-- task: NuGetCommand@2
+    version: '7.x'
+
+- task: NuGetToolInstaller@1
+  displayName: 'Install NuGet'
+  inputs:
+    versionSpec: 
+    checkLatest: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore Project Deps.'
   inputs:
     command: 'restore'
-    restoreSolution: '**/*.sln'
+    projects: '$(projects)'
     feedsToUse: 'config'
-    nugetConfigPath: '$(System.DefaultWorkingDirectory)'
+    nugetConfigPath: '$(System.DefaultWorkingDirectory)/nuget.config'
     noCache: true
+
 - task: DotNetCoreCLI@2
-  inputs:
-    command: 'restore'
-    projects: '**/*.csproj'
-- task: DotNetCoreCLI@2
+  displayName: 'Build Projects to Output'
   inputs:
     configuration: '$(buildConfiguration)'
     command: 'build'
-    projects: '**/*.csproj'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:PublishSingleFile=true /p:SelfContained=true'
-  env:
-    DiscordTokenProd: $(DiscordTokenProd)
-    DiscordLavalinkServerPassword: $(DiscordLavalinkServerPassword)
-    Youtube: $(Youtube)
+    projects: '$(projects)'
+    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration) --no-self-contained'
+
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
   inputs:
     command: 'test'
     projects: '$(System.DefaultWorkingDirectory)/tests/**/*.csproj'
+    arguments: '--configuration $(buildConfiguration)'
+
 - task: CopyFiles@2
   displayName: "Copy Build Files"
   inputs:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
+  
 - task: PublishBuildArtifacts@1
-  displayName: 'Publish Build Files as Artifact'
+  displayName: 'Publish artifacts'
   inputs:
-    PathtoPublish: '$(build.artifactStagingDirectory)'
-    ArtifactName: 'HowBot'
+    artifactName: 'Howbot'
     publishLocation: 'Container'
-
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
