@@ -42,11 +42,12 @@ steps:
     noCache: true
 
 - task: DotNetCoreCLI@2
+  displayName: 'Build Projects to Output'
   inputs:
     configuration: '$(buildConfiguration)'
     command: 'build'
     projects: '$(projects)'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration)'
+    arguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration) --no-self-contained'
 
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
@@ -61,7 +62,7 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: '$(projects)'
-    arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory) -r $(buildRuntime)'
+    arguments: '-c $(buildConfiguration) -o $(buildOutputDirectory) -r $(buildRuntime)'
   
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts'
