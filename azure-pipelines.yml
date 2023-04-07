@@ -35,7 +35,6 @@ steps:
     msbuildArchitecture: 'x64'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-    msbuildArguments: '/t:Restore;Build'
 
 - task: NuGetCommand@2
   displayName: 'Restore NuGet packages'
