@@ -22,7 +22,7 @@ steps:
 - task: UseDotNet@2
   inputs:
     packageType: runtime
-    version: $(dotNetVersion)
+    version: $(dotNetRuntimeVersion)
 - task: NuGetCommand@2
   displayName: 'Nuget Restore'
   inputs:
