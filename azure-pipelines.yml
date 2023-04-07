@@ -40,6 +40,13 @@ steps:
     nugetConfigPath: '$(System.DefaultWorkingDirectory)/nuget.config'
     noCache: true
 
+- task: DotNetCoreCLI@2
+  inputs:
+    configuration: '$(buildConfiguration)'
+    command: 'build'
+    projects: '$(projects)'
+    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:PublishSingleFile=true /p:SelfContained=true'
+
 - task: VSBuild@1
   inputs:
     solution: '$(solution)'
