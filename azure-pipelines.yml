@@ -23,6 +23,13 @@ steps:
     packageType: sdk
     version: 7.x
     installationPath: $(Agent.ToolsDirectory)/dotnet
+- task: NuGetCommand@2
+  inputs:
+    command: 'restore'
+    restoreSolution: '**/*.sln'
+    feedsToUse: 'config'
+    nugetConfigPath: '$(System.DefaultWorkingDirectory)'
+    noCache: true
 - task: DotNetCoreCLI@2
   inputs:
     command: 'restore'
