@@ -23,13 +23,6 @@ steps:
     version: 7.x
     installationPath: $(Agent.ToolsDirectory)/dotnet
 - task: DotNetCoreCLI@2
-  displayName: 'Restore NuGet packages'
-  inputs:
-    command: 'restore'
-    projects: '**/*.csproj'
-    arguments: '-MSBuildVersion:17.3'
-    
-- task: DotNetCoreCLI@2
   inputs:
     command: 'restore'
     projects: '**/*.csproj'
@@ -38,7 +31,7 @@ steps:
     configuration: '$(buildConfiguration)'
     command: 'build'
     projects: '**/*.csproj'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:PublishSingleFile=true /p:PublishTrimmed=true /p:SelfContained=true'
+    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:PublishSingleFile=true /p:SelfContained=true'
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
   inputs:
