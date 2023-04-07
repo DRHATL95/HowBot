@@ -36,8 +36,8 @@ steps:
   inputs:
     command: 'restore'
     projects: '$(projects)'
-    feedsToUse: 'select'
-    vstsFeed: 'dc01251f-6db7-49f6-bc9a-9d6801593051/86e18e22-3346-4974-9b9f-052af44ad855'
+    feedsToUse: 'config'
+    nugetConfigPath: '$(System.DefaultWorkingDirectory)/nuget.config'
     noCache: true
 
 - task: VSBuild@1
