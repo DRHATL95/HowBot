@@ -54,13 +54,10 @@ steps:
     projects: '$(System.DefaultWorkingDirectory)/tests/**/*.csproj'
     arguments: '--configuration $(buildConfiguration)'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish solution'
+- task: CopyFiles@2
+  displayName: "Copy Build Files"
   inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: '$(projects)'
-    arguments: '-c $(buildConfiguration) -o $(buildOutputDirectory) -r $(buildRuntime) --no-self-contained'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
   
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts'
