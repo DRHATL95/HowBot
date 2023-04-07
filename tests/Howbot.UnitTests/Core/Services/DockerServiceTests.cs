@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Docker.DotNet;
-using Docker.DotNet.Models;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Xunit;
 
 namespace Howbot.UnitTests.Core.Services;
 

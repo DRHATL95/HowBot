@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 using Victoria.Player;
 using Victoria.WebSocket;
 
-namespace Howbot.Core;
+namespace Howbot.Core.Models;
 
 public class Player<T> : LavaPlayer<T> where T : LavaTrack
 {
@@ -16,16 +16,13 @@ public class Player<T> : LavaPlayer<T> where T : LavaTrack
     RecentlyPlayed = new Collection<LavaTrack>();
   }
 
-  public bool IsRadioMode { get; set; }
+  public bool Is247ModeEnabled { get; set; }
+  
   public IGuildUser Author { get; set; }
 
   [CanBeNull] public LavaTrack LastPlayed { get; set; }
 
-  // TODO: Message queue implementation
   public ICollection<LavaTrack> RecentlyPlayed { get; set; }
 
-  public void ToggleRadioMode()
-  {
-    IsRadioMode = !IsRadioMode;
-  }
+  public void Toggle247Mode() => Is247ModeEnabled = !Is247ModeEnabled;
 }

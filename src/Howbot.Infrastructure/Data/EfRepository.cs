@@ -1,15 +1,15 @@
-﻿using Howbot.Core.Entities;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Howbot.Infrastructure.Data;
 
 /// <summary>
-/// A simple repository implementation for EF Core
-/// If you don't want changes to be saved immediately, add a SaveChanges method to the interface
-/// and remove the calls to _dbContext.SaveChanges from the Add/Update/Delete methods
+///   A simple repository implementation for EF Core
+///   If you don't want changes to be saved immediately, add a SaveChanges method to the interface
+///   and remove the calls to _dbContext.SaveChanges from the Add/Update/Delete methods
 /// </summary>
 public class EfRepository : IRepository
 {

@@ -1,8 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Entities;
-using JetBrains.Annotations;
-using Victoria.Player;
+using Howbot.Core.Models;
 
 namespace Howbot.Core.Interfaces;
 

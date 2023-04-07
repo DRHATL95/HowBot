@@ -4,8 +4,9 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Google.Apis.Services;
 using Google.Apis.YouTube.v3;
-using Howbot.Core;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Serilog;
 using Victoria.Node;
 using Victoria.Player;
 
@@ -22,34 +24,43 @@ public abstract class Program
 {
   public static async Task<int> Main(string[] args)
   {
-    // Create host builder that will be used to handle application (console) life-cycle.
-    var hostBuilder = CreateHostBuilder(args);
+    try
+    {
+      // Create host builder that will be used to handle application (console) life-cycle.
+      var hostBuilder = CreateHostBuilder(args);
+    
+      // Create Serilog instance
+      Log.Logger = new LoggerConfiguration()
+        .ReadFrom.Configuration(Configuration.SerilogConfiguration)
+        .CreateLogger();
 
-    // Will run indefinitely until canceled w/ cancellation token or process is stopped.
-    await hostBuilder.RunConsoleAsync();
+      // Will run indefinitely until canceled w/ cancellation token or process is stopped.
+      await hostBuilder.RunConsoleAsync();
 
-    // Return exit code to terminal once application has been terminated.
-    return Environment.ExitCode;
+      // Return exit code to terminal once application has been terminated.
+      return Environment.ExitCode;
+    }
+    catch (Exception exception)
+    {
+      Console.WriteLine(exception);
+      throw;
+    }
   }
 
   /// <summary>
-  /// Create the main host builder used to host the service
+  ///   Create the main host builder used to host the service
   /// </summary>
   /// <param name="args">The arguments provided when running</param>
   /// <returns></returns>
-  private static IHostBuilder CreateHostBuilder(string[] args) =>
-    Host.CreateDefaultBuilder(args)
-      .ConfigureLogging((_, builder) =>
+  private static IHostBuilder CreateHostBuilder(string[] args)
+  {
+    return Host.CreateDefaultBuilder(args)
+      .UseSerilog(((context, configuration) =>
       {
-        builder.ClearProviders();
-
-        builder.AddSimpleConsole(options =>
-        {
-          options.IncludeScopes = true;
-          options.SingleLine = true;
-          options.TimestampFormat = "[MM/dd/yyyy HH:mm:ss] ";
-        });
-      })
+        configuration
+          .ReadFrom.Configuration(context.Configuration)
+          .Enrich.FromLogContext();
+      }))
       .ConfigureServices((hostContext, services) =>
       {
         services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
@@ -57,22 +68,27 @@ public abstract class Program
 
         services.AddHowbotServices();
 
+        // Add in-memory cache
+        services.AddMemoryCache();
+
         services.AddSingleton<Configuration>();
-        services.AddSingleton(x => new DiscordSocketClient(x.GetRequiredService<Configuration>().DiscordSocketConfig));
+        services.AddSingleton(x => new DiscordSocketClient(Configuration.DiscordSocketConfig));
         services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
           x.GetRequiredService<Configuration>().InteractionServiceConfig));
         services.AddSingleton(provider =>
         {
           var discordClient = provider.GetRequiredService<DiscordSocketClient>();
-          var nodeConfig = provider.GetRequiredService<Configuration>().NodeConfiguration;
           var logger = provider.GetRequiredService<ILogger<LavaNode<Player<LavaTrack>, LavaTrack>>>();
-          return new LavaNode<Player<LavaTrack>, LavaTrack>(discordClient, nodeConfig, logger);
+          return new LavaNode<Player<LavaTrack>, LavaTrack>(discordClient, Configuration.NodeConfiguration, logger);
         });
         // services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
         services.AddSingleton(x => new YouTubeService(new BaseClientService.Initializer
         {
-          ApiKey = x.GetRequiredService<Configuration>().YouTubeToken, ApplicationName = Constants.BotName
+          ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
         }));
+        
+        // Dynamically insert connection string for DB context
+        ConfigurationHelper.AddOrUpdateAppSetting("DefaultConnection", Configuration.PostgresConnectionString);
 
         // Infrastructure.ContainerSetup
         services.AddDbContext(hostContext.Configuration);
@@ -84,4 +100,5 @@ public abstract class Program
 
         services.AddHostedService<Worker>();
       });
+  }
 }

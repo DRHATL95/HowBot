@@ -5,6 +5,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
 using Victoria.Player;
@@ -44,12 +45,29 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
     if (_logger.IsLogLevelEnabled(LogLevel.Debug))
     {
-      _logger.LogDebug("{ServiceName} is initializing..", nameof(InteractionHandlerService));
+      _logger.LogDebug("{ServiceName} is initializing..", typeof(InteractionHandlerService).ToString());
     }
 
     _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
 
     _interactionService.Log += InteractionServiceOnLog;
+    _interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
+  }
+
+  private async Task InteractionServiceOnInteractionExecuted(ICommandInfo commandInfo,
+    IInteractionContext interactionContext, IResult result)
+  {
+    if (result.IsSuccess)
+    {
+      return;
+    }
+
+    _logger.LogWarning("Slash command did not execute successfully!");
+
+    if (!string.IsNullOrEmpty(result.ErrorReason))
+    {
+      await interactionContext.Interaction.RespondAsync(result.ErrorReason);
+    }
   }
 
   #region Interaction Service Events
@@ -66,7 +84,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
       }
       else
       {
-        _logger.Log(logLevel, (logMessage.Message ?? string.Empty));
+        _logger.Log(logLevel, logMessage.Message ?? string.Empty);
       }
 
       return Task.CompletedTask;

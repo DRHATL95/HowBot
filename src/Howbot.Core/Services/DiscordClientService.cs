@@ -9,11 +9,14 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Howbot.Core.Modules;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Victoria.Node;
 using Victoria.Player;
+using static Howbot.Core.Models.Messages.Debug;
+using static Howbot.Core.Models.Messages.Errors;
 
 namespace Howbot.Core.Services;
 
@@ -21,12 +24,15 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 {
   private readonly DiscordSocketClient _discordSocketClient;
   private readonly InteractionService _interactionService;
-  private readonly ILavaNodeService _lavaNodeService;
   private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
+  private readonly ILavaNodeService _lavaNodeService;
   private readonly ILoggerAdapter<DiscordClientService> _logger;
   private readonly IServiceProvider _serviceProvider;
 
-  public DiscordClientService(DiscordSocketClient discordSocketClient, ILavaNodeService lavaNodeService, IServiceProvider serviceProvider,
+  private string _loggedInUsername = string.Empty;
+
+  public DiscordClientService(DiscordSocketClient discordSocketClient, ILavaNodeService lavaNodeService,
+    IServiceProvider serviceProvider,
     InteractionService interactionService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode,
     ILoggerAdapter<DiscordClientService> logger) : base(logger)
   {
@@ -38,13 +44,28 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _logger = logger;
   }
 
+  private string LoggedInUsername
+  {
+    get => string.IsNullOrEmpty(_loggedInUsername) ? Constants.BotName : _loggedInUsername;
+    set
+    {
+      if (!value.Equals(_loggedInUsername, StringComparison.OrdinalIgnoreCase))
+      {
+        _loggedInUsername = value;
+      }
+    }
+  }
+
   public new void Initialize()
   {
-    if (_discordSocketClient == null) return;
+    if (_discordSocketClient == null)
+    {
+      return;
+    }
 
     if (_logger.IsLogLevelEnabled(LogLevel.Debug))
     {
-      _logger.LogDebug("{ServiceName} is initializing..", nameof(DiscordClientService));
+      _logger.LogDebug("{ServiceName} is initializing..", typeof(DiscordClientService).ToString());
     }
 
     _discordSocketClient.Log += DiscordSocketClientOnLog;
@@ -61,7 +82,10 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   public async ValueTask<bool> LoginDiscordBotAsync(string discordToken)
   {
-    if (string.IsNullOrEmpty(discordToken)) throw new ArgumentNullException(nameof(discordToken));
+    if (string.IsNullOrEmpty(discordToken))
+    {
+      throw new ArgumentNullException(nameof(discordToken));
+    }
 
     try
     {
@@ -71,7 +95,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Unable to login to discord API with token");
+      _logger.LogError(exception, DiscordClientLogin);
       return false;
     }
   }
@@ -85,7 +109,9 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       {
         while (_discordSocketClient.LoginState != LoginState.LoggedIn)
           // Only check after 3 seconds.
-          Thread.Sleep(3000);
+        {
+          Thread.Sleep(Constants.ApplicationTimeoutInMs);
+        }
       });
 
       // Will signal ready state. Must be called only when bot has finished logging in.
@@ -98,13 +124,13 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       }
 
       // Add modules dynamically to discord bot
-      await this.AddModulesToDiscordBotAsync();
+      await AddModulesToDiscordBotAsync();
 
       return true;
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Unable to start discord bot");
+      _logger.LogError(exception, DiscordStart);
       throw;
     }
   }
@@ -168,21 +194,26 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   private Task DiscordSocketClientOnDisconnected(Exception arg)
   {
-    _logger.LogDebug("{Username} has disconnected from socket", Constants.BotName);
+    _logger.LogDebug("{Username} has disconnected from socket", LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnConnected()
   {
-    _logger.LogDebug("{Username} has connected to socket", Constants.BotName);
+    if (_discordSocketClient != null)
+    {
+      LoggedInUsername = _discordSocketClient.CurrentUser.Username;
+    }
+
+    _logger.LogDebug(DiscordSocketClientConnected, LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private async Task DiscordSocketClientOnReady()
   {
-    _logger.LogDebug("{Username} is now in READY state", Constants.BotName);
+    _logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
 
     try
     {
@@ -217,47 +248,61 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   private Task DiscordSocketClientOnLoggedOut()
   {
-    _logger.LogDebug("{Username} has logged out successfully", Constants.BotName);
+    _logger.LogDebug("{Username} has logged out successfully", LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnLoggedIn()
   {
-    _logger.LogDebug("{Username} has logged in successfully", Constants.BotName);
+    _logger.LogDebug("{Username} has logged in successfully", LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnJoinedGuild(SocketGuild arg)
   {
-    _logger.LogDebug("{Username} has joined Guild {GuildTag}", Constants.BotName, GuildHelper.GetGuildTag(arg));
+    _logger.LogDebug("{Username} has joined Guild {GuildTag}", LoggedInUsername, GuildHelper.GetGuildTag(arg));
 
     return Task.CompletedTask;
   }
-  
-  private async Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
+
+  private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
-    if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id) return;
-
-    if (!_lavaNode.TryGetPlayer(oldVoiceState.VoiceChannel.Guild, out var player)) return;
+    if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id) return Task.CompletedTask;
     
+    var guild = (oldVoiceState.VoiceChannel ?? newVoiceState.VoiceChannel).Guild;
+    if (guild == null) return Task.CompletedTask;
+    
+    // If the bot is not in a voice channel, don't do anything
+    if (!_lavaNode.HasPlayer(guild))
+    {
+      return Task.CompletedTask;
+    }
+    
+    if (!_lavaNode.TryGetPlayer(guild, out var player))
+    {
+      return Task.CompletedTask;
+    }
+
     // Get the voice channel the bot is in
     var voiceChannel = _discordSocketClient.Guilds
       .Select(g => g.VoiceChannels.FirstOrDefault(vc => vc.Users.Any(u => u.Id == _discordSocketClient.CurrentUser.Id)))
       .FirstOrDefault();
+    
+    // Get list of users in discord voice channel
+    var users = voiceChannel?.Users.Where(x => x.Id != _discordSocketClient.CurrentUser.Id && x.VoiceState != null).ToList();
 
-    if (voiceChannel != null && !voiceChannel.Users.Any(x => x.Id != _discordSocketClient.CurrentUser.Id && x.VoiceChannel != null))
+    if (voiceChannel != null &&
+        !voiceChannel.Users.Any(x => x.Id != _discordSocketClient.CurrentUser.Id && x.VoiceChannel != null))
     {
-      await Task.Run(() =>
-      {
-          // Leave the voice channel automatically when no one else is in voice
-          _lavaNodeService.InitiateDisconnectLogicAsync(player, TimeSpan.FromSeconds(30));
-      });
+      _ = _lavaNodeService.InitiateDisconnectLogicAsync(player, TimeSpan.FromSeconds(30));
     }
+
+    return Task.CompletedTask;
   }
-  
+
   #endregion
 }
