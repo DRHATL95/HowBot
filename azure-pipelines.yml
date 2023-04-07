@@ -15,14 +15,13 @@ variables:
   buildConfiguration: 'Release'
   buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
   buildRuntime: 'linux-x64'
-  dotNetRuntimeVersion: '7.0.4'
-  dotNetSdkVersion: '7.0.100'
 
 steps:
 - task: UseDotNet@2
   inputs:
-    packageType: runtime
-    version: $(dotNetRuntimeVersion)
+    packageType: sdk
+    version: 7.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
 - task: NuGetCommand@2
   displayName: 'Nuget Restore'
   inputs:
