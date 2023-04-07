@@ -17,6 +17,7 @@ variables:
   buildRuntime: 'linux-x64'
 
 steps:
+
 - task: UseDotNet@2
   inputs:
     packageType: sdk
@@ -32,6 +33,10 @@ steps:
     command: 'build'
     projects: '**/*.csproj'
     arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:PublishSingleFile=true /p:SelfContained=true'
+  env:
+    DiscordTokenProd: $(DiscordTokenProd)
+    DiscordLavalinkServerPassword: $(DiscordLavalinkServerPassword)
+    Youtube: $(Youtube)
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
   inputs:
@@ -41,9 +46,11 @@ steps:
   displayName: "Copy Build Files"
   inputs:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    CleanTargetFolder: true
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Build Files as Artifact'
   inputs:
     PathtoPublish: '$(build.artifactStagingDirectory)'
     ArtifactName: 'HowBot'
     publishLocation: 'Container'
+
