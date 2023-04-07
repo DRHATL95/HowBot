@@ -45,7 +45,7 @@ steps:
     configuration: '$(buildConfiguration)'
     command: 'build'
     projects: '$(projects)'
-    arguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration) --no-self-contained'
+    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration) --no-self-contained'
 
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
