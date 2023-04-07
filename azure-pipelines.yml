@@ -11,6 +11,7 @@ pool:
 
 variables:
   solution: '**/*.sln'
+  projects: '**/*.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
@@ -18,49 +19,46 @@ variables:
 
 steps:
 - task: UseDotNet@2
+  displayName: 'Install .NET 7'
   inputs:
     packageType: sdk
-    version: 7.x
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-- task: MSBuild@1
-  inputs:
-    solution: '**/*.sln'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    msbuildVersion: 'latest'
+    version: '7.x'
+
+- task: NuGetToolInstaller@1
+  displayName: 'Install NuGet'
+
 - task: NuGetCommand@2
+  displayName: 'Restore NuGet packages'
   inputs:
-    command: 'restore'
-    restoreSolution: '**/*.sln'
-    feedsToUse: 'config'
-    noCache: true
+    restoreSolution: '$(solution)'
+    feedsToUse: 'select'
+
 - task: DotNetCoreCLI@2
+  displayName: 'Build solution'
   inputs:
-    command: 'restore'
-    projects: '**/*.csproj'
-- task: DotNetCoreCLI@2
-  inputs:
-    configuration: '$(buildConfiguration)'
     command: 'build'
-    projects: '**/*.csproj'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) /p:PublishSingleFile=true /p:SelfContained=true'
-  env:
-    DiscordTokenProd: $(DiscordTokenProd)
-    DiscordLavalinkServerPassword: $(DiscordLavalinkServerPassword)
-    Youtube: $(Youtube)
+    configuration: '$(buildConfiguration)'
+    projects: '$(solution)'
+    arguments: '--configuration $(buildConfiguration)'
+
 - task: DotNetCoreCLI@2
   displayName: 'Run Unit Tests'
   inputs:
     command: 'test'
     projects: '$(System.DefaultWorkingDirectory)/tests/**/*.csproj'
-- task: CopyFiles@2
-  displayName: "Copy Build Files"
-  inputs:
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Build Files as Artifact'
-  inputs:
-    PathtoPublish: '$(build.artifactStagingDirectory)'
-    ArtifactName: 'HowBot'
-    publishLocation: 'Container'
+    arguments: '--configuration $(buildConfiguration)'
 
+- task: DotNetCoreCLI@2
+  displayName: 'Publish solution'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '$(projects)'
+    arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory) -r $(buildRuntime) --self-contained true'
+  
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish artifacts'
+  inputs:
+    artifactName: 'drop'
+    publishLocation: 'Container'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
