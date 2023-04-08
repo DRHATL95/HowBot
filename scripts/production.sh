@@ -1,4 +1,6 @@
-﻿if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
+﻿#!/bin/bash
+
+if ( ( command -v docker &> /dev/null && command -v dotnet &> /dev/null ) ); then
     echo "Docker and .NET are installed!"
     
     if [ -z "${DiscordTokenProd}" ]; then
@@ -41,7 +43,7 @@
     echo "Checking if Howbot.Worker already is running..."
     
     # Check if the "Howbot.Worker" process is running
-    if pgrep "Howbot.Worker" > /dev/null; then
+    if ( ( pgrep "Howbot.Worker" > /dev/null ) ) then
         echo "Process 'Howbot.Worker' is running"
         # Stop the "Howbot.Worker" process
         pkill "Howbot.Worker"
@@ -66,7 +68,7 @@
     echo "Howbot.Worker is now running!"
 else
     # Check if Docker is installed
-    if command -v docker &> /dev/null
+    if ( ( command -v docker &> /dev/null ) )
     then
         echo "Docker is installed"
     else
@@ -74,7 +76,7 @@ else
     fi
     
     # Check if .NET is installed
-    if command -v dotnet &> /dev/null
+    if ( ( command -v dotnet &> /dev/null ) )
     then
         echo ".NET is installed"
     else
