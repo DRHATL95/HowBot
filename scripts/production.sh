@@ -1,6 +1,4 @@
-﻿#!/bin/bash
-
-set -e
+﻿set -e
 
 if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
     echo "Docker and .NET are installed!"
