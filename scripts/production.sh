@@ -25,7 +25,7 @@ if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
     export YoutubeToken
     
     # Change to project directory
-    cd "$(DeploymentPath)" || exit
+    cd Code/Production/HowBot || exit
     
     # Give the worker executable permissions
     chmod 777 ./Howbot.Worker || exit
