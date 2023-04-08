@@ -5,8 +5,6 @@ if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
     
     LAVANODE_STATUS="$(docker ps -q -f name=lavanode)"
     
-    echo "LAVANODE_STATUS: $(LAVANODE_STATUS)"
-    
     if [ -z "$LAVANODE_STATUS" ]; then
         echo "Starting lavalink docker container..."
         docker run -d -p 2333:2333 --name lavanode fredboat/lavalink:latest
