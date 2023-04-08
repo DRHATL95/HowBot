@@ -14,7 +14,7 @@ public class Configuration
   private const string DiscordTokenDev = "DiscordTokenDev";
   private const string DiscordTokenProd = "DiscordTokenProd";
   private const string LavalinkPassword = "DiscordLavalinkServerPassword";
-  private const string YouTube = "Youtube";
+  private const string YouTube = "YoutubeToken";
 
   public static string DiscordToken => GetDiscordToken() ?? string.Empty;
 
