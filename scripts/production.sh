@@ -8,6 +8,8 @@ if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
     if [ -z "$LAVANODE_STATUS" ]; then
         echo "Starting lavalink docker container..."
         docker run -d -p 2333:2333 --name lavanode fredboat/lavalink:latest
+        docker cp Code/backups/application.yml.example lavanode:/opt/Lavalink/application.yml
+        docker container restart lavanode
     else
         echo "Lava Node is already running! No need to run."
     fi  
