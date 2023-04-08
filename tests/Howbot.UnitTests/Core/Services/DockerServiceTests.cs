@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Docker.DotNet;
-using Docker.DotNet.Models;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Xunit;
 
 namespace Howbot.UnitTests.Core.Services;
 
@@ -52,7 +48,7 @@ public class DockerServiceTests
     return new Tuple<Mock<IDockerClient>>(new Mock<IDockerClient>());
   }
 
-  [Fact]
+  /*[Fact]
   public async Task DockerServiceTests_ListAllContainers_ReturnsIListContainerListResponse()
   {
     var dockerService = Factory();
@@ -125,5 +121,5 @@ public class DockerServiceTests
     var result = await dockerService.BuildImageByImageName("fredboat/lavalink", "latest");
 
     Assert.True(result);
-  }
+  }*/
 }

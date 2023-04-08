@@ -1,0 +1,67 @@
+# ASP.NET
+# Build and test ASP.NET projects.
+# Add steps that publish symbols, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/apps/aspnet/build-aspnet-4
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  solution: '**/*.sln'
+  projects: '**/*.csproj'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+  buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
+  buildRuntime: 'linux-x64'
+
+steps:
+
+- task: UseDotNet@2
+  displayName: 'Install .NET 7'
+  inputs:
+    packageType: sdk
+    version: '7.x'
+
+- task: NuGetToolInstaller@1
+  displayName: 'Install NuGet'
+  inputs:
+    versionSpec: 
+    checkLatest: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore Project Deps.'
+  inputs:
+    command: 'restore'
+    projects: '$(projects)'
+    feedsToUse: 'config'
+    nugetConfigPath: '$(System.DefaultWorkingDirectory)/nuget.config'
+    noCache: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build Projects to Output'
+  inputs:
+    configuration: '$(buildConfiguration)'
+    command: 'build'
+    projects: '$(projects)'
+    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration) --no-self-contained'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Run Unit Tests'
+  inputs:
+    command: 'test'
+    projects: '$(System.DefaultWorkingDirectory)/tests/**/*.csproj'
+    arguments: '--configuration $(buildConfiguration)'
+
+- task: CopyFiles@2
+  displayName: "Copy Build Files"
+  inputs:
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+  
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish artifacts'
+  inputs:
+    artifactName: 'Howbot'
+    publishLocation: 'Container'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'

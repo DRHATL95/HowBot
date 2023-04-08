@@ -6,8 +6,10 @@ namespace Howbot.Core.Helpers;
 
 public static class MusicHelper
 {
-  public static bool IsSearchResponsePlaylist(SearchResponse searchResponse) =>
-    !(string.IsNullOrEmpty(searchResponse.Playlist.Name));
+  public static bool IsSearchResponsePlaylist(SearchResponse searchResponse)
+  {
+    return !string.IsNullOrEmpty(searchResponse.Playlist.Name);
+  }
 
   public static bool AreTracksSimilar(LavaTrack track, LavaTrack secondTrack)
   {
