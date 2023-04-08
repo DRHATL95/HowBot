@@ -1,13 +1,11 @@
-﻿#!/bin/bash
-
-if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
+﻿if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
     echo "Docker and .NET are installed!"
     
     if [ -z "${DiscordTokenProd}" ]; then
         echo "DiscordTokenProd is not set. Setting now.."
         
         # Set the DiscordTokenProd environment variable to the value in the release pipelines variable group
-        DiscordTokenProd=$(DiscordTokenProd)
+        DiscordTokenProd=$1 || exit
         export DiscordTokenProd
     fi
     
@@ -15,7 +13,7 @@ if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
         echo "DiscordLavalinkServerPassword is not set. Setting now.."
         
         # Set the DiscordLavalinkServerPassword environment variable to the value in the release pipelines variable group
-        DiscordLavalinkServerPassword=$(DiscordLavalinkServerPassword)
+        DiscordLavalinkServerPassword=$2 || exit
         export DiscordLavalinkServerPassword
     fi
     
@@ -23,7 +21,7 @@ if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
         echo "YoutubeToken is not set. Setting now.."
         
         # Set the YoutubeToken environment variable to the value in the release pipelines variable group
-        YoutubeToken=$(Youtube)
+        YoutubeToken=$3 || exit 
         export YoutubeToken
     fi
         
@@ -40,6 +38,16 @@ if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
         echo "Lava Node is already running! No need to run."
     fi    
     
+    echo "Checking if Howbot.Worker already is running..."
+    
+    # Check if the "Howbot.Worker" process is running
+    if pgrep "Howbot.Worker" > /dev/null; then
+        echo "Process 'Howbot.Worker' is running"
+        # Stop the "Howbot.Worker" process
+        pkill "Howbot.Worker"
+        echo "Stopped process 'Howbot.Worker'"
+    fi
+    
     echo "Changing to project directory..."
     
     # Change to project directory
@@ -48,7 +56,7 @@ if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
     echo "Giving Howbot.Worker executable permissions..."
     
     # Give the worker executable permissions
-    chmod 777 ./Howbot.Worker || exit
+    chmod +x ./Howbot.Worker || exit
     
     echo "Starting Howbot.Worker..."
     
