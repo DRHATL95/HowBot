@@ -1,4 +1,6 @@
-﻿if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
+﻿#!/bin/bash
+
+if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
     echo "Docker and .NET are installed!"
     
     LAVANODE_STATUS="$(docker ps -q -f name=lavanode)"
