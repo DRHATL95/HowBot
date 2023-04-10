@@ -58,7 +58,7 @@
     <PackageVersion Include="Serilog.Extensions.Logging" Version="3.1.0" />
     <PackageVersion Include="Serilog.Formatting.Compact" Version="1.1.0" />
     <PackageVersion Include="Serilog.Settings.Configuration" Version="3.4.0" />
-    <PackageVersion Include="Serilog.Sinks.ApplicationInsights" Version="4.0.1-dev-00040" />
+    <PackageVersion Include="Serilog.Sinks.ApplicationInsights" Version="4.0.1-dev-00043" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="5.0.0" />
     <PackageVersion Include="SQLite" Version="3.13.0" />
