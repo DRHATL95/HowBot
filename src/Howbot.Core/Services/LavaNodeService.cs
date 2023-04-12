@@ -14,7 +14,6 @@ using Victoria.Node;
 using Victoria.Node.EventArgs;
 using Victoria.Player;
 using Victoria.Responses.Search;
-using static System.Threading.SpinWait;
 
 namespace Howbot.Core.Services;
 
@@ -25,14 +24,16 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
   private readonly ILoggerAdapter<LavaNodeService> _logger;
   private readonly IMusicService _musicService;
+  private readonly IVoiceService _voiceService;
 
   public LavaNodeService(LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, IEmbedService embedService,
-    IMusicService musicService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
+    IMusicService musicService, IVoiceService voiceService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
   {
     _lavaNode = lavaNode;
     _embedService = embedService;
     _logger = logger;
     _musicService = musicService;
+    _voiceService = voiceService;
     _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
   }
 
@@ -57,31 +58,6 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     _lavaNode.OnTrackStuck += LavaNodeOnOnTrackStuck;
   }
 
-  public async Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan)
-  {
-    if (!_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value))
-    {
-      value = new CancellationTokenSource();
-      _disconnectTokens.TryAdd(lavaPlayer.VoiceChannel.Id, value);
-    }
-    else if (value.IsCancellationRequested)
-    {
-      _disconnectTokens.TryUpdate(lavaPlayer.VoiceChannel.Id, new CancellationTokenSource(), value);
-      value = _disconnectTokens[lavaPlayer.VoiceChannel.Id];
-    }
-
-    await lavaPlayer.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
-    var isCancelled = SpinUntil(() => value.IsCancellationRequested, timeSpan);
-    if (isCancelled)
-    {
-      _logger.LogDebug("Auto disconnect cancelled.");
-      return;
-    }
-
-    await _lavaNode.LeaveAsync(lavaPlayer.VoiceChannel);
-    _logger.LogDebug("Howbot has disconnected from voice channel.");
-  }
-
   private async Task Play247Track(Player<LavaTrack> lavaPlayer)
   {
     ArgumentNullException.ThrowIfNull(lavaPlayer);
@@ -100,10 +76,14 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
           _logger.LogDebug("Unable to find a track to play.");
         }
       }
+      else
+      {
+        _logger.LogError("247 mode unable to play, last song was not set correctly.");
+      }
     }
-    catch (Exception e)
+    catch (Exception exception)
     {
-      Console.WriteLine(e);
+      _logger.LogError(exception, "Failed to play 247 mode.");
       throw;
     }
   }
@@ -254,7 +234,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
         }
 
         _logger.LogInformation("Lava player queue is empty. Attempting to disconnect now");
-        await InitiateDisconnectLogicAsync(lavaPlayer, TimeSpan.FromSeconds(30));
+        await _voiceService.InitiateDisconnectLogicAsync(lavaPlayer, TimeSpan.FromSeconds(30));
         return;
       }
 

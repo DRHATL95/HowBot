@@ -25,11 +25,12 @@ public class DiscordClientServiceTest
     // Services
     var interactionService = new Mock<InteractionService>();
     var lavaNodeService = new Mock<LavaNodeService>();
+    var voiceService = new Mock<VoiceService>();
 
     _ = SetupCreateScope(serviceLocator);
 
     var discordClientService = new DiscordClientService(discordSocketClient.Object, lavaNodeService.Object,
-      serviceProvider.Object, interactionService.Object, lavaNode.Object, logger.Object);
+      serviceProvider.Object, interactionService.Object, lavaNode.Object, voiceService.Object, logger.Object);
 
     return (discordClientService, discordSocketClient, logger, serviceProvider, interactionService, lavaNodeService,
       lavaNode);

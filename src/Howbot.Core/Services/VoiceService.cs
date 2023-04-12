@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Victoria.Node;
 using Victoria.Player;
+using static System.Threading.SpinWait;
 using static Howbot.Core.Models.Messages.Responses;
 
 namespace Howbot.Core.Services;
@@ -14,6 +17,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
   // Instance variables
   private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
 
+  private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
   private readonly ILoggerAdapter<VoiceService> _logger;
 
   // Constructor
@@ -22,6 +26,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
   {
     _lavaNode = lavaNode;
     _logger = logger;
+    _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
   }
 
   public async Task<CommandResponse> JoinVoiceAsync(IGuildUser user, ITextChannel textChannel)
@@ -73,6 +78,31 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
       _logger.LogError(exception, "Exception thrown in VoiceService.LeaveVoiceChannelAsync");
       return CommandResponse.CommandNotSuccessful(exception);
     }
+  }
+
+  public async Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan)
+  {
+    if (!_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value))
+    {
+      value = new CancellationTokenSource();
+      _disconnectTokens.TryAdd(lavaPlayer.VoiceChannel.Id, value);
+    }
+    else if (value.IsCancellationRequested)
+    {
+      _disconnectTokens.TryUpdate(lavaPlayer.VoiceChannel.Id, new CancellationTokenSource(), value);
+      value = _disconnectTokens[lavaPlayer.VoiceChannel.Id];
+    }
+
+    await lavaPlayer.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
+    var isCancelled = SpinUntil(() => value.IsCancellationRequested, timeSpan);
+    if (isCancelled)
+    {
+      _logger.LogDebug("Auto disconnect cancelled.");
+      return;
+    }
+
+    await _lavaNode.LeaveAsync(lavaPlayer.VoiceChannel);
+    _logger.LogDebug("Howbot has disconnected from voice channel.");
   }
 
   private async Task<Player<LavaTrack>> JoinGuildVoiceChannelAsync(IVoiceState voiceState, ITextChannel textChannel)

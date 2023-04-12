@@ -28,19 +28,20 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   private readonly ILavaNodeService _lavaNodeService;
   private readonly ILoggerAdapter<DiscordClientService> _logger;
   private readonly IServiceProvider _serviceProvider;
+  private readonly IVoiceService _voiceService;
 
   private string _loggedInUsername = string.Empty;
 
   public DiscordClientService(DiscordSocketClient discordSocketClient, ILavaNodeService lavaNodeService,
-    IServiceProvider serviceProvider,
-    InteractionService interactionService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode,
-    ILoggerAdapter<DiscordClientService> logger) : base(logger)
+    IServiceProvider serviceProvider, InteractionService interactionService, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode,
+    IVoiceService voiceService, ILoggerAdapter<DiscordClientService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _serviceProvider = serviceProvider;
     _lavaNodeService = lavaNodeService;
     _interactionService = interactionService;
     _lavaNode = lavaNode;
+    _voiceService = voiceService;
     _logger = logger;
   }
 
@@ -298,7 +299,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     if (voiceChannel != null &&
         !voiceChannel.Users.Any(x => x.Id != _discordSocketClient.CurrentUser.Id && x.VoiceChannel != null))
     {
-      _ = _lavaNodeService.InitiateDisconnectLogicAsync(player, TimeSpan.FromSeconds(30));
+      _ = _voiceService.InitiateDisconnectLogicAsync(player, TimeSpan.FromSeconds(30));
     }
 
     return Task.CompletedTask;
