@@ -108,7 +108,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       await Task.Run(() =>
       {
         while (_discordSocketClient.LoginState != LoginState.LoggedIn)
-          // Only check after 3 seconds.
+        // Only check after 3 seconds.
         {
           Thread.Sleep(Constants.ApplicationTimeoutInMs);
         }
@@ -172,7 +172,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   private Task DiscordSocketClientOnUserJoined(SocketGuildUser arg)
   {
-    _logger.LogDebug("{GuildUserName} has joined Guild {GuildTag}", arg.Username, GuildHelper.GetGuildTag(arg.Guild));
+    _logger.LogDebug("{GuildUserName} has joined Guild {GuildTag}", arg.Username, DiscordHelper.GetGuildTag(arg.Guild));
 
     return Task.CompletedTask;
   }
@@ -187,7 +187,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
 
     _logger.LogDebug("Command [{CommandName}] has been executed in Guild {GuildTag}", arg.CommandName,
-      GuildHelper.GetGuildTag(guild));
+      DiscordHelper.GetGuildTag(guild));
 
     return Task.CompletedTask;
   }
@@ -262,7 +262,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   private Task DiscordSocketClientOnJoinedGuild(SocketGuild arg)
   {
-    _logger.LogDebug("{Username} has joined Guild {GuildTag}", LoggedInUsername, GuildHelper.GetGuildTag(arg));
+    _logger.LogDebug("{Username} has joined Guild {GuildTag}", LoggedInUsername, DiscordHelper.GetGuildTag(arg));
 
     return Task.CompletedTask;
   }
@@ -272,16 +272,16 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   {
     // Don't care about bot voice state
     if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id) return Task.CompletedTask;
-    
+
     var guild = (oldVoiceState.VoiceChannel ?? newVoiceState.VoiceChannel).Guild;
     if (guild == null) return Task.CompletedTask;
-    
+
     // If the bot is not in a voice channel, don't do anything
     if (!_lavaNode.HasPlayer(guild))
     {
       return Task.CompletedTask;
     }
-    
+
     if (!_lavaNode.TryGetPlayer(guild, out var player))
     {
       return Task.CompletedTask;
@@ -291,7 +291,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     var voiceChannel = _discordSocketClient.Guilds
       .Select(g => g.VoiceChannels.FirstOrDefault(vc => vc.Users.Any(u => u.Id == _discordSocketClient.CurrentUser.Id)))
       .FirstOrDefault();
-    
+
     // Get list of users in discord voice channel
     var users = voiceChannel?.Users.Where(x => x.Id != _discordSocketClient.CurrentUser.Id && x.VoiceState != null).ToList();
 
@@ -304,5 +304,5 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  #endregion
+  #endregion Discord Client Events
 }

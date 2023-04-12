@@ -42,7 +42,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     {
       _logger.LogDebug("{ServiceName} is initializing..", typeof(LavaNodeService).ToString());
     }
-    
+
     if (_lavaNode == null)
     {
       return;
@@ -109,18 +109,17 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   }
 
   [ItemCanBeNull]
-  // ReSharper disable once CognitiveComplexity
   private async Task<LavaTrack> GetUniqueRadioTrack(Player<LavaTrack> player, /*List<string> videoIds = null,*/ int attempt = 0)
   {
     ArgumentNullException.ThrowIfNull(player);
-    
+
     // Recursive base case
     if (attempt >= Constants.MaximumUniqueSearchAttempts)
     {
       _logger.LogDebug("Unable to find a song after {SearchLimit} attempts.", Constants.MaximumUniqueSearchAttempts);
       return null;
     }
-    
+
     if (player.LastPlayed == null && !player.RecentlyPlayed.Any())
     {
       _logger.LogInformation("Unable to find another song, last song is null.");
@@ -128,7 +127,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     }
 
     List<string> uniqueVideoIds;
-    
+
     if (attempt > 0)
     {
       // Recursive pass
@@ -139,28 +138,28 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
       // First pass
       uniqueVideoIds = (await _musicService.GetYoutubeRecommendedVideoId(player.LastPlayed!.Id, Constants.RelatedSearchResultsLimit)).ToList();
     }
-    
+
     var videoId = uniqueVideoIds.FirstOrDefault(x => player.RecentlyPlayed.Any(y => y.Id != x));
     if (string.IsNullOrEmpty(videoId))
     {
       // Recursive call
       return await this.GetUniqueRadioTrack(player, ++attempt);
     }
-    
+
     var videoUrl = Constants.YouTubeBaseShortUrl + videoId;
     var searchResult = await _lavaNode.SearchAsync(SearchType.Direct, videoUrl);
     if (!searchResult.Tracks.Any())
     {
       return null;
     }
-    
+
     var nextTrack = searchResult.Tracks.First();
     if (player.RecentlyPlayed.Any(x => x.Id == nextTrack.Id))
     {
       // Recursive call
       return await this.GetUniqueRadioTrack(player, ++attempt);
     }
-    
+
     if (MusicHelper.AreTracksSimilar(player.LastPlayed, nextTrack))
     {
       // Recursive call
@@ -168,7 +167,6 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     }
 
     return nextTrack;
-    
   }
 
   #region Lava Node Events
@@ -180,7 +178,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   /// <returns></returns>
   private Task LavaNodeOnOnTrackStuck(TrackStuckEventArg<Player<LavaTrack>, LavaTrack> trackStuckEventArg)
   {
-    var guild = GuildHelper.GetGuildTag(trackStuckEventArg.Player.TextChannel.Guild);
+    var guild = DiscordHelper.GetGuildTag(trackStuckEventArg.Player.TextChannel.Guild);
 
     _logger.LogWarning("Requested track [{TrackTitle}] for Guild {GuildTag} is stuck",
       trackStuckEventArg.Track.Title, guild);
@@ -250,7 +248,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
         if (trackEndEventArg.Player.Is247ModeEnabled)
         {
           _logger.LogInformation("Player queue is empty, but 24/7 mode is enabled. Playing next related track.");
-          
+
           await Play247Track(lavaPlayer);
           return;
         }
@@ -276,12 +274,12 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     var textChannel = trackStartEventArg.Player.TextChannel;
 
     _logger.LogDebug("Track [{TrackName}] has started playing in Guild {GuildTag}",
-      trackStartEventArg.Track.Title, GuildHelper.GetGuildTag(guild));
+      trackStartEventArg.Track.Title, DiscordHelper.GetGuildTag(guild));
 
     var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(trackStartEventArg.Track,
       trackStartEventArg.Player.Author, textChannel);
     await textChannel.SendMessageAsync(embed: embed as Embed);
   }
 
-  #endregion
+  #endregion Lava Node Events
 }

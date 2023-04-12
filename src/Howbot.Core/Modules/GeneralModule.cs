@@ -3,10 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Permissions.Bot;
 using static Howbot.Core.Models.Permissions.User;
@@ -25,7 +25,7 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
     _voiceService = voiceService;
     _logger = logger;
   }
-  
+
   [SlashCommand(JoinCommandName, JoinCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoiceCommandPermission)]
@@ -36,13 +36,13 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
     try
     {
       await DeferAsync();
-      
+
       CommandResponse commandResponse = await _voiceService.JoinVoiceAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
       if (!commandResponse.Success)
       {
         ModuleHelper.HandleCommandFailed(commandResponse);
       }
-      
+
       await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
     }
     catch (Exception exception)
@@ -51,7 +51,7 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
       throw;
     }
   }
-  
+
   [SlashCommand(LeaveCommandName, LeaveCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
@@ -69,7 +69,7 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
       {
         ModuleHelper.HandleCommandFailed(commandResponse);
       }
-      
+
       await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
     }
     catch (Exception exception)

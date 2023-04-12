@@ -3,8 +3,17 @@ using System.IO;
 
 namespace Howbot.Core.Helpers;
 
+/// <summary>
+/// Class of static helpers used for handling configuration.
+/// </summary>
 public class ConfigurationHelper
 {
+  /// <summary>
+  /// Adds or updates configuration settings in appsettings.json
+  /// </summary>
+  /// <typeparam name="T"></typeparam>
+  /// <param name="sectionPathKey"></param>
+  /// <param name="value"></param>
   public static void AddOrUpdateAppSetting<T>(string sectionPathKey, T value)
   {
     try
@@ -17,7 +26,6 @@ public class ConfigurationHelper
 
       string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
       File.WriteAllText(filePath, output);
-
     }
     catch (Exception ex)
     {
@@ -25,6 +33,13 @@ public class ConfigurationHelper
     }
   }
 
+  /// <summary>
+  /// Used to update a section of a jsonObjection, specifically used for <see cref="AddOrUpdateAppSetting{T}(string, T)"/>
+  /// </summary>
+  /// <typeparam name="T"></typeparam>
+  /// <param name="sectionPathKey"></param>
+  /// <param name="jsonObj"></param>
+  /// <param name="value"></param>
   private static void SetValueRecursively<T>(string sectionPathKey, dynamic jsonObj, T value)
   {
     // split the string at the first ':' character

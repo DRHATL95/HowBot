@@ -28,7 +28,7 @@ public abstract class Program
     {
       // Create host builder that will be used to handle application (console) life-cycle.
       var hostBuilder = CreateHostBuilder(args);
-    
+
       // Create Serilog instance
       Log.Logger = new LoggerConfiguration()
         .ReadFrom.Configuration(Configuration.SerilogConfiguration)
@@ -84,9 +84,10 @@ public abstract class Program
         // services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
         services.AddSingleton(x => new YouTubeService(new BaseClientService.Initializer
         {
-          ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
+          ApiKey = Configuration.YouTubeToken,
+          ApplicationName = Constants.BotName
         }));
-        
+
         // Dynamically insert connection string for DB context
         ConfigurationHelper.AddOrUpdateAppSetting("DefaultConnection", Configuration.PostgresConnectionString);
 

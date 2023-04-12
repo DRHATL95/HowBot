@@ -4,11 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Google.Apis.YouTube.v3;
-using Howbot.Core.Entities;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Serilog;
 using Victoria;
 using Victoria.Node;
 using Victoria.Player;
@@ -407,9 +405,9 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         _logger.LogDebug(ClientNotConnectedToVoiceChannel);
         return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
-      
+
       _logger.LogDebug(Shuffle);
-      
+
       lavaPlayer.Vueue.Shuffle();
 
       return CommandResponse.CommandSuccessful(BotShuffleQueue);
@@ -430,11 +428,11 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         _logger.LogDebug(ClientNotConnectedToVoiceChannel);
         return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
       }
-      
+
       _logger.LogDebug(lavaPlayer.Is247ModeEnabled ? TwoFourSevenOff : TwoFourSevenOn);
-      
+
       lavaPlayer.Toggle247Mode();
-      
+
       var response = lavaPlayer.Is247ModeEnabled ? BotTwoFourSevenOff : BotTwoFourSevenOn;
       return CommandResponse.CommandSuccessful(response);
     }
@@ -445,8 +443,8 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
   }
 
-  #endregion
-  
+  #endregion Music Module Commands
+
   private async Task PlayTrack(Player<LavaTrack> lavaPlayer, SearchResponse searchResponse, IGuildUser user)
   {
     AddToPlayerQueue(lavaPlayer, searchResponse);

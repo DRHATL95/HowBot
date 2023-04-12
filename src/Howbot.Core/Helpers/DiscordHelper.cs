@@ -4,6 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Helpers;
 
+/// <summary>
+/// Class of static helpers used for interacting with Discord API.
+/// </summary>
 public static class DiscordHelper
 {
   /// <summary>
@@ -27,5 +30,15 @@ public static class DiscordHelper
       LogSeverity.Debug => LogLevel.Debug,
       _ => throw new ArgumentOutOfRangeException(nameof(logSeverity), logSeverity, null)
     };
+  }
+
+  /// <summary>
+  /// Helper function to create a tag consisting of <see cref="IGuild"/> name and id.
+  /// </summary>
+  /// <param name="guild"></param>
+  /// <returns></returns>
+  public static string GetGuildTag(IGuild guild)
+  {
+    return guild == null ? string.Empty : $"[{guild.Name} - {guild.Id}]";
   }
 }

@@ -17,7 +17,7 @@ public class Player<T> : LavaPlayer<T> where T : LavaTrack
   }
 
   public bool Is247ModeEnabled { get; set; }
-  
+
   public IGuildUser Author { get; set; }
 
   [CanBeNull] public LavaTrack LastPlayed { get; set; }

@@ -19,10 +19,10 @@ public class Configuration
   public static string DiscordToken => GetDiscordToken() ?? string.Empty;
 
   public static string YouTubeToken => GetYouTubeToken() ?? string.Empty;
-  
+
   public static string PostgresConnectionString => GetPostgresConnectionString() ?? string.Empty;
-  
-  public static IConfigurationRoot SerilogConfiguration => 
+
+  public static IConfigurationRoot SerilogConfiguration =>
     new ConfigurationBuilder()
       .SetBasePath(Directory.GetCurrentDirectory())
       // .AddJsonFile($"config.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
@@ -150,7 +150,7 @@ public class Configuration
 
     return token ?? string.Empty;
   }
-  
+
   private static string GetPostgresConnectionString()
   {
     // See GetDiscordToken

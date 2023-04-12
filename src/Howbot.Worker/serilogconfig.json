@@ -82,8 +82,8 @@
     ],
     "Properties": {
       "Application": "Howbot",
-        "Version": "1.0.0",
-        "Environment": "Development"
+      "Version": "1.0.0",
+      "Environment": "Development"
     },
     "Destructure": [
       {

@@ -13,6 +13,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 {
   // Instance variables
   private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
+
   private readonly ILoggerAdapter<VoiceService> _logger;
 
   // Constructor

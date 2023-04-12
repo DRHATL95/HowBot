@@ -18,6 +18,7 @@ public class DockerService : ServiceBase<DockerService>, IDockerService
   }
 
 #pragma warning disable CS1998
+
   public async Task<IList<ContainerListResponse>> ListAllContainers()
 #pragma warning restore CS1998
   {
@@ -30,6 +31,7 @@ public class DockerService : ServiceBase<DockerService>, IDockerService
   }
 
 #pragma warning disable CS1998
+
   public async Task<IList<ImagesListResponse>> ListAllImages()
 #pragma warning restore CS1998
   {
@@ -42,6 +44,7 @@ public class DockerService : ServiceBase<DockerService>, IDockerService
   }
 
 #pragma warning disable CS1998
+
   public async Task<ImageInspectResponse> GetImageByImageName(string imageName)
 #pragma warning restore CS1998
   {
@@ -54,6 +57,7 @@ public class DockerService : ServiceBase<DockerService>, IDockerService
   }
 
 #pragma warning disable CS1998
+
   public async Task<ContainerInspectResponse> GetContainerByContainerName(string containerId)
 #pragma warning restore CS1998
   {

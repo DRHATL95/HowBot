@@ -2,17 +2,14 @@
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Howbot.Core.Entities;
+using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Preconditions;
 using Victoria.Node;
 using Victoria.Player;
 using Victoria.Responses.Search;
 using static Howbot.Core.Models.Constants.Commands;
-using static Howbot.Core.Models.Messages.Debug;
-using static Howbot.Core.Models.Messages.Errors;
 using static Howbot.Core.Models.Messages.Responses;
 using static Howbot.Core.Models.Permissions.Bot;
 using static Howbot.Core.Models.Permissions.User;
@@ -69,7 +66,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       {
         ModuleHelper.HandleCommandFailed(commandResponse);
       }
-      
+
       // Because embeds are handled by events, just delete the deferred response
       await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
     }
@@ -103,7 +100,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
           return;
         }
       }
-      
+
       await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
     }
     catch (Exception exception)
@@ -136,7 +133,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
           return;
         }
       }
-      
+
       await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
     }
     catch (Exception exception)
@@ -178,7 +175,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
           return;
         }
       }
-      
+
       await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
     }
     catch (Exception exception)
@@ -211,7 +208,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
           return;
         }
       }
-      
+
       await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
     }
     catch (Exception exception)
@@ -244,7 +241,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
           return;
         }
       }
-      
+
       await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
     }
     catch (Exception exception)
@@ -398,7 +395,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       throw;
     }
   }
-  
+
   [SlashCommand(ShuffleCommandName, ShuffleCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
@@ -409,7 +406,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     try
     {
       await DeferAsync();
-      
+
       CommandResponse commandResponse = _musicService.ShuffleQueue(Context.Guild);
 
       if (!commandResponse.Success)
@@ -430,7 +427,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       throw;
     }
   }
-  
+
   [SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
@@ -464,5 +461,5 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  #endregion
+  #endregion Music Module Slash Commands
 }

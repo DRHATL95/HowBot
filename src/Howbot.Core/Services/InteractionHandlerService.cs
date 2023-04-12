@@ -113,41 +113,49 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionUnknownCommand, ephemeral: true);
             break;
+
           case InteractionCommandError.ConvertFailed:
             _logger.LogError(Messages.Errors.InteractionConvertFailedLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionConvertFailed, ephemeral: true);
             break;
+
           case InteractionCommandError.BadArgs:
             _logger.LogError(Messages.Errors.InteractionBadArgumentsLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionBadArguments);
             break;
+
           case InteractionCommandError.Exception:
             _logger.LogError(new Exception(result.ErrorReason), Messages.Errors.InteractionException);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionExceptionLog, ephemeral: true);
             break;
+
           case InteractionCommandError.Unsuccessful:
             _logger.LogError(Messages.Errors.InteractionUnsuccessfulLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionUnsuccessful, ephemeral: true);
             break;
+
           case InteractionCommandError.UnmetPrecondition:
             _logger.LogError(Messages.Errors.InteractionUnmetPreconditionLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionUnmetPrecondition, ephemeral: true);
             break;
+
           case InteractionCommandError.ParseFailed:
             _logger.LogError(Messages.Errors.InteractionParseFailedLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionParseFailed, ephemeral: true);
             break;
+
           case null:
             _logger.LogError(Messages.Errors.InteractionNullLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionNull, ephemeral: true);
             break;
+
           default:
             throw new ArgumentOutOfRangeException();
         }
@@ -165,5 +173,5 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
   }
 
-  #endregion
+  #endregion Interaction Service Events
 }

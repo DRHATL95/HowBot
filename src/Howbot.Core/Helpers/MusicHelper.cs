@@ -4,13 +4,27 @@ using Victoria.Responses.Search;
 
 namespace Howbot.Core.Helpers;
 
+/// <summary>
+/// Class of static helpers that help with Music Module Commands.
+/// </summary>
 public static class MusicHelper
 {
+  /// <summary>
+  /// Checks if the requested LavaNode <see cref="SearchResponse"/> is a search response or a single <see cref="LavaTrack"/>.
+  /// </summary>
+  /// <param name="searchResponse"></param>
+  /// <returns></returns>
   public static bool IsSearchResponsePlaylist(SearchResponse searchResponse)
   {
     return !string.IsNullOrEmpty(searchResponse.Playlist.Name);
   }
 
+  /// <summary>
+  /// Checks if two tracks are simlar based on Levenshtein distance. Compares the track's title, author and URL.
+  /// </summary>
+  /// <param name="track"></param>
+  /// <param name="secondTrack"></param>
+  /// <returns></returns>
   public static bool AreTracksSimilar(LavaTrack track, LavaTrack secondTrack)
   {
     var titleDistance = CalculateLevenshteinDistance(track.Title, secondTrack.Title);
