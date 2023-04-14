@@ -45,6 +45,9 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _logger = logger;
   }
 
+  /// <summary>
+  /// The most valid username, will either be the default or the client name of the bot.
+  /// </summary>
   private string LoggedInUsername
   {
     get => string.IsNullOrEmpty(_loggedInUsername) ? Constants.BotName : _loggedInUsername;
@@ -57,6 +60,9 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
   }
 
+  /// <summary>
+  /// Called to initialize this service and connect events to the <see cref="DiscordSocketClient"/>.
+  /// </summary>
   public new void Initialize()
   {
     if (_discordSocketClient == null)
@@ -81,12 +87,14 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
   }
 
+  /// <summary>
+  /// Called to login the <see cref="DiscordSocketClient"/> to the Discord API.
+  /// </summary>
+  /// <param name="discordToken"></param>
+  /// <returns></returns>
   public async ValueTask<bool> LoginDiscordBotAsync(string discordToken)
   {
-    if (string.IsNullOrEmpty(discordToken))
-    {
-      throw new ArgumentNullException(nameof(discordToken));
-    }
+    ArgumentException.ThrowIfNullOrEmpty(nameof(discordToken));
 
     try
     {
@@ -101,6 +109,10 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
   }
 
+  /// <summary>
+  /// Should be called after login, will start the <see cref="DiscordSocketClient"/> and add modules to it.
+  /// </summary>
+  /// <returns></returns>
   public async ValueTask<bool> StartDiscordBotAsync()
   {
     try
@@ -121,6 +133,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       // Only in debug, set bots online presence to offline
       if (Configuration.IsDebug())
       {
+        _logger.LogInformation("Client has logged in anonymously.");
         await _discordSocketClient.SetStatusAsync(UserStatus.Invisible);
       }
 
@@ -136,6 +149,10 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
   }
 
+  /// <summary>
+  /// Add modules to the <see cref="DiscordSocketClient"/> dynamically.
+  /// </summary>
+  /// <returns></returns>
   private async Task AddModulesToDiscordBotAsync()
   {
     try
@@ -220,29 +237,33 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     {
       if (Configuration.IsDebug())
       {
-        _logger.LogDebug("Registering commands to DEV Guild");
+        _logger.LogDebug("Registering commands to DEV Guild.");
         await _interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
       }
       else
       {
-        _logger.LogDebug("Registering commands globally");
+        _logger.LogDebug("Registering commands globally.");
         await _interactionService.RegisterCommandsGloballyAsync();
       }
 
-      _logger.LogDebug("Successfully registered commands to discord bot");
+      _logger.LogDebug("Successfully registered commands to discord bot.");
 
-      if (!_lavaNode.IsConnected)
+      // Run in separate thread to not slow down main thread.
+      await Task.Run(async () =>
       {
-        _logger.LogDebug("Connecting to lavalink server");
+        if (!_lavaNode.IsConnected)
+        {
+          _logger.LogDebug("Connecting to lavalink server");
 
-        await _lavaNode.ConnectAsync();
+          await _lavaNode.ConnectAsync();
 
-        _logger.LogDebug("Successfully connected to lavalink server");
-      }
+          _logger.LogDebug("Successfully connected to lavalink server");
+        }
+      });     
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception thrown in client ready event");
+      _logger.LogError(exception, nameof(DiscordSocketClientOnReady));
       throw;
     }
   }

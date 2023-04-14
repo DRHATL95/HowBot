@@ -33,15 +33,9 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
   public new void Initialize()
   {
-    if (_discordSocketClient == null)
-    {
-      return;
-    }
+    ArgumentNullException.ThrowIfNull(_discordSocketClient);
+    ArgumentNullException.ThrowIfNull(_interactionService);
 
-    if (_interactionService == null)
-    {
-      return;
-    }
 
     if (_logger.IsLogLevelEnabled(LogLevel.Debug))
     {
@@ -62,7 +56,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
       return;
     }
 
-    _logger.LogWarning("Slash command did not execute successfully!");
+    _logger.LogWarning("Interaction command did not execute successfully!");
 
     if (!string.IsNullOrEmpty(result.ErrorReason))
     {
@@ -80,7 +74,14 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
       if (logLevel == LogLevel.Error)
       {
-        _logger.LogError(logMessage.Exception, "Exception thrown logging interaction service");
+        if (logMessage.Exception != null)
+        {
+          _logger.LogError(logMessage.Exception, nameof(InteractionServiceOnLog));
+        }
+        else
+        {
+          _logger.LogError("An error has been thrown in the Interaction Service.");
+        }
       }
       else
       {
@@ -163,10 +164,11 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "An exception has been thrown trying to run an interaction command");
+      _logger.LogError(exception, nameof(DiscordSocketClientOnInteractionCreated));
 
       if (socketInteraction.Type is InteractionType.ApplicationCommand)
       {
+        _logger.LogDebug("Attempting to delete the failed command.");
         // If exception is thrown, acknowledgement will still be there. This will clean-up.
         await socketInteraction.GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
       }

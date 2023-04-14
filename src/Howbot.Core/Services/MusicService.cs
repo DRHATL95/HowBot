@@ -433,7 +433,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
       lavaPlayer.Toggle247Mode();
 
-      var response = lavaPlayer.Is247ModeEnabled ? BotTwoFourSevenOff : BotTwoFourSevenOn;
+      var response = lavaPlayer.Is247ModeEnabled ? BotTwoFourSevenOn : BotTwoFourSevenOff;
       return CommandResponse.CommandSuccessful(response);
     }
     catch (Exception exception)

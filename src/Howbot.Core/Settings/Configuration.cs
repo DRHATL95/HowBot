@@ -1,9 +1,7 @@
 ﻿using System;
-using System.IO;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Microsoft.Extensions.Configuration;
 using Victoria.Node;
 using Victoria.WebSocket;
 
@@ -22,13 +20,6 @@ public class Configuration
 
   public static string PostgresConnectionString => GetPostgresConnectionString() ?? string.Empty;
 
-  public static IConfigurationRoot SerilogConfiguration =>
-    new ConfigurationBuilder()
-      .SetBasePath(Directory.GetCurrentDirectory())
-      // .AddJsonFile($"config.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
-      .AddJsonFile(path: "serilogconfig.json", optional: false, reloadOnChange: true)
-      .Build();
-
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
   public static DiscordSocketConfig DiscordSocketConfig =>
@@ -36,12 +27,12 @@ public class Configuration
     {
       AlwaysDownloadUsers = true,
       GatewayIntents = GatewayIntents,
-      LogLevel = LogSeverity.Debug,
+      LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error,
       LogGatewayIntentWarnings = false,
       UseInteractionSnowflakeDate = false
     };
 
-  private static WebSocketConfiguration WebSocketConfiguration => new() { BufferSize = 2048 };
+  private static WebSocketConfiguration WebSocketConfiguration => new() { BufferSize = 2048 + 1024 + 1024 }; // TODO: I think this will be fixed on next Victoria release
 
   // LavaNode/Lavalink config
   public static NodeConfiguration NodeConfiguration =>
@@ -55,7 +46,7 @@ public class Configuration
       SocketConfiguration = WebSocketConfiguration
     };
 
-  public InteractionServiceConfig InteractionServiceConfig =>
+  public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
   public static bool IsDebug()
@@ -69,42 +60,22 @@ public class Configuration
 
   private static string GetYouTubeToken()
   {
-    string token = null;
+    var token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Process);
 
-    if (IsDebug())
+    if (!string.IsNullOrEmpty(token))
     {
-      // First attempt to get the token from the current hosted process.
-      token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Process);
-      // ReSharper disable once InvertIf
-      if (string.IsNullOrEmpty(token))
-      {
-        token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.User) ??
-                Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Machine);
-
-        return token ?? string.Empty;
-      }
-    }
-    else
-    {
-      // First attempt to get the token from the current hosted process.
-      token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Process);
-      // ReSharper disable once InvertIf
-      if (string.IsNullOrEmpty(token))
-      {
-        token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.User) ??
-                Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Machine);
-
-        return token ?? string.Empty;
-      }
+      return token;
     }
 
-    return token;
+    token = Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.User) ??
+            Environment.GetEnvironmentVariable(YouTube, EnvironmentVariableTarget.Machine);
+
+    return token ?? string.Empty;
   }
 
   private static string GetDiscordToken()
   {
-    string token = null;
-
+    string token;
     if (IsDebug())
     {
       // First attempt to get the token from the current hosted process.

@@ -29,22 +29,19 @@ public abstract class Program
       // Create host builder that will be used to handle application (console) life-cycle.
       var hostBuilder = CreateHostBuilder(args);
 
-      // Create Serilog instance
-      Log.Logger = new LoggerConfiguration()
-        .ReadFrom.Configuration(Configuration.SerilogConfiguration)
-        .CreateLogger();
-
       // Will run indefinitely until canceled w/ cancellation token or process is stopped.
       await hostBuilder.RunConsoleAsync();
-
-      // Return exit code to terminal once application has been terminated.
-      return Environment.ExitCode;
     }
     catch (Exception exception)
     {
-      Console.WriteLine(exception);
-      throw;
+      if (Log.IsEnabled(Serilog.Events.LogEventLevel.Error))
+      { 
+        Log.Logger.Error(nameof(Main), exception);
+      }
     }
+
+    // Return exit code to terminal once application has been terminated.
+    return Environment.ExitCode;
   }
 
   /// <summary>
@@ -60,7 +57,7 @@ public abstract class Program
         configuration
           .ReadFrom.Configuration(context.Configuration)
           .Enrich.FromLogContext();
-      }))
+      }))      
       .ConfigureServices((hostContext, services) =>
       {
         services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
@@ -70,11 +67,11 @@ public abstract class Program
 
         // Add in-memory cache
         services.AddMemoryCache();
-
+    
         services.AddSingleton<Configuration>();
         services.AddSingleton(x => new DiscordSocketClient(Configuration.DiscordSocketConfig));
         services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
-          x.GetRequiredService<Configuration>().InteractionServiceConfig));
+          Configuration.InteractionServiceConfig));
         services.AddSingleton(provider =>
         {
           var discordClient = provider.GetRequiredService<DiscordSocketClient>();
