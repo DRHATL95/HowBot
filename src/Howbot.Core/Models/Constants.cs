@@ -7,6 +7,10 @@ public abstract record Constants
   public const string BotName = "Howbot";
   public const string YouTubeBaseShortUrl = "https://youtu.be/";
   public const string YouTubeBaseLongUrl = "https://www.youtube.com/watch?v=";
+  // TODO: These will be used for creating API using Discord REST client
+  public const string DiscordOAuth2BaseUrl = "https://discord.com/oauth2/authorize";
+  public const string DiscordTokenBaseUrl = "https://discord.com/api/oauth2/token";
+  public const string DiscordTokenRevokeBaseUrl = "https://discord.com/api/oauth2/token/revoke";
   public const int MaximumUniqueSearchAttempts = 5;
   public const int RelatedSearchResultsLimit = 3;
   public const int ApplicationTimeoutInMs = 3000;
