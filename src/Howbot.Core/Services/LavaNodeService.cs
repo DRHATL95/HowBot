@@ -66,7 +66,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     {
       if (lavaPlayer.LastPlayed != null)
       {
-        var track = await this.GetUniqueRadioTrack(lavaPlayer);
+        var track = await GetUniqueRadioTrack(lavaPlayer);
         if (track != null)
         {
           await lavaPlayer.PlayAsync(track);
@@ -88,10 +88,17 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     }
   }
 
-  [ItemCanBeNull]
-  private async Task<LavaTrack> GetUniqueRadioTrack(Player<LavaTrack> player, /*List<string> videoIds = null,*/ int attempt = 0)
+  /// <summary>
+  /// 
+  /// </summary>
+  /// <param name="player"></param>
+  /// <param name="attempt"></param>
+  /// <returns></returns>
+  private async Task<LavaTrack> GetUniqueRadioTrack(Player<LavaTrack> player, int attempt = 0)
   {
     ArgumentNullException.ThrowIfNull(player);
+
+    List<string> uniqueVideoIds;
 
     // Recursive base case
     if (attempt >= Constants.MaximumUniqueSearchAttempts)
@@ -102,34 +109,33 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
 
     if (player.LastPlayed == null && !player.RecentlyPlayed.Any())
     {
-      _logger.LogInformation("Unable to find another song, last song is null.");
+      _logger.LogError("Unable to find another song, last song is null.");
       return null;
     }
-
-    List<string> uniqueVideoIds;
 
     if (attempt > 0)
     {
       // Recursive pass
-      uniqueVideoIds = (await _musicService.GetYoutubeRecommendedVideoId(player.LastPlayed!.Id, Constants.RelatedSearchResultsLimit + attempt)).ToList();
+      uniqueVideoIds = (await _musicService.GetYoutubeRecommendedVideoId(player.LastPlayed.Id, Constants.RelatedSearchResultsLimit + attempt)).ToList();
     }
     else
     {
       // First pass
-      uniqueVideoIds = (await _musicService.GetYoutubeRecommendedVideoId(player.LastPlayed!.Id, Constants.RelatedSearchResultsLimit)).ToList();
+      uniqueVideoIds = (await _musicService.GetYoutubeRecommendedVideoId(player.LastPlayed.Id, Constants.RelatedSearchResultsLimit)).ToList();
     }
 
-    var videoId = uniqueVideoIds.FirstOrDefault(x => player.RecentlyPlayed.Any(y => y.Id != x));
+    var videoId = uniqueVideoIds.FirstOrDefault(videoId => player.RecentlyPlayed.Any(track => track.Id != videoId));
     if (string.IsNullOrEmpty(videoId))
     {
       // Recursive call
-      return await this.GetUniqueRadioTrack(player, ++attempt);
+      return await GetUniqueRadioTrack(player, ++attempt);
     }
 
     var videoUrl = Constants.YouTubeBaseShortUrl + videoId;
     var searchResult = await _lavaNode.SearchAsync(SearchType.Direct, videoUrl);
     if (!searchResult.Tracks.Any())
     {
+      _logger.LogError("Unable to find a track using Victoria search.");
       return null;
     }
 
@@ -137,14 +143,16 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     if (player.RecentlyPlayed.Any(x => x.Id == nextTrack.Id))
     {
       // Recursive call
-      return await this.GetUniqueRadioTrack(player, ++attempt);
+      return await GetUniqueRadioTrack(player, ++attempt);
     }
 
     if (MusicHelper.AreTracksSimilar(player.LastPlayed, nextTrack))
     {
       // Recursive call
-      return await this.GetUniqueRadioTrack(player, ++attempt);
+      return await GetUniqueRadioTrack(player, ++attempt);
     }
+
+    _logger.LogDebug("{TrackName} was returned.", nextTrack.Title);
 
     return nextTrack;
   }
@@ -173,7 +181,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
   /// <returns></returns>
   private Task LavaNodeOnOnWebSocketClosed(WebSocketClosedEventArg arg)
   {
-    _logger.Log(LogLevel.Critical, "Discord websocket has closed for the following reason: {Reason}", arg.Reason);
+    _logger.Log(LogLevel.Warning, "Discord websocket has closed for the following reason: {Reason}", arg.Reason);
 
     return Task.CompletedTask;
   }
