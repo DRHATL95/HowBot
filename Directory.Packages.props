@@ -28,7 +28,7 @@
     <PackageVersion Include="Google.Apis.YouTube.v3" Version="1.60.0.2945" />
     <PackageVersion Include="MediatR" Version="11.1.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.4"/>
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.8" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="7.0.4" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.4">
       <PrivateAssets>all</PrivateAssets>
