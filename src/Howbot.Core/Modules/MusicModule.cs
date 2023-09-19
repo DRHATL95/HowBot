@@ -1,14 +1,21 @@
 ﻿using System;
+using System.Collections.Immutable;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Victoria.Node;
-using Victoria.Player;
-using Victoria.Responses.Search;
+using JetBrains.Annotations;
+using Lavalink4NET;
+using Lavalink4NET.Clients;
+using Lavalink4NET.Players;
+using Lavalink4NET.Players.Preconditions;
+using Lavalink4NET.Players.Queued;
+using Microsoft.Extensions.Options;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
 using static Howbot.Core.Models.Permissions.Bot;
@@ -18,18 +25,18 @@ namespace Howbot.Core.Modules;
 
 public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 {
-  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
-  private readonly ILoggerAdapter<MusicModule> _logger;
-  private readonly IMusicService _musicService;
-  private readonly IVoiceService _voiceService;
+  [NotNull] private readonly IAudioService _audioService;
+  [NotNull] private readonly ILoggerAdapter<MusicModule> _logger;
+  [NotNull] private readonly IMusicService _musicService;
+  [NotNull] private readonly IVoiceService _voiceService;
 
-  public MusicModule(IVoiceService voiceService, IMusicService musicService,
-    LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, ILoggerAdapter<MusicModule> logger)
+  public MusicModule([NotNull] IVoiceService voiceService, [NotNull] IMusicService musicService,
+    [NotNull] ILoggerAdapter<MusicModule> logger, [NotNull] IAudioService audioService)
   {
     _voiceService = voiceService;
     _musicService = musicService;
-    _lavaNode = lavaNode;
     _logger = logger;
+    _audioService = audioService;
   }
 
   #region Music Module Slash Commands
@@ -40,35 +47,43 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
   public async Task PlayCommandAsync(
-    [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
+    [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)] [NotNull]
     string searchRequest,
     [Summary(PlaySearchTypeArgumentName, PlaySearchTypeArgumentDescription)]
-    SearchType searchType = SearchType.YouTube)
+    SearchProviderTypes searchProviderType)
   {
     try
     {
-      await DeferAsync();
+      await DeferAsync().ConfigureAwait(false);
 
       if (string.IsNullOrEmpty(searchRequest))
       {
-        await ModifyOriginalResponseAsync(properties => properties.Content = "You must enter a search request!");
+        await ModifyOriginalResponseAsync(([NotNull] properties) => properties.Content = "You must enter a search request!").ConfigureAwait(false);
         return;
       }
 
-      var user = Context.User as IGuildUser;
-      var voiceState = Context.User as IVoiceState;
-      var channel = Context.Channel as ITextChannel;
+      var player =
+        await TryGetPlayerAsync(true, true, preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused))
+          .ConfigureAwait(false);
 
-      CommandResponse commandResponse =
-        await _musicService.PlayBySearchTypeAsync(searchType, searchRequest, user, voiceState, channel);
-
-      if (!commandResponse.Success)
+      if (player is not null)
       {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-      }
+        var user = (Context.User as IGuildUser) ?? throw new ArgumentNullException(nameof(Context.User));
+        var voiceState = (Context.User as IVoiceState) ?? throw new ArgumentNullException(nameof(Context.User));
+        var channel = (Context.Channel as ITextChannel) ?? throw new ArgumentNullException(nameof(Context.Channel));
 
-      // Because embeds are handled by events, just delete the deferred response
-      await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+        var response =
+          await _musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
+            channel);
+
+        if (!response.IsSuccessful)
+        {
+          ModuleHelper.HandleCommandFailed(response);
+        }
+
+        // Because embeds are handled by events, just delete the deferred response
+        await GetOriginalResponseAsync().ContinueWith(([NotNull]task) => task.Result.DeleteAsync().ConfigureAwait(false));
+      }
     }
     catch (Exception exception)
     {
@@ -88,20 +103,27 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var commandResponse = await _musicService.PauseTrackAsync(Context.Guild);
+      var player =
+        await TryGetPlayerAsync(false, preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused))
+          .ConfigureAwait(false);
 
-      if (!commandResponse.Success)
+      if (player is not null)
       {
-        ModuleHelper.HandleCommandFailed(commandResponse);
+        var response = await _musicService.PauseTrackAsync(player);
 
-        if (string.IsNullOrEmpty(commandResponse.Message))
+        if (!response.IsSuccessful)
         {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
-          return;
+          ModuleHelper.HandleCommandFailed(response);
+
+          if (string.IsNullOrEmpty(response.Message))
+          {
+            await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
+            return;
+          }
+
+          await ModifyOriginalResponseAsync(properties => properties.Content = response.Message);
         }
       }
-
-      await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
     }
     catch (Exception exception)
     {
@@ -121,20 +143,27 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var commandResponse = await _musicService.ResumeTrackAsync(Context.Guild);
+      var player =
+        await TryGetPlayerAsync(false, true, preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused))
+          .ConfigureAwait(false);
 
-      if (!commandResponse.Success)
+      if (player is not null)
       {
-        ModuleHelper.HandleCommandFailed(commandResponse);
+        var response = await _musicService.ResumeTrackAsync(player);
 
-        if (string.IsNullOrEmpty(commandResponse.Message))
+        if (!response.IsSuccessful)
         {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
-          return;
-        }
-      }
+          ModuleHelper.HandleCommandFailed(response);
 
-      await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+          if (string.IsNullOrEmpty(response.Message))
+          {
+            await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
+            return;
+          }
+        }
+
+        await ModifyOriginalResponseAsync(properties => properties.Content = response.Message);
+      }
     }
     catch (Exception exception)
     {
@@ -160,18 +189,21 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
         throw new ArgumentNullException(nameof(timeToSeek));
       }
 
+      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
+
+
       TimeSpan timeSpan =
         (timeToSeek == default) ? ModuleHelper.ConvertToTimeSpan(hours, minutes, seconds) : timeToSeek;
 
-      CommandResponse commandResponse = await _musicService.SeekTrackAsync(Context.Guild, timeSpan);
+      CommandResponse commandResponse = await _musicService.SeekTrackAsync<IQueuedLavalinkPlayer>(player, timeSpan);
 
-      if (!commandResponse.Success)
+      if (!commandResponse.IsSuccessful)
       {
         ModuleHelper.HandleCommandFailed(commandResponse);
 
         if (string.IsNullOrEmpty(commandResponse.Message))
         {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+          await GetOriginalResponseAsync().ContinueWith(([NotNull] task) => task.Result.DeleteAsync().ConfigureAwait(false));
           return;
         }
       }
@@ -196,15 +228,17 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var commandResponse = await _musicService.SkipTrackAsync(Context.Guild, tracksToSkip);
+      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
 
-      if (!commandResponse.Success)
+      var commandResponse = await _musicService.SkipTrackAsync(player, tracksToSkip);
+
+      if (!commandResponse.IsSuccessful)
       {
         ModuleHelper.HandleCommandFailed(commandResponse);
 
         if (string.IsNullOrEmpty(commandResponse.Message))
         {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+          await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
           return;
         }
       }
@@ -229,15 +263,17 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var commandResponse = await _musicService.ChangeVolumeAsync(Context.Guild, newVolume);
+      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
 
-      if (!commandResponse.Success)
+      var commandResponse = await _musicService.ChangeVolumeAsync(player, newVolume);
+
+      if (!commandResponse.IsSuccessful)
       {
         ModuleHelper.HandleCommandFailed(commandResponse);
 
         if (string.IsNullOrEmpty(commandResponse.Message))
         {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+          await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
           return;
         }
       }
@@ -263,16 +299,20 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var commandResponse =
-        await _musicService.NowPlayingAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
+      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
 
-      if (!commandResponse.Success)
+      if (Context.User is not IGuildUser guildUser || Context.Channel is not ITextChannel textChannel) return;
+
+      var commandResponse =
+        await _musicService.NowPlayingAsync(player, guildUser, textChannel);
+
+      if (!commandResponse.IsSuccessful)
       {
         ModuleHelper.HandleCommandFailed(commandResponse);
 
         if (string.IsNullOrEmpty(commandResponse.Message))
         {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+          await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
           return;
         }
       }
@@ -282,94 +322,12 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       }
       else
       {
-        await ModifyOriginalResponseAsync(properties => properties.Content = $"Now playing {(commandResponse.LavaPlayer?.Track.Title ?? this.Context.Interaction.Data.ToString())}");
+        await ModifyOriginalResponseAsync(properties => properties.Content = $"Now playing {commandResponse.LavalinkTrack?.Title ?? Context.Interaction.Data.ToString()}");
       }
     }
     catch (Exception exception)
     {
       _logger.LogError(exception, nameof(NowPlayingCommandAsync));
-      throw;
-    }
-  }
-
-  [SlashCommand(GeniusCommandName, GeniusCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
-  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  [RequireOwner]
-  public async Task GetLyricsFromGeniusAsync()
-  {
-    try
-    {
-      await DeferAsync(true);
-
-      var commandResponse = await _musicService.GetLyricsFromGeniusAsync(Context.Guild);
-
-      if (!commandResponse.Success)
-      {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-
-        if (string.IsNullOrEmpty(commandResponse.Message))
-        {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
-          return;
-        }
-      }
-
-      if (commandResponse.Embed != null)
-      {
-        await ModifyOriginalResponseAsync(properties => properties.Embed = commandResponse.Embed as Embed);
-      }
-      else
-      {
-        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
-      }
-    }
-    catch (Exception exception)
-    {
-      _logger.LogError(exception, nameof(GetLyricsFromGeniusAsync));
-      throw;
-    }
-  }
-
-  [SlashCommand(OvhCommandName, OvhCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
-  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  [RequireOwner]
-  public async Task GetLyricsFromOvhAsync()
-  {
-    try
-    {
-      await DeferAsync(true);
-
-      var commandResponse = await _musicService.GetLyricsFromOvhAsync(Context.Guild);
-
-      if (!commandResponse.Success)
-      {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-
-        if (string.IsNullOrEmpty(commandResponse.Message))
-        {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
-          return;
-        }
-      }
-
-      if (commandResponse.Embed != null)
-      {
-        await ModifyOriginalResponseAsync(properties => properties.Embed = commandResponse.Embed as Embed);
-      }
-      else
-      {
-        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
-      }
-    }
-    catch (Exception exception)
-    {
-      _logger.LogError(exception, nameof(GetLyricsFromOvhAsync));
       throw;
     }
   }
@@ -407,15 +365,17 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      CommandResponse commandResponse = _musicService.ShuffleQueue(Context.Guild);
+      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
 
-      if (!commandResponse.Success)
+      CommandResponse commandResponse = _musicService.ToggleShuffle(player);
+
+      if (!commandResponse.IsSuccessful)
       {
         ModuleHelper.HandleCommandFailed(commandResponse);
 
         if (string.IsNullOrEmpty(commandResponse.Message))
         {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+          await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
           return;
         }
       }
@@ -428,7 +388,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
+  /*[SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
@@ -459,7 +419,106 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       _logger.LogError(exception, nameof(TwentyFourSevenCommandAsync));
       throw;
     }
-  }
+  }*/
 
   #endregion Music Module Slash Commands
+
+
+  [ItemCanBeNull]
+  private async ValueTask<QueuedLavalinkPlayer> TryGetPlayerAsync(bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default,
+    bool isDeferred = false, CancellationToken cancellationToken = default)
+  {
+    cancellationToken.ThrowIfCancellationRequested();
+
+    if (Context.User is not SocketGuildUser socketGuildUser)
+    {
+      return null;
+    }
+
+    ulong voiceChannelId = socketGuildUser.VoiceChannel.Id;
+    IGuild guild = Context.Guild;
+    ulong guildId = guild.Id;
+
+    var retrieveOptions = new PlayerRetrieveOptions(
+      ChannelBehavior: allowConnect ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None,
+      VoiceStateBehavior: requireChannel ? MemberVoiceStateBehavior.RequireSame : MemberVoiceStateBehavior.Ignore,
+      Preconditions: preconditions);
+    var playerOptions = new QueuedLavalinkPlayerOptions();
+
+    var result = await _audioService.Players.
+      RetrieveAsync(guildId: guildId, memberVoiceChannel: voiceChannelId, playerFactory: PlayerFactory.Queued, options: new OptionsWrapper<QueuedLavalinkPlayerOptions>(playerOptions), retrieveOptions, cancellationToken);
+
+    if (result.IsSuccess)
+    {
+      return result.Player;
+    }
+
+    var errorMessage = CreateErrorEmbed(result);
+
+    if (isDeferred)
+    {
+      await FollowupAsync(embed: errorMessage).ConfigureAwait(false);
+    }
+    else
+    {
+      await RespondAsync(embed: errorMessage).ConfigureAwait(false);
+    }
+
+    return null;
+  }
+
+  [ItemCanBeNull]
+  private async ValueTask<QueuedLavalinkPlayer> GetQueuedPlayerAsync(bool connectToVoiceChannel = true)
+  {
+    var channelBehavior = connectToVoiceChannel
+      ? PlayerChannelBehavior.Join
+      : PlayerChannelBehavior.None;
+
+    var retrieveOptions = new PlayerRetrieveOptions(ChannelBehavior: channelBehavior);
+    var queuePlayerOption = new QueuedLavalinkPlayerOptions();
+    var guildId = Context.Guild.Id;
+
+    if (Context.User is not SocketGuildUser socketGuildUser) return null;
+
+    var voiceChannelId = socketGuildUser.VoiceChannel.Id;
+
+    var result = await _audioService.Players
+      .RetrieveAsync(guildId, voiceChannelId, PlayerFactory.Queued, new OptionsWrapper<QueuedLavalinkPlayerOptions>(queuePlayerOption), retrieveOptions: retrieveOptions)
+      .ConfigureAwait(false);
+
+    if (!result.IsSuccess)
+    {
+      var errorMessage = result.Status switch
+      {
+        PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
+        PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected.",
+        _ => "Unknown error.",
+      };
+
+      await FollowupAsync(errorMessage).ConfigureAwait(false);
+      return null;
+    }
+
+    return result.Player;
+  }
+
+  [NotNull]
+  private static Embed CreateErrorEmbed(PlayerResult<QueuedLavalinkPlayer> result)
+  {
+    var title = result.Status switch
+    {
+      PlayerRetrieveStatus.UserNotInVoiceChannel => "You must be in a voice channel.",
+      PlayerRetrieveStatus.BotNotConnected => "The bot is not connected to any channel.",
+      PlayerRetrieveStatus.VoiceChannelMismatch => "You must be in the same voice channel as the bot.",
+
+      PlayerRetrieveStatus.PreconditionFailed when result.Precondition == PlayerPrecondition.Playing => "The player is currently now playing any track.",
+      PlayerRetrieveStatus.PreconditionFailed when result.Precondition == PlayerPrecondition.NotPaused => "The player is already paused.",
+      PlayerRetrieveStatus.PreconditionFailed when result.Precondition == PlayerPrecondition.Paused => "The player is not paused.",
+      PlayerRetrieveStatus.PreconditionFailed when result.Precondition == PlayerPrecondition.QueueEmpty => "The queue is empty.",
+
+      _ => "Unknown error.",
+    };
+
+    return new EmbedBuilder().WithTitle(title).Build();
+  }
 }

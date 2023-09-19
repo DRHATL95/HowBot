@@ -1,6 +1,7 @@
 ﻿using System;
-using Victoria.Player;
-using Victoria.Responses.Search;
+using JetBrains.Annotations;
+using Lavalink4NET.Integrations.Lavasearch;
+using Lavalink4NET.Players.Queued;
 
 namespace Howbot.Core.Helpers;
 
@@ -9,32 +10,45 @@ namespace Howbot.Core.Helpers;
 /// </summary>
 public static class MusicHelper
 {
+
   /// <summary>
-  /// Checks if the requested LavaNode <see cref="SearchResponse"/> is a search response or a single <see cref="LavaTrack"/>.
+  /// Checks the requested search result if playlist is empty./>.
   /// </summary>
-  /// <param name="searchResponse"></param>
-  /// <returns></returns>
-  public static bool IsSearchResponsePlaylist(SearchResponse searchResponse)
+  /// <param name="searchResult"></param>
+  /// <returns>True if search result playlist is not empty.</returns>
+  [NotNull]
+  public static bool IsSearchResponsePlaylist([NotNull]SearchResult searchResult)
   {
-    return !string.IsNullOrEmpty(searchResponse.Playlist.Name);
+    return !searchResult.Playlists.IsEmpty;
   }
 
   /// <summary>
-  /// Checks if two tracks are simlar based on Levenshtein distance. Compares the track's title, author and URL.
+  /// Checks if two <see cref="ITrackQueueItem"/> are similar based on Levenshtein distance. Compares the track's title, author and URL.
   /// </summary>
-  /// <param name="track"></param>
-  /// <param name="secondTrack"></param>
+  /// <param name="queueItem"></param>
+  /// <param name="secondQueueItem"></param>
   /// <returns></returns>
-  public static bool AreTracksSimilar(LavaTrack track, LavaTrack secondTrack)
+  public static bool AreTracksSimilar([NotNull]ITrackQueueItem queueItem, [NotNull]ITrackQueueItem secondQueueItem)
   {
-    var titleDistance = CalculateLevenshteinDistance(track.Title, secondTrack.Title);
-    var authorDistance = CalculateLevenshteinDistance(track.Author, secondTrack.Author);
-    var urlDistance = CalculateLevenshteinDistance(track.Url, secondTrack.Url);
+    if (queueItem.Track is null || secondQueueItem.Track is null)
+    {
+      return false;
+    }
+
+    var titleDistance = CalculateLevenshteinDistance(queueItem.Track!.Title, secondQueueItem.Track!.Title);
+    var authorDistance = CalculateLevenshteinDistance(queueItem.Track!.Author, secondQueueItem.Track!.Author);
+    var urlDistance = CalculateLevenshteinDistance(queueItem.Track!.Identifier, secondQueueItem.Track!.Identifier);
 
     return titleDistance < 5 && authorDistance < 5 && urlDistance < 5;
   }
 
-  private static int CalculateLevenshteinDistance(string a, string b)
+  /// <summary>
+  /// Algorithm used to compare if two strings are similar. This will be used to recommend new songs based on songs already played avoiding duplicates. 
+  /// </summary>
+  /// <param name="a"></param>
+  /// <param name="b"></param>
+  /// <returns></returns>
+  private static int CalculateLevenshteinDistance([NotNull]string a, [NotNull]string b)
   {
     var distance = new int[a.Length + 1, b.Length + 1];
 

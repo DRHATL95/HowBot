@@ -10,19 +10,26 @@ using Howbot.Core.Models;
 using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
+using JetBrains.Annotations;
+using Lavalink4NET;
+using Lavalink4NET.Clients;
+using Lavalink4NET.DiscordNet;
+using Lavalink4NET.Extensions;
+using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog;
-using Victoria.Node;
-using Victoria.Player;
 
 namespace Howbot.Worker;
 
-public abstract class Program
+[UsedImplicitly]
+public class Program
 {
-  public static async Task<int> Main(string[] args)
+
+  [NotNull] private static readonly ILogger _logger = Log.Logger;
+
+  static async Task<int> Main(string[] args)
   {
     try
     {
@@ -35,8 +42,8 @@ public abstract class Program
     catch (Exception exception)
     {
       if (Log.IsEnabled(Serilog.Events.LogEventLevel.Error))
-      { 
-        Log.Logger.Error(nameof(Main), exception);
+      {
+        _logger.Error(nameof(Main), exception);
       }
     }
 
@@ -49,16 +56,16 @@ public abstract class Program
   /// </summary>
   /// <param name="args">The arguments provided when running</param>
   /// <returns></returns>
-  private static IHostBuilder CreateHostBuilder(string[] args)
+  private static IHostBuilder CreateHostBuilder([NotNull] string[] args)
   {
     return Host.CreateDefaultBuilder(args)
-      .UseSerilog(((context, configuration) =>
+      .UseSerilog(([NotNull] context, [NotNull] configuration) =>
       {
         configuration
           .ReadFrom.Configuration(context.Configuration)
           .Enrich.FromLogContext();
-      }))      
-      .ConfigureServices((hostContext, services) =>
+      })
+      .ConfigureServices(([NotNull] hostContext, [NotNull] services) =>
       {
         services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
         services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
@@ -67,23 +74,22 @@ public abstract class Program
 
         // Add in-memory cache
         services.AddMemoryCache();
-    
+
         services.AddSingleton<Configuration>();
         services.AddSingleton(x => new DiscordSocketClient(Configuration.DiscordSocketConfig));
-        services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
-          Configuration.InteractionServiceConfig));
-        services.AddSingleton(provider =>
-        {
-          var discordClient = provider.GetRequiredService<DiscordSocketClient>();
-          var logger = provider.GetRequiredService<ILogger<LavaNode<Player<LavaTrack>, LavaTrack>>>();
-          return new LavaNode<Player<LavaTrack>, LavaTrack>(discordClient, Configuration.NodeConfiguration, logger);
-        });
+        services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
         // services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
         services.AddSingleton(x => new YouTubeService(new BaseClientService.Initializer
         {
           ApiKey = Configuration.YouTubeToken,
           ApplicationName = Constants.BotName
         }));
+        services.AddLavalink();
+        services.ConfigureLavalink(x =>
+        {
+          x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
+        });
+        services.AddLyrics();
 
         // Dynamically insert connection string for DB context
         ConfigurationHelper.AddOrUpdateAppSetting("DefaultConnection", Configuration.PostgresConnectionString);

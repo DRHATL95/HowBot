@@ -1,103 +1,69 @@
 ﻿using System;
 using Discord;
 using JetBrains.Annotations;
-using Victoria.Player;
+using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Models;
 
 public class CommandResponse
 {
+  public bool IsSuccessful { get; init; }
+
+  [NotNull] public string Message { get; private init; }
+
+  [CanBeNull] public Exception Exception { get; private init; }
+
+  [CanBeNull] public IEmbed Embed { get; private init; }
+
+  [CanBeNull] public LavalinkTrack LavalinkTrack { get; init; }
+
   private CommandResponse()
   {
     Message = string.Empty;
-    Success = false;
     Exception = null;
     Embed = null;
+    LavalinkTrack = null;
   }
 
-  private CommandResponse(bool success)
-  {
-    Success = success;
-    Message = String.Empty;
-    Exception = null;
-  }
-
-  private CommandResponse(Player<LavaTrack> lavaPlayer)
-  {
-    Success = true;
-    LavaPlayer = lavaPlayer;
-  }
-
-  private CommandResponse(IEmbed embed)
-  {
-    Success = true;
-    Embed = embed;
-  }
-
-  private CommandResponse(string message)
-  {
-    Message = message;
-    Success = true;
-    Exception = null;
-  }
-
-  private CommandResponse(bool success, string message)
-  {
-    Success = success;
-    Message = message;
-    Exception = null;
-  }
-
-  private CommandResponse(Exception exception)
-  {
-    Success = false;
-    Exception = exception;
-  }
-
-  public bool Success { get; }
-
-  public string Message { get; }
-
-  [CanBeNull] public Exception Exception { get; }
-
-  [CanBeNull] public IEmbed Embed { get; }
-
-  [CanBeNull] public Player<LavaTrack> LavaPlayer { get; init; }
-
-  public string CommandName { get; set; }
-
+  [NotNull]
   public static CommandResponse CommandSuccessful()
   {
-    return new CommandResponse(true);
+    return new CommandResponse { IsSuccessful = true };
   }
 
-  public static CommandResponse CommandSuccessful(string message)
+  [NotNull]
+  public static CommandResponse CommandSuccessful([NotNull] string message)
   {
-    return new CommandResponse(true, message);
+    return new CommandResponse { IsSuccessful = true, Message = message };
   }
 
-  public static CommandResponse CommandSuccessful(Player<LavaTrack> lavaPlayer)
+  [NotNull]
+  public static CommandResponse CommandSuccessful([NotNull] LavalinkTrack lavalinkTrack)
   {
-    return new CommandResponse(lavaPlayer);
+    return new CommandResponse { IsSuccessful = true, LavalinkTrack = lavalinkTrack };
   }
 
-  public static CommandResponse CommandSuccessful(IEmbed embed)
+  [NotNull]
+  public static CommandResponse CommandSuccessful([NotNull] IEmbed embed)
   {
-    return new CommandResponse(embed);
+    return new CommandResponse { IsSuccessful = true, Embed = embed };
   }
 
+  [NotNull]
   public static CommandResponse CommandNotSuccessful()
   {
-    return new CommandResponse(false);
+    return new CommandResponse();
   }
 
-  public static CommandResponse CommandNotSuccessful(string message)
+  [NotNull]
+  public static CommandResponse CommandNotSuccessful([NotNull] string message)
   {
-    return new CommandResponse(false, message);
+    return new CommandResponse { IsSuccessful = false, Message = message };
   }
 
-  public static CommandResponse CommandNotSuccessful(Exception exception)
+  [NotNull]
+  public static CommandResponse CommandNotSuccessful([NotNull] Exception exception)
   {
-    return new CommandResponse(exception);
+    return new CommandResponse { IsSuccessful = false, Exception = exception };
   }
 }

@@ -5,73 +5,75 @@ using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Victoria.Node;
-using Victoria.Player;
+using JetBrains.Annotations;
+using Lavalink4NET;
+using Lavalink4NET.DiscordNet;
+using Lavalink4NET.Players;
+using Microsoft.Extensions.Options;
 using static System.Threading.SpinWait;
-using static Howbot.Core.Models.Messages.Responses;
 
 namespace Howbot.Core.Services;
 
 public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 {
   // Instance variables
-  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
+  [NotNull] private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
 
-  private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
-  private readonly ILoggerAdapter<VoiceService> _logger;
+  [NotNull] private readonly ILoggerAdapter<VoiceService> _logger;
 
-  // Constructor
-  public VoiceService(LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, ILoggerAdapter<VoiceService> logger) :
-    base(logger)
+  [NotNull] private readonly IAudioService _audioService;
+
+  public VoiceService([NotNull] ILoggerAdapter<VoiceService> logger, [NotNull] IAudioService audioService) : base(logger)
   {
-    _lavaNode = lavaNode;
     _logger = logger;
+    _audioService = audioService;
     _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
   }
 
-  public async Task<CommandResponse> JoinVoiceAsync(IGuildUser user, ITextChannel textChannel)
+  public async Task<CommandResponse> JoinVoiceChannelAsync(IGuildUser user, bool isDeaf = true)
   {
     try
     {
-      if (user is IVoiceState voiceState)
+      var voiceChannel = user.VoiceChannel;
+      if (voiceChannel is null)
       {
-        var lavaPlayer = await JoinGuildVoiceChannelAsync(voiceState, textChannel);
-
-        return lavaPlayer == null
-          ? CommandResponse.CommandNotSuccessful(
-            new Exception("Exception thrown creating lava player while joining voice channel"))
-          : CommandResponse.CommandSuccessful(lavaPlayer);
+        return CommandResponse.CommandNotSuccessful("User who requested command is not in voice.");
       }
+
+      await _audioService.Players.JoinAsync(voiceChannel: voiceChannel).ConfigureAwait(false);
+
+      return CommandResponse.CommandSuccessful("This command is not active.");
     }
     catch (Exception exception)
     {
       _logger.LogError(exception, "Exception has been thrown executing command [{CommandName}]",
-        nameof(JoinVoiceAsync));
+        nameof(JoinVoiceChannelAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
-
-    return CommandResponse.CommandNotSuccessful("Unable to join voice channel.");
   }
 
-  public async Task<CommandResponse> LeaveVoiceChannelAsync(IGuildUser user)
+  public async ValueTask<CommandResponse> LeaveVoiceChannelAsync(IGuildUser user, IGuildChannel guildChannel)
   {
     try
     {
-      if (user is not IVoiceState voiceState)
+      var player = await GetPlayerAsync(new GetPlayerParameters()
       {
-        return CommandResponse.CommandNotSuccessful("Unable to leave voice channel");
+        ConnectToVoiceChannel = false,
+        GuildId = guildChannel.GuildId,
+        TextChannel = (ITextChannel)guildChannel,
+        VoiceChannelId = user.VoiceChannel.Id
+      }).ConfigureAwait(false);
+
+      if (player is null)
+      {
+        return CommandResponse.CommandNotSuccessful("Unable to leave channel. Not in a voice channel.");
       }
 
-      // Get lava player instance
-      if (!_lavaNode.HasPlayer(user.Guild))
-      {
-        _logger.LogDebug("Cannot leave voice, not in voice channel.");
-        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
-      }
+      // Using lavalink player disconnect from the voice channel.
+      await player.DisconnectAsync().ConfigureAwait(false);
 
-      _logger.LogDebug("Leaving voice channel");
-      await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
-      return CommandResponse.CommandSuccessful(BotLeaveVoiceConnection);
+      // Return successful response
+      return CommandResponse.CommandSuccessful("Successfully disconnected from voice channel.");
     }
     catch (Exception exception)
     {
@@ -80,61 +82,65 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
     }
   }
 
-  public async Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan)
+  public async Task InitiateDisconnectLogicAsync(ILavalinkPlayer player, TimeSpan timeSpan)
   {
-    if (!_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value))
+    if (!_disconnectTokens.TryGetValue(player.VoiceChannelId, out var value))
     {
       value = new CancellationTokenSource();
-      _disconnectTokens.TryAdd(lavaPlayer.VoiceChannel.Id, value);
+      _disconnectTokens.TryAdd(player.VoiceChannelId, value);
     }
     else if (value.IsCancellationRequested)
     {
-      _disconnectTokens.TryUpdate(lavaPlayer.VoiceChannel.Id, new CancellationTokenSource(), value);
-      value = _disconnectTokens[lavaPlayer.VoiceChannel.Id];
+      _disconnectTokens.TryUpdate(player.VoiceChannelId, new CancellationTokenSource(), value);
+      value = _disconnectTokens[player.VoiceChannelId];
     }
 
-    await lavaPlayer.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
-    var isCancelled = SpinUntil(() => value.IsCancellationRequested, timeSpan);
+    var isCancelled = SpinUntil(() => value?.IsCancellationRequested ?? false, timeSpan);
     if (isCancelled)
     {
       _logger.LogDebug("Auto disconnect cancelled.");
       return;
     }
 
-    await _lavaNode.LeaveAsync(lavaPlayer.VoiceChannel);
-    _logger.LogDebug("Howbot has disconnected from voice channel.");
+    await player.DisconnectAsync(value.Token).ConfigureAwait(false);
   }
 
-  private async Task<Player<LavaTrack>> JoinGuildVoiceChannelAsync(IVoiceState voiceState, ITextChannel textChannel)
+  private struct GetPlayerParameters
   {
-    // Parameter error handling
-    ArgumentNullException.ThrowIfNull(voiceState);
-    ArgumentNullException.ThrowIfNull(textChannel);
+    public ulong GuildId { get; init; }
 
-    // Check if user is in a voice channel
-    if (voiceState.VoiceChannel == null)
-    {
-      _logger.LogInformation("Requested user is not in a voice channel");
-      return null;
-    }
+    public ulong VoiceChannelId { get; init; }
 
-    // Check if bot is already connect
-    if (!IsBotAlreadyConnected(textChannel.Guild))
-    {
-      // Not in voice, join active voice channel
-      var lavaPlayer = await _lavaNode.JoinAsync(voiceState.VoiceChannel, textChannel);
-      return lavaPlayer;
-    }
+    [NotNull] public ITextChannel TextChannel { get; init; }
 
-    // Get already created lava player (already connected to voice channel)
-    _lavaNode.TryGetPlayer(textChannel.Guild, out var player);
-    return player;
+    public bool ConnectToVoiceChannel { get; init; }
   }
 
-  private bool IsBotAlreadyConnected(IGuild guild)
+  private async ValueTask<ILavalinkPlayer> GetPlayerAsync(GetPlayerParameters playerParams)
   {
-    ArgumentNullException.ThrowIfNull(guild);
+    var retrieveOptions = new PlayerRetrieveOptions(
+      ChannelBehavior: playerParams.ConnectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None);
 
-    return _lavaNode.HasPlayer(guild);
+    var result = await _audioService.Players
+      .RetrieveAsync(guildId: playerParams.GuildId, memberVoiceChannel: playerParams.VoiceChannelId,
+        playerFactory: PlayerFactory.Default,
+        options: new OptionsWrapper<LavalinkPlayerOptions>(new LavalinkPlayerOptions()),
+        retrieveOptions: retrieveOptions);
+
+    if (result.IsSuccess)
+    {
+      return result.Player;
+    }
+
+    var errorMessage = result.Status switch
+    {
+      PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
+      PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected.",
+      _ => "Unknown error.",
+    };
+
+    await playerParams.TextChannel.SendMessageAsync(errorMessage).ConfigureAwait(false);
+
+    return null;
   }
 }

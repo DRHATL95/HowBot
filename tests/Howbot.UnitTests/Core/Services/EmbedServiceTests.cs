@@ -2,8 +2,9 @@
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Services;
+using Lavalink4NET.Players.Queued;
+using Lavalink4NET.Tracks;
 using Moq;
-using Victoria.Player;
 using Xunit;
 
 namespace Howbot.UnitTests.Core.Services;
@@ -40,22 +41,22 @@ public class EmbedServiceTests
   {
     var embedService = Factory();
 
-    var mockLavaTrack = new Mock<LavaTrack>();
+    var lavalinkTrack = new Mock<LavalinkTrack>();
     var mockGuildUser = new Mock<IGuildUser>();
     var mockTextChannel = new Mock<ITextChannel>();
 
     var mockEmbedService = new Mock<IEmbedService>();
     mockEmbedService
       .Setup(service =>
-        service.GenerateMusicNowPlayingEmbedAsync(mockLavaTrack.Object, mockGuildUser.Object, mockTextChannel.Object)
+        service.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object, mockTextChannel.Object)
           .Result)
       .Returns(new EmbedBuilder().Build());
 
     var result =
-      embedService.GenerateMusicNowPlayingEmbedAsync(mockLavaTrack.Object, mockGuildUser.Object,
+      embedService.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object,
         mockTextChannel.Object);
 
-    Assert.NotNull(result);
+    Assert.NotNull(result.Result);
   }
 
   [Fact]
@@ -63,7 +64,7 @@ public class EmbedServiceTests
   {
     var embedService = Factory();
 
-    var mockQueue = new Mock<Vueue<LavaTrack>>();
+    var mockQueue = new Mock<ITrackQueue>();
 
     var mockEmbedService = new Mock<IEmbedService>();
     mockEmbedService
@@ -72,7 +73,7 @@ public class EmbedServiceTests
 
     var result = embedService.GenerateMusicNextTrackEmbedAsync(mockQueue.Object);
 
-    Assert.NotNull(result);
+    Assert.NotNull(result.Result);
   }
 
   [Fact]
@@ -80,7 +81,7 @@ public class EmbedServiceTests
   {
     var embedService = Factory();
 
-    var mockQueue = new Mock<Vueue<LavaTrack>>();
+    var mockQueue = new Mock<ITrackQueue>();
 
     var mockEmbedService = new Mock<IEmbedService>();
     mockEmbedService
@@ -89,6 +90,6 @@ public class EmbedServiceTests
 
     var result = embedService.GenerateMusicCurrentQueueEmbedAsync(mockQueue.Object);
 
-    Assert.NotNull(result);
+    Assert.NotNull(result.Result);
   }
 }

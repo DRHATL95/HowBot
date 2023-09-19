@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Discord;
-using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
-using JetBrains.Annotations;
+using Lavalink4NET;
+using Lavalink4NET.Clients.Events;
+using Lavalink4NET.Events;
+using Lavalink4NET.Events.Players;
 using Microsoft.Extensions.Logging;
-using Victoria.Node;
-using Victoria.Node.EventArgs;
-using Victoria.Player;
-using Victoria.Responses.Search;
 
 namespace Howbot.Core.Services;
 
@@ -21,19 +15,18 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
 {
   private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
   private readonly IEmbedService _embedService;
-  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
   private readonly ILoggerAdapter<LavaNodeService> _logger;
   private readonly IMusicService _musicService;
   private readonly IVoiceService _voiceService;
+  private readonly IAudioService _audioService;
 
-  public LavaNodeService(LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, IEmbedService embedService,
-    IMusicService musicService, IVoiceService voiceService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
+  public LavaNodeService(IEmbedService embedService, IMusicService musicService, IVoiceService voiceService, IAudioService audioService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
   {
-    _lavaNode = lavaNode;
     _embedService = embedService;
     _logger = logger;
     _musicService = musicService;
     _voiceService = voiceService;
+    _audioService = audioService;
     _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
   }
 
@@ -44,57 +37,62 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
       _logger.LogDebug("{ServiceName} is initializing..", typeof(LavaNodeService).ToString());
     }
 
-    if (_lavaNode == null)
-    {
-      return;
-    }
+    _audioService.StatisticsUpdated += AudioServiceOnStatisticsUpdated;
+    _audioService.TrackEnded += AudioServiceOnTrackEnded;
+    _audioService.TrackException += AudioServiceOnTrackException;
+    _audioService.TrackStarted += AudioServiceOnTrackStarted;
+    _audioService.TrackStuck += AudioServiceOnTrackStuck;
+    _audioService.WebSocketClosed += AudioServiceOnWebSocketClosed;
 
-    // Hook-up lava node events
-    _lavaNode.OnTrackStart += LavaNodeOnOnTrackStart;
-    _lavaNode.OnTrackEnd += LavaNodeOnOnTrackEnd;
-    _lavaNode.OnTrackException += LavaNodeOnOnTrackException;
-    _lavaNode.OnStatsReceived += LavaNodeOnOnStatsReceived;
-    _lavaNode.OnWebSocketClosed += LavaNodeOnOnWebSocketClosed;
-    _lavaNode.OnTrackStuck += LavaNodeOnOnTrackStuck;
+    _audioService.DiscordClient.VoiceServerUpdated += DiscordClientOnVoiceServerUpdated;
+    _audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
   }
 
-  private async Task Play247Track(Player<LavaTrack> lavaPlayer)
+  private Task DiscordClientOnVoiceStateUpdated(object sender, VoiceStateUpdatedEventArgs eventargs)
   {
-    ArgumentNullException.ThrowIfNull(lavaPlayer);
-
-    try
-    {
-      if (lavaPlayer.LastPlayed != null)
-      {
-        var track = await GetUniqueRadioTrack(lavaPlayer);
-        if (track != null)
-        {
-          await lavaPlayer.PlayAsync(track);
-        }
-        else
-        {
-          _logger.LogDebug("Unable to find a track to play.");
-        }
-      }
-      else
-      {
-        _logger.LogError("247 mode unable to play, last song was not set correctly.");
-      }
-    }
-    catch (Exception exception)
-    {
-      _logger.LogError(exception, "Failed to play 247 mode.");
-      throw;
-    }
+    throw new NotImplementedException();
   }
 
-  /// <summary>
-  /// 
-  /// </summary>
-  /// <param name="player"></param>
-  /// <param name="attempt"></param>
-  /// <returns></returns>
-  private async Task<LavaTrack> GetUniqueRadioTrack(Player<LavaTrack> player, int attempt = 0)
+  private Task DiscordClientOnVoiceServerUpdated(object sender, VoiceServerUpdatedEventArgs eventargs)
+  {
+    throw new NotImplementedException();
+  }
+
+  private Task AudioServiceOnWebSocketClosed(object sender, WebSocketClosedEventArgs eventargs)
+  {
+    _logger.LogCritical("Discord websocket has closed for the following reason: {Reason}", eventargs.Reason);
+
+    return Task.CompletedTask;
+  }
+
+  private Task AudioServiceOnTrackStuck(object sender, TrackStuckEventArgs eventargs)
+  {
+    throw new System.NotImplementedException();
+  }
+
+  private Task AudioServiceOnTrackStarted(object sender, TrackStartedEventArgs eventargs)
+  {
+    throw new System.NotImplementedException();
+  }
+
+  private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventargs)
+  {
+    throw new System.NotImplementedException();
+  }
+
+  private Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventargs)
+  {
+    throw new System.NotImplementedException();
+  }
+
+  private Task AudioServiceOnStatisticsUpdated(object sender, StatisticsUpdatedEventArgs eventargs)
+  {
+    _logger.LogInformation("Lavalink has been online for: {Uptime}", eventargs.Statistics.Uptime);
+
+    return Task.CompletedTask;
+  }
+
+  /*private async Task<LavalinkTrack> GetUniqueRadioTrack(ILavalinkPlayer player, int attempt = 0)
   {
     ArgumentNullException.ThrowIfNull(player);
 
@@ -155,119 +153,21 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     _logger.LogDebug("{TrackName} was returned.", nextTrack.Title);
 
     return nextTrack;
-  }
+  }*/
 
-  #region Lava Node Events
-
-  /// <summary>
-  ///   LavaNode event handler for when a track gets stuck.
-  /// </summary>
-  /// <param name="trackStuckEventArg"></param>
-  /// <returns></returns>
-  private Task LavaNodeOnOnTrackStuck(TrackStuckEventArg<Player<LavaTrack>, LavaTrack> trackStuckEventArg)
+  public async ValueTask DisposeAsync()
   {
-    var guild = DiscordHelper.GetGuildTag(trackStuckEventArg.Player.TextChannel.Guild);
-
-    _logger.LogWarning("Requested track [{TrackTitle}] for Guild {GuildTag} is stuck",
-      trackStuckEventArg.Track.Title, guild);
-
-    return Task.CompletedTask;
-  }
-
-  /// <summary>
-  ///   LavaNode websocket event handler for when the socket is closed unexpectedly.
-  /// </summary>
-  /// <param name="arg"></param>
-  /// <returns></returns>
-  private Task LavaNodeOnOnWebSocketClosed(WebSocketClosedEventArg arg)
-  {
-    _logger.Log(LogLevel.Warning, "Discord websocket has closed for the following reason: {Reason}", arg.Reason);
-
-    return Task.CompletedTask;
-  }
-
-  /// <summary>
-  ///   LavaNode event handler for when stats are received from the server.
-  /// </summary>
-  /// <param name="arg"></param>
-  /// <returns></returns>
-  private Task LavaNodeOnOnStatsReceived(StatsEventArg arg)
-  {
-    _logger.LogDebug($"Lavalink has been online for: {arg.Uptime:g}");
-
-    return Task.CompletedTask;
-  }
-
-  /// <summary>
-  ///   LavaNode event handler for when an exception has been thrown.
-  /// </summary>
-  /// <param name="trackExceptionEventArg"></param>
-  /// <returns></returns>
-  private Task LavaNodeOnOnTrackException(TrackExceptionEventArg<Player<LavaTrack>, LavaTrack> trackExceptionEventArg)
-  {
-    var exception = new Exception(trackExceptionEventArg.Exception.Message);
-
-    _logger.LogError(exception, "[{Severity}] - LavaNode has thrown an exception",
-      trackExceptionEventArg.Exception.Severity);
-
-    return Task.CompletedTask;
-  }
-
-  /// <summary>
-  ///   LavaNode event handler for when track ends.
-  /// </summary>
-  /// <param name="trackEndEventArg"></param>
-  private async Task LavaNodeOnOnTrackEnd(TrackEndEventArg<Player<LavaTrack>, LavaTrack> trackEndEventArg)
-  {
-    if (trackEndEventArg.Reason is not TrackEndReason.Finished)
+    if (_audioService != null)
     {
-      return;
+      await _audioService.DisposeAsync();
+
+      _audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
+      _audioService.TrackEnded -= AudioServiceOnTrackEnded;
+      _audioService.TrackException -= AudioServiceOnTrackException;
+      _audioService.TrackStarted -= AudioServiceOnTrackStarted;
+      _audioService.TrackStuck -= AudioServiceOnTrackStuck;
+      _audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
     }
 
-    var lavaPlayer = trackEndEventArg.Player;
-    if (lavaPlayer != null)
-    {
-      // set last played track
-      lavaPlayer.LastPlayed ??= trackEndEventArg.Track;
-      lavaPlayer.RecentlyPlayed.Add(lavaPlayer.LastPlayed);
-
-      if (!lavaPlayer.Vueue.TryDequeue(out var lavaTrack))
-      {
-        if (trackEndEventArg.Player.Is247ModeEnabled)
-        {
-          _logger.LogInformation("Player queue is empty, but 24/7 mode is enabled. Playing next related track.");
-
-          await Play247Track(lavaPlayer);
-          return;
-        }
-
-        _logger.LogInformation("Lava player queue is empty. Attempting to disconnect now");
-        await _voiceService.InitiateDisconnectLogicAsync(lavaPlayer, TimeSpan.FromSeconds(30));
-        return;
-      }
-
-      _logger.LogDebug("Track has ended. Playing next song in queue.");
-      await lavaPlayer.PlayAsync(lavaTrack);
-    }
   }
-
-  /// <summary>
-  ///   LavaNode event handler for when track starts
-  /// </summary>
-  /// <param name="trackStartEventArg"></param>
-  /// <returns></returns>
-  private async Task LavaNodeOnOnTrackStart(TrackStartEventArg<Player<LavaTrack>, LavaTrack> trackStartEventArg)
-  {
-    var guild = trackStartEventArg.Player.TextChannel.Guild;
-    var textChannel = trackStartEventArg.Player.TextChannel;
-
-    _logger.LogDebug("Track [{TrackName}] has started playing in Guild {GuildTag}",
-      trackStartEventArg.Track.Title, DiscordHelper.GetGuildTag(guild));
-
-    var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(trackStartEventArg.Track,
-      trackStartEventArg.Player.Author, textChannel);
-    await textChannel.SendMessageAsync(embed: embed as Embed);
-  }
-
-  #endregion Lava Node Events
 }

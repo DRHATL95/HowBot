@@ -1,17 +1,24 @@
 ﻿using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Models;
-using Victoria.Player;
+using JetBrains.Annotations;
+using Lavalink4NET.Players.Queued;
+using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Interfaces;
 
 public interface IEmbedService : IServiceBase
 {
-  IEmbed CreateEmbed(EmbedOptions embedOptions);
+  [NotNull]
+  IEmbed CreateEmbed([NotNull] EmbedOptions embedOptions);
 
-  Task<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavaTrack lavaTrack, IGuildUser user, ITextChannel textChannel);
+  [NotNull]
+  ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync([NotNull] LavalinkTrack queueItem,[NotNull] IGuildUser user,[NotNull] ITextChannel textChannel);
 
-  Task<IEmbed> GenerateMusicNextTrackEmbedAsync(Vueue<LavaTrack> queue);
+  [NotNull]
+  ValueTask<IEmbed> GenerateMusicNextTrackEmbedAsync([NotNull] ITrackQueue queue);
 
-  Task<IEmbed> GenerateMusicCurrentQueueEmbedAsync(Vueue<LavaTrack> queue);
+  [NotNull]
+  ValueTask<IEmbed> GenerateMusicCurrentQueueEmbedAsync([NotNull] ITrackQueue queue);
+
 }

@@ -7,6 +7,7 @@ using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using JetBrains.Annotations;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Permissions.Bot;
 using static Howbot.Core.Models.Permissions.User;
@@ -15,11 +16,11 @@ namespace Howbot.Core.Modules;
 
 public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
 {
-  private readonly InteractionService _interactionService;
-  private readonly IVoiceService _voiceService;
-  private readonly ILoggerAdapter<GeneralModule> _logger;
+  [NotNull] private readonly InteractionService _interactionService;
+  [NotNull] private readonly IVoiceService _voiceService;
+  [NotNull] private readonly ILoggerAdapter<GeneralModule> _logger;
 
-  public GeneralModule(InteractionService interactionService, IVoiceService voiceService, ILoggerAdapter<GeneralModule> logger)
+  public GeneralModule([NotNull] InteractionService interactionService,[NotNull] IVoiceService voiceService,[NotNull] ILoggerAdapter<GeneralModule> logger)
   {
     _interactionService = interactionService;
     _voiceService = voiceService;
@@ -35,15 +36,18 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync();
+      await DeferAsync().ConfigureAwait(false);
 
-      CommandResponse commandResponse = await _voiceService.JoinVoiceAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
-      if (!commandResponse.Success)
+      if (Context.User is IGuildUser user)
       {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-      }
+        CommandResponse commandResponse = await _voiceService.JoinVoiceChannelAsync(user);
+        if (!commandResponse.IsSuccessful)
+        {
+          ModuleHelper.HandleCommandFailed(commandResponse);
+        }
 
-      await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+        await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
+      }
     }
     catch (Exception exception)
     {
@@ -61,16 +65,19 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync();
+      await DeferAsync().ConfigureAwait(false);
 
-      var commandResponse = await _voiceService.LeaveVoiceChannelAsync(Context.User as IGuildUser);
-
-      if (!commandResponse.Success)
+      if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
-        ModuleHelper.HandleCommandFailed(commandResponse);
+        CommandResponse commandResponse = await _voiceService.LeaveVoiceChannelAsync(user, channel).ConfigureAwait(false);
+
+        if (!commandResponse.IsSuccessful)
+        {
+          ModuleHelper.HandleCommandFailed(commandResponse);
+        }
       }
 
-      await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+      await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
     }
     catch (Exception exception)
     {
@@ -84,16 +91,19 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      var replyMessage = await Context.Channel.SendMessageAsync("Ping?");
+      var channel = Context.Channel;
+      var client = Context.Client;
 
-      var latency = Context.Client.Latency;
+      var replyMessage = await channel.SendMessageAsync("Ping?").ConfigureAwait(false);
+
+      var latency = client.Latency;
       var message =
         $"Pong! Bot WebSocket latency {latency}ms. Discord API latency {(DateTimeOffset.UtcNow - replyMessage.CreatedAt).TotalMilliseconds}ms";
 
-      var editedMessage = await Context.Channel.SendMessageAsync(message,
-        messageReference: new MessageReference(replyMessage.Id, replyMessage.Channel.Id));
+      await Context.Channel.SendMessageAsync(message,
+        messageReference: new MessageReference(replyMessage.Id, replyMessage.Channel.Id)).ConfigureAwait(false);
 
-      await replyMessage.DeleteAsync();
+      await replyMessage.DeleteAsync().ConfigureAwait(false);
     }
     catch (Exception exception)
     {
@@ -102,14 +112,17 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
+  [NotNull]
   [SlashCommand(HelpCommandName, HelpCommandDescription, true, RunMode.Async)]
-  public async Task HelpCommandAsync()
+  public Task HelpCommandAsync()
   {
     var commands = _interactionService.SlashCommands;
     var commandList = string.Join("\n", commands.Select(c => $"`/{c.Name}`: {c.Description}"));
 
     var embedBuilder = new EmbedBuilder { Title = "Command List", Description = commandList };
 
-    await RespondAsync(embeds: new[] { embedBuilder.Build() });
+    RespondAsync(embeds: new[] { embedBuilder.Build() }).ConfigureAwait(false);
+
+    return Task.CompletedTask;
   }
 }

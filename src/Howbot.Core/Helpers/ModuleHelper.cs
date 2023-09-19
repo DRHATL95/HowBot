@@ -17,14 +17,6 @@ public static class ModuleHelper
   {
     ArgumentNullException.ThrowIfNull(commandResponse, nameof(commandResponse));
 
-    if (!string.IsNullOrEmpty(commandResponse.CommandName))
-    {
-      Log.Logger.Information("Command has failed.");
-      return;
-    }
-
-    Log.Logger.Information("{CommandName} has failed", commandResponse.CommandName);
-
     if (commandResponse.Exception != null)
     {
       throw commandResponse.Exception;

@@ -5,16 +5,16 @@ using Discord;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
-using Victoria;
-using Victoria.Player;
+using Lavalink4NET.Players.Queued;
+using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Services;
 
 public class EmbedService : ServiceBase<EmbedService>, IEmbedService
 {
-  private readonly ILoggerAdapter<EmbedService> _logger;
+  [NotNull] private readonly ILoggerAdapter<EmbedService> _logger;
 
-  public EmbedService(ILoggerAdapter<EmbedService> logger) : base(logger)
+  public EmbedService([NotNull] ILoggerAdapter<EmbedService> logger) : base(logger)
   {
     _logger = logger;
   }
@@ -60,100 +60,93 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     return embedBuilder.Build();
   }
 
-  public async Task<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavaTrack lavaTrack, IGuildUser user,
-    ITextChannel textChannel)
+  public ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavalinkTrack track, IGuildUser user, ITextChannel textChannel)
   {
-    if (lavaTrack == null)
-    {
-      throw new ArgumentNullException(nameof(lavaTrack));
-    }
+    ArgumentException.ThrowIfNullOrEmpty(nameof(track));
+    ArgumentException.ThrowIfNullOrEmpty(nameof(user));
+    ArgumentException.ThrowIfNullOrEmpty(nameof(textChannel));
 
-    if (user == null)
-    {
-      throw new ArgumentNullException(nameof(user));
-    }
+    EmbedOptions defaultEmbedOptions = new EmbedOptions { Title = "Your song is now playing." };
 
-    if (textChannel == null)
-    {
-      throw new ArgumentNullException(nameof(textChannel));
-    }
+    Uri trackArtworkUri = track.ArtworkUri;
 
     try
     {
-      var trackArtwork = await lavaTrack.FetchArtworkAsync();
-      var trackDescription = lavaTrack.Position > TimeSpan.Zero
-        ? $"By: {lavaTrack.Author} ({lavaTrack.Position:hh\\:mm\\:ss}/{lavaTrack.Duration:hh\\:mm\\:ss})"
-        : $"By: {lavaTrack.Author} | {lavaTrack.Duration:hh\\:mm\\:ss}";
-
-      return new EmbedBuilder()
-        .WithColor(Color.DarkPurple)
+      var embed = new EmbedBuilder()
+        .WithColor(Color.Default)
         .WithTitle("Now Playing")
-        .WithUrl(lavaTrack.Url)
-        .WithThumbnailUrl(trackArtwork)
-        .AddField(new EmbedFieldBuilder { IsInline = false, Name = lavaTrack.Title, Value = trackDescription })
-        .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user) ?? new EmbedFooterBuilder())
+        .WithUrl(track.Uri?.AbsoluteUri ?? string.Empty)
+        .WithThumbnailUrl(trackArtworkUri?.AbsoluteUri ?? string.Empty)
+        .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
         .WithCurrentTimestamp()
         .Build();
+
+      return ValueTask.FromResult((IEmbed)embed);
     }
     catch (Exception exception)
     {
       _logger.LogError(exception, nameof(GenerateMusicNowPlayingEmbedAsync));
       _logger.LogInformation("Failed to generate music now playing embed, falling back to default embed.");
-      return CreateEmbed(new EmbedOptions { Title = "Your song is now playing!" });
+      return ValueTask.FromResult(CreateEmbed(defaultEmbedOptions));
     }
   }
 
-  public Task<IEmbed> GenerateMusicNextTrackEmbedAsync(Vueue<LavaTrack> queue)
+  public ValueTask<IEmbed> GenerateMusicNextTrackEmbedAsync(ITrackQueue queue)
   {
-    ArgumentNullException.ThrowIfNull(queue);
+    ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
 
-    if (queue.Count == 0)
+    if (!queue.TryPeek(out ITrackQueueItem nextTrackItem))
     {
-      return Task.FromResult(CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." }));
+      return ValueTask.FromResult(CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." }));
     }
 
-    var nextTrack = queue.Peek();
-
-    return Task.FromResult(CreateEmbed(new EmbedOptions
+    if (nextTrackItem?.Track is null)
     {
-      Title = "Next Track",
+      return ValueTask.FromResult(CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." }));
+    }
+
+    var embed = CreateEmbed(new EmbedOptions()
+    {
+      Title = "Next Track In Queue",
       Fields = new[]
       {
-        new EmbedFieldBuilder
+        new EmbedFieldBuilder()
         {
           IsInline = false,
-          Name = nextTrack.Title,
-          Value = $"By: {nextTrack.Author} | {nextTrack.Duration:hh\\:mm\\:ss}"
+          Name = nextTrackItem.Identifier,
+          Value = $@"By: {nextTrackItem.Track.Author} | {nextTrackItem.Track.Duration:hh\:mm\:ss}"
         }
       }
-    }));
+    });
+
+    return ValueTask.FromResult(embed);
+
   }
 
-  public Task<IEmbed> GenerateMusicCurrentQueueEmbedAsync(Vueue<LavaTrack> queue)
+  public ValueTask<IEmbed> GenerateMusicCurrentQueueEmbedAsync(ITrackQueue queue)
   {
-    ArgumentNullException.ThrowIfNull(queue);
+    ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
 
-    if (queue.Count == 0)
+    if (queue.IsEmpty)
     {
-      return Task.FromResult(CreateEmbed(new EmbedOptions { Title = "There are no songs in the queue." }));
+      return ValueTask.FromResult(CreateEmbed(new EmbedOptions { Title = "There are no songs in the queue." }));
     }
 
-    var queueList = queue.ToList();
-    var queueListCount = queueList.Count;
-    var queueListCountString = queueListCount.ToString();
+    var queueList = queue.Count > 10
+      ? string.Join("\n", queue.Take(10).Select(((item, i) => $"`{i + 1}.` {item.Identifier}")))
+      : string.Join(Environment.NewLine, queue.Select(((item, i) => $"`{i + 1}.` {item.Identifier}")));
 
-    var queueListString = queueListCount > 10
-      ? string.Join("\n", queueList.Take(10).Select((track, index) => $"`{index + 1}.` {track.Title}"))
-      : string.Join("\n", queueList.Select((track, index) => $"`{index + 1}.` {track.Title}"));
-
-    return Task.FromResult(CreateEmbed(new EmbedOptions
+    var embed = CreateEmbed(new EmbedOptions()
     {
-      Title = $"Current Queue ({queueListCountString})",
-      Fields = new[] { new EmbedFieldBuilder { IsInline = false, Name = "Songs", Value = queueListString } }
-    }));
+      Title = $"Current Queue ({queue.Count})",
+      Fields = new[] { new EmbedFieldBuilder() { IsInline = false, Name = "Songs", Value = queueList } }
+    });
+
+    return ValueTask.FromResult(embed);
   }
 
-  private static EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser([NotNull] IUser user)
+  [NotNull]
+  private EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser([NotNull] IUser user)
   {
     try
     {
@@ -163,10 +156,11 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
         .WithText(user.Username)
         .WithIconUrl(authorFooterThumbnail);
     }
-    catch (Exception)
+    catch (Exception exception)
     {
-      // TODO: Log exception
+      _logger.LogError(exception);
       return new EmbedFooterBuilder();
     }
   }
+
 }

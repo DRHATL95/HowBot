@@ -6,28 +6,25 @@ using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
-using Victoria.Node;
-using Victoria.Player;
 
 namespace Howbot.Core.Services;
 
 public class InteractionHandlerService : ServiceBase<InteractionHandlerService>, IInteractionHandlerService
 {
-  private readonly DiscordSocketClient _discordSocketClient;
-  private readonly InteractionService _interactionService;
-  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
-  private readonly ILoggerAdapter<InteractionHandlerService> _logger;
-  private readonly IServiceProvider _serviceProvider;
+  [NotNull] private readonly DiscordSocketClient _discordSocketClient;
+  [NotNull] private readonly InteractionService _interactionService;
+  [NotNull] private readonly ILoggerAdapter<InteractionHandlerService> _logger;
+  [NotNull] private readonly IServiceProvider _serviceProvider;
 
-  public InteractionHandlerService(DiscordSocketClient discordSocketClient, InteractionService interactionService,
-    IServiceProvider serviceProvider, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode,
-    ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
+  public InteractionHandlerService([NotNull] DiscordSocketClient discordSocketClient,[NotNull] InteractionService interactionService,
+    [NotNull] IServiceProvider serviceProvider,
+    [NotNull] ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;
     _serviceProvider = serviceProvider;
-    _lavaNode = lavaNode;
     _logger = logger;
   }
 
@@ -48,24 +45,9 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     _interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
   }
 
-  private async Task InteractionServiceOnInteractionExecuted(ICommandInfo commandInfo,
-    IInteractionContext interactionContext, IResult result)
-  {
-    if (result.IsSuccess)
-    {
-      return;
-    }
-
-    _logger.LogWarning("Interaction command did not execute successfully!");
-
-    if (!string.IsNullOrEmpty(result.ErrorReason))
-    {
-      await interactionContext.Interaction.RespondAsync(result.ErrorReason);
-    }
-  }
-
   #region Interaction Service Events
 
+  [NotNull]
   private Task InteractionServiceOnLog(LogMessage logMessage)
   {
     try
@@ -97,7 +79,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
   }
 
-  private async Task DiscordSocketClientOnInteractionCreated(SocketInteraction socketInteraction)
+  private async Task DiscordSocketClientOnInteractionCreated([NotNull] SocketInteraction socketInteraction)
   {
     try
     {
@@ -175,5 +157,22 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
   }
 
+  private async Task InteractionServiceOnInteractionExecuted([NotNull] ICommandInfo commandInfo,
+    [NotNull] IInteractionContext interactionContext, [NotNull] IResult result)
+  {
+    if (result.IsSuccess)
+    {
+      return;
+    }
+
+    _logger.LogWarning("Interaction command did not execute successfully!");
+
+    if (!string.IsNullOrEmpty(result.ErrorReason))
+    {
+      await interactionContext.Interaction.RespondAsync(result.ErrorReason);
+    }
+  }
+
   #endregion Interaction Service Events
+
 }

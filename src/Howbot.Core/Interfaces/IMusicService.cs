@@ -1,42 +1,43 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Models;
-using Victoria.Responses.Search;
+using JetBrains.Annotations;
+using Lavalink4NET.Players;
+using Lavalink4NET.Rest.Entities.Tracks;
 
 namespace Howbot.Core.Interfaces;
 
 public interface IMusicService : IServiceBase
 {
-  #region Module Calls
+  [NotNull]
+  public Task<CommandResponse> PlayTrackBySearchTypeAsync<T>(T player, SearchProviderTypes searchProviderType, [NotNull] string searchRequest, [NotNull] IGuildUser user,
+    [NotNull] IVoiceState voiceState, [NotNull] ITextChannel textChannel) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> PlayBySearchTypeAsync(SearchType searchType, string searchRequest, IGuildUser user,
-    IVoiceState voiceState, ITextChannel textChannel);
+  [NotNull]
+  public Task<CommandResponse> PauseTrackAsync<T>(T player) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> PauseTrackAsync(IGuild guild);
+  [NotNull]
+  public Task<CommandResponse> ResumeTrackAsync<T>(T player) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> ResumeTrackAsync(IGuild guild);
+  [NotNull]
+  public Task<CommandResponse> SkipTrackAsync<T>(T player, int numberOfTracks) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> SkipTrackAsync(IGuild guild, int numberOfTracks);
+  [NotNull]
+  public Task<CommandResponse> SeekTrackAsync<T>(T player, TimeSpan seekPosition) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> SeekTrackAsync(IGuild guild, TimeSpan seekPosition);
+  [NotNull]
+  public Task<CommandResponse> ChangeVolumeAsync<T>(T player, [CanBeNull] int? newVolume) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> ChangeVolumeAsync(IGuild guild, int? newVolume);
+  public Task<CommandResponse> NowPlayingAsync<T>(T player, [NotNull] IGuildUser user, [NotNull] ITextChannel textChannel) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> NowPlayingAsync(IGuildUser user, ITextChannel textChannel);
+  public Task<CommandResponse> ApplyAudioFilterAsync<T>(T player, [NotNull] IPlayerFilters filter) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> ApplyAudioFilterAsync<T>(IGuild guild, T filter);
+  public Task<CommandResponse> GetLyricsFromTrackAsync<T>(T player) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> GetLyricsFromGeniusAsync(IGuild guild);
+  public CommandResponse ToggleShuffle<T>(T player) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> GetLyricsFromOvhAsync(IGuild guild);
+  /*  public CommandResponse ToggleTwoFourSeven(); */
 
-  public CommandResponse ShuffleQueue(IGuild guild);
-
-  public CommandResponse ToggleTwoFourSeven(IGuild guild);
-
-  #endregion Module Calls
-
-  public Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1);
+  /* public Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1); */
 }
