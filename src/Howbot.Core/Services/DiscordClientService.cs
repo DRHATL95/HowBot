@@ -119,7 +119,8 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   {
     try
     {
-      await _interactionService.AddModuleAsync(typeof(MusicModule), _serviceProvider);
+      await _interactionService.AddModuleAsync(typeof(MusicModule), _serviceProvider).ConfigureAwait(false);
+      await _interactionService.AddModuleAsync(typeof(AdminModule), _serviceProvider).ConfigureAwait(false);
       // await _interactionService.AddModuleAsync(typeof(GeneralModule), _serviceProvider);
     }
     catch (FileNotFoundException exception)
@@ -183,7 +184,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   [NotNull]
   private Task DiscordSocketClientOnDisconnected(Exception arg)
   {
-    _logger.LogDebug("{Username} has disconnected from socket", LoggedInUsername);
+    _logger.LogError(arg, "{Username} has disconnected from the ws.", LoggedInUsername);
 
     return Task.CompletedTask;
   }

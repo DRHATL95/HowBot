@@ -11,9 +11,6 @@ using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
 using JetBrains.Annotations;
-using Lavalink4NET;
-using Lavalink4NET.Clients;
-using Lavalink4NET.DiscordNet;
 using Lavalink4NET.Extensions;
 using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.Extensions.Configuration;
@@ -51,11 +48,6 @@ public class Program
     return Environment.ExitCode;
   }
 
-  /// <summary>
-  ///   Create the main host builder used to host the service
-  /// </summary>
-  /// <param name="args">The arguments provided when running</param>
-  /// <returns></returns>
   private static IHostBuilder CreateHostBuilder([NotNull] string[] args)
   {
     return Host.CreateDefaultBuilder(args)

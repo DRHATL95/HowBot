@@ -39,7 +39,8 @@ public class Configuration
     {
       // AlwaysDownloadUsers = true,
       GatewayIntents = GatewayIntents,
-      LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error,
+      // LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error,
+      LogLevel = LogSeverity.Info,
       LogGatewayIntentWarnings = false,
       UseInteractionSnowflakeDate = false
     };

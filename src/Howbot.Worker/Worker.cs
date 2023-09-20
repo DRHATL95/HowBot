@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Discord.WebSocket;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Howbot.Core.Settings;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,11 +16,13 @@ public class Worker : BackgroundService
   [NotNull] private readonly IDiscordClientService _discordClientService;
   [NotNull] private readonly ILoggerAdapter<Worker> _logger;
   [NotNull] private readonly IServiceProvider _serviceProvider;
+  [NotNull] private readonly DiscordSocketClient _discordSocketClient;
 
-  public Worker([NotNull] IDiscordClientService discordClientService, [NotNull] IServiceProvider serviceProvider, [NotNull] ILoggerAdapter<Worker> logger)
+  public Worker([NotNull] IDiscordClientService discordClientService, [NotNull] IServiceProvider serviceProvider, DiscordSocketClient discordSocketClient, [NotNull] ILoggerAdapter<Worker> logger)
   {
     _discordClientService = discordClientService;
     _serviceProvider = serviceProvider;
+    _discordSocketClient = discordSocketClient;
     _logger = logger;
   }
 
@@ -56,6 +60,15 @@ public class Worker : BackgroundService
     }
   }
 
+  public override async Task StopAsync(CancellationToken cancellationToken)
+  {
+    await base.StopAsync(cancellationToken);
+
+    await _discordSocketClient.StopAsync().ConfigureAwait(false);
+
+    _logger.LogInformation("Discord client has been stopped.");
+  }
+
   private void InitializeHowbotServices()
   {
     _logger.LogDebug("Initializing howbot services..");
@@ -75,13 +88,6 @@ public class Worker : BackgroundService
     {
       _logger.LogError(exception);
       throw;
-    }
-  }
-
-  private class DiscordLoginException : Exception
-  {
-    public DiscordLoginException(string message) : base(message)
-    {
     }
   }
   

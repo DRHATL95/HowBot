@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -10,8 +9,6 @@ using Howbot.Core.Models;
 using JetBrains.Annotations;
 using Lavalink4NET;
 using Lavalink4NET.Integrations.Lavasearch;
-using Lavalink4NET.Integrations.Lavasearch.Extensions;
-using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
@@ -71,19 +68,18 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       var type = ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
 
-      type = TrackSearchMode.YouTube;
-
-      var searchResponse = await _audioService.Tracks.SearchAsync(query: searchRequest,
+      // This is using Lavalink4Net.Extensions.LavaSearch - CURRENTLY NOT WORKING (Only Texts is being populated)
+      /*var searchResponse = await _audioService.Tracks.SearchAsync(query: searchRequest,
         loadOptions: new TrackLoadOptions(SearchMode: type),
-        categories: ImmutableArray.Create(SearchCategory.Track)).ConfigureAwait(false);
+        categories: ImmutableArray.Create(SearchCategory.Track)).ConfigureAwait(false);*/
 
-      if (searchResponse is null) return CommandResponse.CommandNotSuccessful("Unable to find any tracks");
+      var track = await _audioService.Tracks.LoadTrackAsync(searchRequest, type);
 
-      var extendedLavalinkTrack = new ExtendedLavalinkTrack(searchResponse.Tracks[0]);
+      if (track is null) return CommandResponse.CommandNotSuccessful("Unable to find any tracks");
 
-      await player.PlayAsync(extendedLavalinkTrack.Track).ConfigureAwait(false);
+      await player.PlayAsync(track).ConfigureAwait(false);
 
-      return CommandResponse.CommandSuccessful(extendedLavalinkTrack.Track);
+      return CommandResponse.CommandSuccessful(track);
     }
     catch (Exception exception)
     {
@@ -303,6 +299,14 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   }*/
 
   #endregion Music Module Commands
+
+  private void SearchForTrack(string searchQuery, SearchProviderTypes searchProvider = SearchProviderTypes.YouTube,
+    SearchCategory searchCategory = SearchCategory.Track)
+  {
+    var convertedType = ConvertSearchProviderTypeToTrackSearchMode(searchProvider);
+
+
+  }
 
   private static TrackSearchMode ConvertSearchProviderTypeToTrackSearchMode(SearchProviderTypes searchProviderType)
   {

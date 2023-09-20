@@ -58,12 +58,12 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       if (string.IsNullOrEmpty(searchRequest))
       {
-        await ModifyOriginalResponseAsync(([NotNull] properties) => properties.Content = "You must enter a search request!").ConfigureAwait(false);
+        await ModifyOriginalResponseAsync(properties => properties.Content = "You must enter a search request!").ConfigureAwait(false);
         return;
       }
 
       var player =
-        await TryGetPlayerAsync(true, true, preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused))
+        await TryGetPlayerAsync(true)
           .ConfigureAwait(false);
 
       if (player is not null)
@@ -74,15 +74,24 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
         var response =
           await _musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
-            channel);
+            channel).ConfigureAwait(false);
 
         if (!response.IsSuccessful)
         {
           ModuleHelper.HandleCommandFailed(response);
+          // Because embeds are handled by events, just delete the deferred response
+          await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
+          return;
         }
 
-        // Because embeds are handled by events, just delete the deferred response
-        await GetOriginalResponseAsync().ContinueWith(([NotNull]task) => task.Result.DeleteAsync().ConfigureAwait(false));
+        if (player.Queue.Count == 0)
+        {
+          await FollowupAsync($"🔈 Playing: {response.LavalinkTrack?.Uri}").ConfigureAwait(false);
+        }
+        else
+        {
+          await FollowupAsync($"Adding {response.LavalinkTrack?.Uri} to the server queue.");
+        }
       }
     }
     catch (Exception exception)
@@ -222,7 +231,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  public async Task SkipCommandAsync(int tracksToSkip = 0)
+  public async Task SkipCommandAsync(int tracksToSkip = 1)
   {
     try
     {

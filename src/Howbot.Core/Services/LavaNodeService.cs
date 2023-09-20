@@ -1,33 +1,24 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 using Howbot.Core.Interfaces;
 using Lavalink4NET;
 using Lavalink4NET.Clients.Events;
 using Lavalink4NET.Events;
 using Lavalink4NET.Events.Players;
+using Lavalink4NET.Protocol.Payloads.Events;
 using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
-public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
+public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, IAsyncDisposable
 {
-  private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
-  private readonly IEmbedService _embedService;
   private readonly ILoggerAdapter<LavaNodeService> _logger;
-  private readonly IMusicService _musicService;
-  private readonly IVoiceService _voiceService;
   private readonly IAudioService _audioService;
 
-  public LavaNodeService(IEmbedService embedService, IMusicService musicService, IVoiceService voiceService, IAudioService audioService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
+  public LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
   {
-    _embedService = embedService;
     _logger = logger;
-    _musicService = musicService;
-    _voiceService = voiceService;
     _audioService = audioService;
-    _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
   }
 
   public new void Initialize()
@@ -48,14 +39,20 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
     _audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
   }
 
+  #region LavaLink & LavaNode Events
+
   private Task DiscordClientOnVoiceStateUpdated(object sender, VoiceStateUpdatedEventArgs eventargs)
   {
-    throw new NotImplementedException();
+    _logger.LogDebug("Voice state updated.");
+
+    return Task.CompletedTask;
   }
 
   private Task DiscordClientOnVoiceServerUpdated(object sender, VoiceServerUpdatedEventArgs eventargs)
   {
-    throw new NotImplementedException();
+    _logger.LogDebug("Voice server updated.");
+
+    return Task.CompletedTask;
   }
 
   private Task AudioServiceOnWebSocketClosed(object sender, WebSocketClosedEventArgs eventargs)
@@ -72,25 +69,44 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
 
   private Task AudioServiceOnTrackStarted(object sender, TrackStartedEventArgs eventargs)
   {
-    throw new System.NotImplementedException();
+    _logger.LogDebug("Starting track [{TrackTitle}]", eventargs.Track.Title);
+
+    return Task.CompletedTask;
   }
 
   private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventargs)
   {
-    throw new System.NotImplementedException();
+    var exception = new Exception(eventargs.Exception.Message);
+
+    _logger.LogError(exception, "[{Severity}] - LavaNode has thrown an exception",
+      eventargs.Exception.Severity);
+
+    return Task.CompletedTask;
   }
 
   private Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventargs)
   {
-    throw new System.NotImplementedException();
+    if (eventargs.Reason is not TrackEndReason.Finished)
+    {
+      _logger.LogInformation("Track [{TrackName}] has ended with reason [{Reason}]", eventargs.Track.Title, eventargs.Reason);
+      return Task.CompletedTask;
+    }
+
+    _logger.LogInformation("Current song [{SongName}] has ended.", eventargs.Track.Title);
+
+    return Task.CompletedTask;
   }
 
   private Task AudioServiceOnStatisticsUpdated(object sender, StatisticsUpdatedEventArgs eventargs)
   {
-    _logger.LogInformation("Lavalink has been online for: {Uptime}", eventargs.Statistics.Uptime);
+    _logger.LogInformation("Lavalink has been online for: {UpTime}", eventargs.Statistics.Uptime.ToString("g"));
+
+    _logger.LogDebug(eventargs.Statistics.ToString());
 
     return Task.CompletedTask;
   }
+
+  #endregion
 
   /*private async Task<LavalinkTrack> GetUniqueRadioTrack(ILavalinkPlayer player, int attempt = 0)
   {
@@ -168,6 +184,5 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService
       _audioService.TrackStuck -= AudioServiceOnTrackStuck;
       _audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
     }
-
   }
 }

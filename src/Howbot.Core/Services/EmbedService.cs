@@ -76,6 +76,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
         .WithColor(Color.Default)
         .WithTitle("Now Playing")
         .WithUrl(track.Uri?.AbsoluteUri ?? string.Empty)
+        .WithDescription($"{track.Title} - {track.Author}")
         .WithThumbnailUrl(trackArtworkUri?.AbsoluteUri ?? string.Empty)
         .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
         .WithCurrentTimestamp()
