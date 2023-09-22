@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System;
+using Discord;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Services;
@@ -48,13 +49,13 @@ public class EmbedServiceTests
     var mockEmbedService = new Mock<IEmbedService>();
     mockEmbedService
       .Setup(service =>
-        service.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object, mockTextChannel.Object)
+        service.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object, mockTextChannel.Object, TimeSpan.FromMinutes(1))
           .Result)
       .Returns(new EmbedBuilder().Build());
 
     var result =
       embedService.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object,
-        mockTextChannel.Object);
+        mockTextChannel.Object, TimeSpan.FromMinutes(1));
 
     Assert.NotNull(result.Result);
   }

@@ -338,3 +338,4 @@ logs/
 
 # Ignore docker compose bc config vars
 /src/Howbot.Worker/docker-compose.yml
+/Howbot.sln.DotSettings

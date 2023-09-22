@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
+using Howbot.Core.Models.Exceptions;
 using Howbot.Core.Settings;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;

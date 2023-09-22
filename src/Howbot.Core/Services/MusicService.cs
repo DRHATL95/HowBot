@@ -1,18 +1,23 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
-using Google.Apis.YouTube.v3;
+using Discord.Interactions;
+using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Players;
 using JetBrains.Annotations;
 using Lavalink4NET;
-using Lavalink4NET.Integrations.Lavasearch;
+using Lavalink4NET.Clients;
 using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players;
+using Lavalink4NET.Players.Preconditions;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
+using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace Howbot.Core.Services;
 
@@ -23,41 +28,17 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   
   [NotNull] private readonly ILoggerAdapter<MusicService> _logger;
 
-  [NotNull] private readonly YouTubeService _youTubeService;
-
   [NotNull] private readonly IAudioService _audioService;
 
   [NotNull] private readonly ILyricsService _lyricsService;
 
-  public MusicService([NotNull] IEmbedService embedService, [NotNull] YouTubeService youTubeService, [NotNull] IAudioService audioService, [NotNull] ILoggerAdapter<MusicService> logger, [NotNull] ILyricsService lyricsService) : base(logger)
+  public MusicService([NotNull] IEmbedService embedService, [NotNull] IAudioService audioService, [NotNull] ILoggerAdapter<MusicService> logger, [NotNull] ILyricsService lyricsService) : base(logger)
   {
     _embedService = embedService;
-    _youTubeService = youTubeService;
     _logger = logger;
     _lyricsService = lyricsService;
     _audioService = audioService;
   }
-
-  public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
-  {
-    var searchListRequest = _youTubeService.Search.List("snippet");
-
-    searchListRequest.Type = "video";
-    // For some reason if I want 1 result, I have to set the max results to 2?
-    // TODO: Investigate
-    searchListRequest.MaxResults = count == 1 ? 2 : count;
-    searchListRequest.RelatedToVideoId = videoId;
-
-    var response = await searchListRequest.ExecuteAsync();
-
-    if (count <= 1)
-    {
-      return new[] { response.Items[0].Id.VideoId };
-    }
-
-    return response.Items.Select(item => item.Id.VideoId).ToList();
-  }
-
 
   #region Music Module Commands
 
@@ -198,7 +179,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         return CommandResponse.CommandNotSuccessful("No track is currently playing.");
       }
 
-      var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(player.CurrentTrack, user, textChannel);
+      var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(player.CurrentTrack, user, textChannel, player.Position?.Position);
 
       return CommandResponse.CommandSuccessful(embed);
 
@@ -300,12 +281,82 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
   #endregion Music Module Commands
 
-  private void SearchForTrack(string searchQuery, SearchProviderTypes searchProvider = SearchProviderTypes.YouTube,
-    SearchCategory searchCategory = SearchCategory.Track)
+  private static ValueTask<HowbotPlayer> CreatePlayerAsync(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties,
+    CancellationToken cancellationToken = default)
   {
-    var convertedType = ConvertSearchProviderTypeToTrackSearchMode(searchProvider);
+    cancellationToken.ThrowIfCancellationRequested();
 
+    ArgumentNullException.ThrowIfNull(properties);
 
+    Log.Logger.Information("Creating new player..");
+
+    return ValueTask.FromResult(new HowbotPlayer(properties));
+  } 
+  
+  [ItemCanBeNull]
+  public async ValueTask<IQueuedLavalinkPlayer> GetPlayerByContextAsync(SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false,
+    CancellationToken cancellationToken = default)
+  {
+    cancellationToken.ThrowIfCancellationRequested();
+
+    // Can't execute function without socket context
+    ArgumentNullException.ThrowIfNull(context, nameof(context));
+
+    if (context.User is not SocketGuildUser guildUser)
+    {
+      await context.Interaction.FollowupAsync("Unable to create player, command requested by non-guild member.")
+        .ConfigureAwait(false);
+
+      return null;
+    }
+
+    ulong voiceChannelId = guildUser.VoiceChannel?.Id ?? 0;
+    IGuild guild = context.Guild;
+    ulong guildId = guild.Id;
+
+    var retrieveOptions = new PlayerRetrieveOptions(
+      ChannelBehavior: allowConnect ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None,
+      VoiceStateBehavior: requireChannel ? MemberVoiceStateBehavior.RequireSame : MemberVoiceStateBehavior.Ignore,
+      Preconditions: preconditions);
+
+    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions()
+    {
+      DisconnectOnDestroy = true,
+      DisconnectOnStop = true,
+      SelfDeaf = true,
+      ClearQueueOnStop = true,
+      ClearHistoryOnStop = true
+    };
+
+    var result = await _audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId, CreatePlayerAsync,
+        retrieveOptions: retrieveOptions, options: new OptionsWrapper<HowbotPlayerOptions>(playerOptions), cancellationToken: cancellationToken)
+      .ConfigureAwait(false);
+
+    if (!result.IsSuccess)
+    {
+      var errorMessage = result.Status switch
+      {
+        // The user is not connected to a voice channel.
+        PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
+
+        // The bot is not in a voice channel
+        PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected to a voice channel.",
+
+        // The bot is not in the same voice channel as the user.
+        PlayerRetrieveStatus.VoiceChannelMismatch => "You are not in the same voice channel as the bot.",
+
+        // The bot failed it's precondition check.
+        PlayerRetrieveStatus.PreconditionFailed => "The bot failed it's precondition check.",
+
+        _ => "An unknown error occurred while creating the player."
+      };
+
+      await context.Interaction.FollowupAsync(errorMessage).ConfigureAwait(false);
+
+      return null;
+    }
+
+    return result.Player;
   }
 
   private static TrackSearchMode ConvertSearchProviderTypeToTrackSearchMode(SearchProviderTypes searchProviderType)
@@ -322,4 +373,25 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       _ => TrackSearchMode.YouTube
     };
   }
+
+  /*public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
+  {
+    var searchListRequest = _youTubeService.Search.List("snippet");
+
+    searchListRequest.Type = "video";
+    // For some reason if I want 1 result, I have to set the max results to 2?
+    // TODO: Investigate
+    searchListRequest.MaxResults = count == 1 ? 2 : count;
+    searchListRequest.RelatedToVideoId = videoId;
+
+    var response = await searchListRequest.ExecuteAsync();
+
+    if (count <= 1)
+    {
+      return new[] { response.Items[0].Id.VideoId };
+    }
+
+    return response.Items.Select(item => item.Id.VideoId).ToList();
+  }*/
+
 }

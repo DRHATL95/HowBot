@@ -57,6 +57,8 @@ public class Configuration
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
+  public static double MusixMatchVersionNumber => 1.1;
+
   #endregion
 
   public static bool IsDebug()

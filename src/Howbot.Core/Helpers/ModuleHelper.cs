@@ -1,5 +1,6 @@
 ﻿using System;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Exceptions;
 using Serilog;
 
 namespace Howbot.Core.Helpers;
@@ -9,17 +10,19 @@ namespace Howbot.Core.Helpers;
 /// </summary>
 public static class ModuleHelper
 {
+
   /// <summary>
-  /// Helper function to handle Module Command failed. Should handle exceptions or reponses returned from Services.
+  ///   /// Helper function to handle Module Command failed. Should handle exceptions or responses returned from Services.
   /// </summary>
   /// <param name="commandResponse"></param>
+  /// <exception cref="CommandException"></exception>
   public static void HandleCommandFailed(CommandResponse commandResponse)
   {
     ArgumentNullException.ThrowIfNull(commandResponse, nameof(commandResponse));
 
     if (commandResponse.Exception != null)
     {
-      throw commandResponse.Exception;
+      throw new CommandException(commandResponse.Exception.Message, commandResponse.Exception.InnerException);
     }
 
     if (!string.IsNullOrEmpty(commandResponse.Message))
@@ -39,7 +42,7 @@ public static class ModuleHelper
     {
       switch (arg)
       {
-        case int intArg when intArg <= 0:
+        case int intArg when intArg < 0:
         case string stringArg when string.IsNullOrEmpty(stringArg):
           return false;
 
@@ -68,4 +71,5 @@ public static class ModuleHelper
 
     return new TimeSpan(hours, minutes, seconds);
   }
+
 }

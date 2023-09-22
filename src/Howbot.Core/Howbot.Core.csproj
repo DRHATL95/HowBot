@@ -26,4 +26,8 @@
     <PackageReference Include="Serilog.Sinks.Console" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Extensions\" />
+  </ItemGroup>
+
 </Project>

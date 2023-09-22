@@ -1,21 +1,16 @@
 ﻿using System;
 using System.Collections.Immutable;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
-using Lavalink4NET;
-using Lavalink4NET.Clients;
-using Lavalink4NET.Players;
+using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players.Preconditions;
 using Lavalink4NET.Players.Queued;
-using Microsoft.Extensions.Options;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
 using static Howbot.Core.Models.Permissions.Bot;
@@ -25,21 +20,16 @@ namespace Howbot.Core.Modules;
 
 public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 {
-  [NotNull] private readonly IAudioService _audioService;
   [NotNull] private readonly ILoggerAdapter<MusicModule> _logger;
   [NotNull] private readonly IMusicService _musicService;
-  [NotNull] private readonly IVoiceService _voiceService;
+  [NotNull] private readonly ILyricsService _lyricsService;
 
-  public MusicModule([NotNull] IVoiceService voiceService, [NotNull] IMusicService musicService,
-    [NotNull] ILoggerAdapter<MusicModule> logger, [NotNull] IAudioService audioService)
+  public MusicModule(IMusicService musicService, ILyricsService lyricsService, ILoggerAdapter<MusicModule> logger)
   {
-    _voiceService = voiceService;
     _musicService = musicService;
+    _lyricsService = lyricsService;
     _logger = logger;
-    _audioService = audioService;
   }
-
-  #region Music Module Slash Commands
 
   [SlashCommand(PlayCommandName, PlayCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
@@ -63,8 +53,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       }
 
       var player =
-        await TryGetPlayerAsync(true)
-          .ConfigureAwait(false);
+        await _musicService.GetPlayerByContextAsync(Context, true).ConfigureAwait(false);
 
       if (player is not null)
       {
@@ -86,11 +75,11 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
         if (player.Queue.Count == 0)
         {
-          await FollowupAsync($"🔈 Playing: {response.LavalinkTrack?.Uri}").ConfigureAwait(false);
+          await FollowupAsync($"🔈 Playing: <{response.LavalinkTrack?.Uri}>").ConfigureAwait(false);
         }
         else
         {
-          await FollowupAsync($"Adding {response.LavalinkTrack?.Uri} to the server queue.");
+          await FollowupAsync($"Adding <{response.LavalinkTrack?.Uri}> to the server queue.");
         }
       }
     }
@@ -113,8 +102,8 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       await DeferAsync();
 
       var player =
-        await TryGetPlayerAsync(false, preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused))
-          .ConfigureAwait(false);
+        await _musicService.GetPlayerByContextAsync(Context,
+          preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused)).ConfigureAwait(false);
 
       if (player is not null)
       {
@@ -152,26 +141,24 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player =
-        await TryGetPlayerAsync(false, true, preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused))
-          .ConfigureAwait(false);
+      var player = await _musicService.GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Paused)).ConfigureAwait(false);
 
       if (player is not null)
       {
-        var response = await _musicService.ResumeTrackAsync(player);
+        var commandResponse = await _musicService.ResumeTrackAsync(player);
 
-        if (!response.IsSuccessful)
+        if (!commandResponse.IsSuccessful)
         {
-          ModuleHelper.HandleCommandFailed(response);
+          ModuleHelper.HandleCommandFailed(commandResponse);
 
-          if (string.IsNullOrEmpty(response.Message))
+          if (string.IsNullOrEmpty(commandResponse.Message))
           {
             await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
             return;
           }
         }
 
-        await ModifyOriginalResponseAsync(properties => properties.Content = response.Message);
+        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
       }
     }
     catch (Exception exception)
@@ -198,7 +185,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
         throw new ArgumentNullException(nameof(timeToSeek));
       }
 
-      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
+      var player = await _musicService.GetPlayerByContextAsync(Context).ConfigureAwait(false);
 
 
       TimeSpan timeSpan =
@@ -237,7 +224,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
+      var player = await _musicService.GetPlayerByContextAsync(Context);
 
       var commandResponse = await _musicService.SkipTrackAsync(player, tracksToSkip);
 
@@ -272,7 +259,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
+      var player = await _musicService.GetPlayerByContextAsync(Context).ConfigureAwait(false);
 
       var commandResponse = await _musicService.ChangeVolumeAsync(player, newVolume);
 
@@ -308,7 +295,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
+      var player = await _musicService.GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Playing)).ConfigureAwait(false);
 
       if (Context.User is not IGuildUser guildUser || Context.Channel is not ITextChannel textChannel) return;
 
@@ -374,7 +361,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await GetQueuedPlayerAsync(false).ConfigureAwait(false);
+      var player = await _musicService.GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.QueueNotEmpty)).ConfigureAwait(false);
 
       CommandResponse commandResponse = _musicService.ToggleShuffle(player);
 
@@ -395,6 +382,39 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       _logger.LogError(exception, nameof(ShuffleCommandAsync));
       throw;
     }
+  }
+
+  [SlashCommand("lyrics", description: "Searches for lyrics", runMode: RunMode.Async)]
+  [RequireOwner]
+  public async Task LyricsCommandAsync()
+  {
+    await DeferAsync().ConfigureAwait(false);
+
+    var player = await _musicService.GetPlayerByContextAsync(Context,
+      preconditions: ImmutableArray.Create(PlayerPrecondition.Playing)).ConfigureAwait(false);
+
+    if (player is null)
+    {
+      return;
+    }
+
+    var track = player.CurrentTrack;
+
+    if (track is null)
+    {
+      await FollowupAsync("🤔 No track is currently playing.").ConfigureAwait(false);
+      return;
+    }
+
+    var lyrics = await _lyricsService.GetLyricsAsync(track.Title, track.Author).ConfigureAwait(false);
+
+    if (lyrics is null)
+    {
+      await FollowupAsync("😖 No lyrics found.").ConfigureAwait(false);
+      return;
+    }
+
+    await FollowupAsync($"📃 Lyrics for {track.Title} by {track.Author}:\n{lyrics}").ConfigureAwait(false);
   }
 
   /*[SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
@@ -430,104 +450,4 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }*/
 
-  #endregion Music Module Slash Commands
-
-
-  [ItemCanBeNull]
-  private async ValueTask<QueuedLavalinkPlayer> TryGetPlayerAsync(bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default,
-    bool isDeferred = false, CancellationToken cancellationToken = default)
-  {
-    cancellationToken.ThrowIfCancellationRequested();
-
-    if (Context.User is not SocketGuildUser socketGuildUser)
-    {
-      return null;
-    }
-
-    ulong voiceChannelId = socketGuildUser.VoiceChannel.Id;
-    IGuild guild = Context.Guild;
-    ulong guildId = guild.Id;
-
-    var retrieveOptions = new PlayerRetrieveOptions(
-      ChannelBehavior: allowConnect ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None,
-      VoiceStateBehavior: requireChannel ? MemberVoiceStateBehavior.RequireSame : MemberVoiceStateBehavior.Ignore,
-      Preconditions: preconditions);
-    var playerOptions = new QueuedLavalinkPlayerOptions();
-
-    var result = await _audioService.Players.
-      RetrieveAsync(guildId: guildId, memberVoiceChannel: voiceChannelId, playerFactory: PlayerFactory.Queued, options: new OptionsWrapper<QueuedLavalinkPlayerOptions>(playerOptions), retrieveOptions, cancellationToken);
-
-    if (result.IsSuccess)
-    {
-      return result.Player;
-    }
-
-    var errorMessage = CreateErrorEmbed(result);
-
-    if (isDeferred)
-    {
-      await FollowupAsync(embed: errorMessage).ConfigureAwait(false);
-    }
-    else
-    {
-      await RespondAsync(embed: errorMessage).ConfigureAwait(false);
-    }
-
-    return null;
-  }
-
-  [ItemCanBeNull]
-  private async ValueTask<QueuedLavalinkPlayer> GetQueuedPlayerAsync(bool connectToVoiceChannel = true)
-  {
-    var channelBehavior = connectToVoiceChannel
-      ? PlayerChannelBehavior.Join
-      : PlayerChannelBehavior.None;
-
-    var retrieveOptions = new PlayerRetrieveOptions(ChannelBehavior: channelBehavior);
-    var queuePlayerOption = new QueuedLavalinkPlayerOptions();
-    var guildId = Context.Guild.Id;
-
-    if (Context.User is not SocketGuildUser socketGuildUser) return null;
-
-    var voiceChannelId = socketGuildUser.VoiceChannel.Id;
-
-    var result = await _audioService.Players
-      .RetrieveAsync(guildId, voiceChannelId, PlayerFactory.Queued, new OptionsWrapper<QueuedLavalinkPlayerOptions>(queuePlayerOption), retrieveOptions: retrieveOptions)
-      .ConfigureAwait(false);
-
-    if (!result.IsSuccess)
-    {
-      var errorMessage = result.Status switch
-      {
-        PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
-        PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected.",
-        _ => "Unknown error.",
-      };
-
-      await FollowupAsync(errorMessage).ConfigureAwait(false);
-      return null;
-    }
-
-    return result.Player;
-  }
-
-  [NotNull]
-  private static Embed CreateErrorEmbed(PlayerResult<QueuedLavalinkPlayer> result)
-  {
-    var title = result.Status switch
-    {
-      PlayerRetrieveStatus.UserNotInVoiceChannel => "You must be in a voice channel.",
-      PlayerRetrieveStatus.BotNotConnected => "The bot is not connected to any channel.",
-      PlayerRetrieveStatus.VoiceChannelMismatch => "You must be in the same voice channel as the bot.",
-
-      PlayerRetrieveStatus.PreconditionFailed when result.Precondition == PlayerPrecondition.Playing => "The player is currently now playing any track.",
-      PlayerRetrieveStatus.PreconditionFailed when result.Precondition == PlayerPrecondition.NotPaused => "The player is already paused.",
-      PlayerRetrieveStatus.PreconditionFailed when result.Precondition == PlayerPrecondition.Paused => "The player is not paused.",
-      PlayerRetrieveStatus.PreconditionFailed when result.Precondition == PlayerPrecondition.QueueEmpty => "The queue is empty.",
-
-      _ => "Unknown error.",
-    };
-
-    return new EmbedBuilder().WithTitle(title).Build();
-  }
 }

@@ -6,8 +6,9 @@ namespace Howbot.Core.Helpers;
 /// <summary>
 /// Class of static helpers used for handling configuration.
 /// </summary>
-public class ConfigurationHelper
+public static class ConfigurationHelper
 {
+
   /// <summary>
   /// Adds or updates configuration settings in appsettings.json
   /// </summary>
@@ -48,7 +49,7 @@ public class ConfigurationHelper
     var currentSection = remainingSections[0];
     if (remainingSections.Length > 1)
     {
-      // continue with the procress, moving down the tree
+      // continue with the process, moving down the tree
       var nextSection = remainingSections[1];
       SetValueRecursively(nextSection, jsonObj[currentSection], value);
     }

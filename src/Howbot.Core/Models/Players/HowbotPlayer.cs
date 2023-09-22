@@ -1,19 +1,18 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Howbot.Core.Interfaces;
 using JetBrains.Annotations;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
+using Serilog;
 
 namespace Howbot.Core.Models.Players;
 
-public class HowbotQueuedPlayer : QueuedLavalinkPlayer
+public class HowbotPlayer : QueuedLavalinkPlayer
 {
-  private readonly ILoggerAdapter<HowbotQueuedPlayer> _logger;
 
-  public HowbotQueuedPlayer([NotNull] IPlayerProperties<HowbotQueuedPlayer, HowbotQueuedPlayerOptions> properties, ILoggerAdapter<HowbotQueuedPlayer> logger) : base(properties)
+  public HowbotPlayer([NotNull] IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties) : base(properties)
   {
-    _logger = logger;
+
   }
 
   protected override async ValueTask NotifyTrackStartedAsync(ITrackQueueItem queueItem,
@@ -21,6 +20,6 @@ public class HowbotQueuedPlayer : QueuedLavalinkPlayer
   {
     await base.NotifyTrackStartedAsync(queueItem, cancellationToken);
 
-    _logger.LogInformation("Track started: {0}", queueItem.Track?.Title);
+    Log.Logger.Information("Track started: {0}", queueItem.Track?.Title);
   }
 }

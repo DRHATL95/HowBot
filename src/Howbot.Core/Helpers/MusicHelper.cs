@@ -1,6 +1,5 @@
 ﻿using System;
 using JetBrains.Annotations;
-using Lavalink4NET.Integrations.Lavasearch;
 using Lavalink4NET.Players.Queued;
 
 namespace Howbot.Core.Helpers;
@@ -10,17 +9,6 @@ namespace Howbot.Core.Helpers;
 /// </summary>
 public static class MusicHelper
 {
-
-  /// <summary>
-  /// Checks the requested search result if playlist is empty./>.
-  /// </summary>
-  /// <param name="searchResult"></param>
-  /// <returns>True if search result playlist is not empty.</returns>
-  [NotNull]
-  public static bool IsSearchResponsePlaylist([NotNull]SearchResult searchResult)
-  {
-    return !searchResult.Playlists.IsEmpty;
-  }
 
   /// <summary>
   /// Checks if two <see cref="ITrackQueueItem"/> are similar based on Levenshtein distance. Compares the track's title, author and URL.
@@ -77,4 +65,5 @@ public static class MusicHelper
 
     return distance[a.Length, b.Length];
   }
+
 }

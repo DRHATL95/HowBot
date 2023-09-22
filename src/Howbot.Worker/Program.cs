@@ -20,7 +20,6 @@ using Serilog;
 
 namespace Howbot.Worker;
 
-[UsedImplicitly]
 public class Program
 {
 
@@ -82,6 +81,10 @@ public class Program
           x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
         });
         services.AddLyrics();
+        services.ConfigureLyrics(x =>
+        {
+          x.BaseAddress = new Uri($"https://api.musixmatch.com/ws/{Configuration.MusixMatchVersionNumber}/");
+        });
 
         // Dynamically insert connection string for DB context
         ConfigurationHelper.AddOrUpdateAppSetting("DefaultConnection", Configuration.PostgresConnectionString);

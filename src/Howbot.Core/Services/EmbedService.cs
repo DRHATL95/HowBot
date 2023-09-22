@@ -60,7 +60,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     return embedBuilder.Build();
   }
 
-  public ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavalinkTrack track, IGuildUser user, ITextChannel textChannel)
+  public ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavalinkTrack track, IGuildUser user, ITextChannel textChannel, TimeSpan? position)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(track));
     ArgumentException.ThrowIfNullOrEmpty(nameof(user));
@@ -72,15 +72,37 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
 
     try
     {
-      var embed = new EmbedBuilder()
+      var embedBuilder = new EmbedBuilder()
         .WithColor(Color.Default)
-        .WithTitle("Now Playing")
+        .WithTitle($"{track.Title} - {track.Author}")
         .WithUrl(track.Uri?.AbsoluteUri ?? string.Empty)
-        .WithDescription($"{track.Title} - {track.Author}")
         .WithThumbnailUrl(trackArtworkUri?.AbsoluteUri ?? string.Empty)
         .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
-        .WithCurrentTimestamp()
-        .Build();
+        .WithCurrentTimestamp();
+
+      if (!string.IsNullOrEmpty(track.SourceName))
+      {
+        embedBuilder.Fields.Add(new EmbedFieldBuilder()
+        {
+          IsInline = true,
+          Name = "Source",
+          Value = track.SourceName
+        });
+      }
+
+      if (position.HasValue)
+      {
+        embedBuilder.Fields.Add(new EmbedFieldBuilder()
+        {
+          IsInline = true,
+          Name = "Position",
+          Value = position.Value.ToString(@"hh\:mm\:ss")
+        });
+      }
+
+      embedBuilder.AddField("Duration", track.Duration.ToString(@"hh\:mm\:ss"), true);
+
+      var embed = embedBuilder.Build();
 
       return ValueTask.FromResult((IEmbed)embed);
     }

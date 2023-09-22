@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
@@ -13,7 +14,7 @@ public interface IEmbedService : IServiceBase
   IEmbed CreateEmbed([NotNull] EmbedOptions embedOptions);
 
   [NotNull]
-  ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync([NotNull] LavalinkTrack queueItem,[NotNull] IGuildUser user,[NotNull] ITextChannel textChannel);
+  ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync([NotNull] LavalinkTrack queueItem,[NotNull] IGuildUser user,[NotNull] ITextChannel textChannel, TimeSpan? position);
 
   [NotNull]
   ValueTask<IEmbed> GenerateMusicNextTrackEmbedAsync([NotNull] ITrackQueue queue);
