@@ -5,17 +5,18 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Players;
 using JetBrains.Annotations;
 using Lavalink4NET;
 using Lavalink4NET.Clients;
-using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -25,38 +26,31 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 {
 
   [NotNull] private readonly IEmbedService _embedService;
-  
-  [NotNull] private readonly ILoggerAdapter<MusicService> _logger;
 
   [NotNull] private readonly IAudioService _audioService;
 
-  [NotNull] private readonly ILyricsService _lyricsService;
-
-  public MusicService([NotNull] IEmbedService embedService, [NotNull] IAudioService audioService, [NotNull] ILoggerAdapter<MusicService> logger, [NotNull] ILyricsService lyricsService) : base(logger)
+  public MusicService([NotNull] IEmbedService embedService, [NotNull] IAudioService audioService)
   {
     _embedService = embedService;
-    _logger = logger;
-    _lyricsService = lyricsService;
     _audioService = audioService;
   }
 
   #region Music Module Commands
 
-  public async Task<CommandResponse> PlayTrackBySearchTypeAsync<T>(T player, SearchProviderTypes searchProviderType, string searchRequest, IGuildUser user,
-    IVoiceState voiceState, ITextChannel textChannel) where T : ILavalinkPlayer
+  public async Task<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player, SearchProviderTypes searchProviderType, string searchRequest, IGuildUser user,
+    IVoiceState voiceState, ITextChannel textChannel)
   {
     try
     {
-      var type = ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
+      // Convert from enum to Lavalink struct for searching providers (default is YouTube)
+      var type = LavalinkHelper.ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
 
-      // This is using Lavalink4Net.Extensions.LavaSearch - CURRENTLY NOT WORKING (Only Texts is being populated)
-      /*var searchResponse = await _audioService.Tracks.SearchAsync(query: searchRequest,
-        loadOptions: new TrackLoadOptions(SearchMode: type),
-        categories: ImmutableArray.Create(SearchCategory.Track)).ConfigureAwait(false);*/
-
-      var track = await _audioService.Tracks.LoadTrackAsync(searchRequest, type);
-
-      if (track is null) return CommandResponse.CommandNotSuccessful("Unable to find any tracks");
+      // TODO: Convert to LavalinkSearch (once stable and ready)
+      var track = await _audioService.Tracks.LoadTrackAsync(searchRequest, type).ConfigureAwait(false);
+      if (track is null)
+      {
+        return CommandResponse.CommandNotSuccessful("Unable to find any tracks");
+      }
 
       await player.PlayAsync(track).ConfigureAwait(false);
 
@@ -64,7 +58,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(PlayTrackBySearchTypeAsync));
+      Logger.LogError(exception, nameof(PlayTrackBySearchTypeAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -73,15 +67,15 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   {
     try
     {
-      _logger.LogDebug("Pausing current track [{GuildId}]", player.GuildId);
+      Logger.LogDebug("Pausing current track [{GuildId}]", player.GuildId);
 
       await player.PauseAsync().ConfigureAwait(false);
 
-      return CommandResponse.CommandSuccessful();
+      return CommandResponse.CommandSuccessful("Paused track.");
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(PlayTrackBySearchTypeAsync));
+      Logger.LogError(exception, nameof(PlayTrackBySearchTypeAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -102,7 +96,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(ResumeTrackAsync));
+      Logger.LogError(exception, nameof(ResumeTrackAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -118,11 +112,11 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         return CommandResponse.CommandSuccessful($"Skipped {numberOfTracks} tracks in queue.");
       }
 
-      return CommandResponse.CommandNotSuccessful("Unable to skip to position in queue.");
+      return CommandResponse.CommandNotSuccessful("Unasble to skip to position in queue.");
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception thrown in MusicService.SkipTrackAsync");
+      Logger.LogError(exception, "Exception thrown in MusicService.SkipTrackAsync");
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -131,7 +125,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   {
     try
     {
-      _logger.LogDebug($"Seeking to {seekPosition:g}.");
+      Logger.LogDebug($"Seeking to {seekPosition:g}.");
 
       await player.SeekAsync(seekPosition).ConfigureAwait(false);
 
@@ -139,7 +133,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      Logger.LogError(exception, nameof(SeekTrackAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -165,7 +159,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      Logger.LogError(exception, nameof(SeekTrackAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -186,7 +180,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      Logger.LogError(exception, nameof(SeekTrackAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -207,30 +201,8 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      Logger.LogError(exception, nameof(SeekTrackAsync));
       return Task.FromResult(CommandResponse.CommandNotSuccessful(exception));
-    }
-  }
-
-  public async Task<CommandResponse> GetLyricsFromTrackAsync<T>(T player) where T: ILavalinkPlayer
-  {
-    try
-    {
-      var track = player.CurrentTrack;
-
-      if (track is null)
-      {
-        return CommandResponse.CommandNotSuccessful("Nothing is playing.");
-      }
-
-      var lyrics = await _lyricsService.GetLyricsAsync(track.Author, track.Title);
-
-      return string.IsNullOrEmpty(lyrics) ? CommandResponse.CommandNotSuccessful("No lyrics found for current song playing.") : CommandResponse.CommandSuccessful(lyrics);
-    }
-    catch (Exception exception)
-    {
-      _logger.LogError(exception);
-      return CommandResponse.CommandNotSuccessful(exception);
     }
   }
 
@@ -249,35 +221,10 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      Logger.LogError(exception, nameof(SeekTrackAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
-
-
-  /*public CommandResponse ToggleTwoFourSeven(IGuild guild)
-  {
-    try
-    {
-      if (!_lavaNode.TryGetPlayer(guild, out var lavaPlayer))
-      {
-        _logger.LogDebug(ClientNotConnectedToVoiceChannel);
-        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
-      }
-
-      _logger.LogDebug(lavaPlayer.Is247ModeEnabled ? TwoFourSevenOff : TwoFourSevenOn);
-
-      lavaPlayer.Toggle247Mode();
-
-      var response = lavaPlayer.Is247ModeEnabled ? BotTwoFourSevenOn : BotTwoFourSevenOff;
-      return CommandResponse.CommandSuccessful(response);
-    }
-    catch (Exception exception)
-    {
-      _logger.LogError(exception);
-      return CommandResponse.CommandNotSuccessful(exception);
-    }
-  }*/
 
   #endregion Music Module Commands
 
@@ -294,7 +241,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   } 
   
   [ItemCanBeNull]
-  public async ValueTask<IQueuedLavalinkPlayer> GetPlayerByContextAsync(SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false,
+  public async ValueTask<HowbotPlayer> GetPlayerByContextAsync(SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -358,40 +305,5 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
     return result.Player;
   }
-
-  private static TrackSearchMode ConvertSearchProviderTypeToTrackSearchMode(SearchProviderTypes searchProviderType)
-  {
-    return searchProviderType switch
-    {
-      SearchProviderTypes.Apple => TrackSearchMode.AppleMusic,
-      SearchProviderTypes.Deezer => TrackSearchMode.Deezer,
-      SearchProviderTypes.SoundCloud => TrackSearchMode.SoundCloud,
-      SearchProviderTypes.Spotify => TrackSearchMode.Spotify,
-      SearchProviderTypes.YouTube => TrackSearchMode.YouTube,
-      SearchProviderTypes.YouTubeMusic => TrackSearchMode.YouTubeMusic,
-      SearchProviderTypes.YandexMusic => TrackSearchMode.YandexMusic,
-      _ => TrackSearchMode.YouTube
-    };
-  }
-
-  /*public async Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
-  {
-    var searchListRequest = _youTubeService.Search.List("snippet");
-
-    searchListRequest.Type = "video";
-    // For some reason if I want 1 result, I have to set the max results to 2?
-    // TODO: Investigate
-    searchListRequest.MaxResults = count == 1 ? 2 : count;
-    searchListRequest.RelatedToVideoId = videoId;
-
-    var response = await searchListRequest.ExecuteAsync();
-
-    if (count <= 1)
-    {
-      return new[] { response.Items[0].Id.VideoId };
-    }
-
-    return response.Items.Select(item => item.Id.VideoId).ToList();
-  }*/
 
 }

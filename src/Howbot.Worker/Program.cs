@@ -12,7 +12,6 @@ using Howbot.Core.Settings;
 using Howbot.Infrastructure;
 using JetBrains.Annotations;
 using Lavalink4NET.Extensions;
-using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -80,11 +79,14 @@ public class Program
         {
           x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
         });
-        services.AddLyrics();
+
+        // Currently not working w/ default lyrics provider
+        // https://github.com/NTag/lyrics.ovh/tree/main
+        /*services.AddLyrics();
         services.ConfigureLyrics(x =>
         {
           x.BaseAddress = new Uri($"https://api.musixmatch.com/ws/{Configuration.MusixMatchVersionNumber}/");
-        });
+        });*/
 
         // Dynamically insert connection string for DB context
         ConfigurationHelper.AddOrUpdateAppSetting("DefaultConnection", Configuration.PostgresConnectionString);

@@ -1,22 +1,28 @@
-﻿using Howbot.Core.Interfaces;
+﻿using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
-public abstract class ServiceBase<T> : IServiceBase
+public abstract class ServiceBase<T>
 {
-  private readonly ILoggerAdapter<T> _logger;
+  [NotNull] 
+  protected ILogger<T> Logger { get; }
 
-  protected ServiceBase(ILoggerAdapter<T> logger)
+  protected ServiceBase()
   {
-    _logger = logger;
+    Logger = new LoggerFactory().CreateLogger<T>();
   }
 
+  protected ServiceBase([NotNull] ILogger<T> logger)
+  {
+    Logger = logger;
+  }
+  
   public void Initialize()
   {
-    if (_logger != null && _logger.IsLogLevelEnabled(LogLevel.Debug))
+    if (Logger.IsEnabled(LogLevel.Debug))
     {
-      _logger.LogDebug("{ServiceName} is initializing..", typeof(T).ToString());
+      Logger.LogDebug("{ServiceName} is initializing..", nameof(T));
     }
   }
 }

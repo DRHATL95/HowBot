@@ -26,7 +26,7 @@ public class DiscordClientServiceTest
 
     _ = SetupCreateScope(serviceLocator);
 
-    var discordClientService = new DiscordClientService(discordSocketClient.Object, serviceProvider.Object, interactionService.Object, voiceService.Object, audioService.Object, logger.Object);
+    var discordClientService = new DiscordClientService(discordSocketClient.Object, serviceProvider.Object, interactionService.Object, voiceService.Object, audioService.Object);
 
     return (discordClientService, discordSocketClient, audioService, logger, serviceProvider, interactionService);
   }

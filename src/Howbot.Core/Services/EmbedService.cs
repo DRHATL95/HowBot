@@ -2,23 +2,21 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Howbot.Core.Extensions;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Players;
 using JetBrains.Annotations;
+using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Tracks;
+using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
 public class EmbedService : ServiceBase<EmbedService>, IEmbedService
 {
-  [NotNull] private readonly ILoggerAdapter<EmbedService> _logger;
-
-  public EmbedService([NotNull] ILoggerAdapter<EmbedService> logger) : base(logger)
-  {
-    _logger = logger;
-  }
-
   public IEmbed CreateEmbed(EmbedOptions options)
   {
     ArgumentNullException.ThrowIfNull(options);
@@ -68,7 +66,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
 
     EmbedOptions defaultEmbedOptions = new EmbedOptions { Title = "Your song is now playing." };
 
-    Uri trackArtworkUri = track.ArtworkUri;
+    Uri trackArtworkUri = track.ArtworkUri ?? new Uri("https://i.imgur.com/Lf76JRO.png");
 
     try
     {
@@ -76,7 +74,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
         .WithColor(Color.Default)
         .WithTitle($"{track.Title} - {track.Author}")
         .WithUrl(track.Uri?.AbsoluteUri ?? string.Empty)
-        .WithThumbnailUrl(trackArtworkUri?.AbsoluteUri ?? string.Empty)
+        .WithThumbnailUrl(trackArtworkUri?.AbsoluteUri)
         .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
         .WithCurrentTimestamp();
 
@@ -86,7 +84,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
         {
           IsInline = true,
           Name = "Source",
-          Value = track.SourceName
+          Value = GetSourceAsString(track.SourceName)
         });
       }
 
@@ -108,8 +106,8 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(GenerateMusicNowPlayingEmbedAsync));
-      _logger.LogInformation("Failed to generate music now playing embed, falling back to default embed.");
+      Logger.LogError(exception, nameof(GenerateMusicNowPlayingEmbedAsync));
+      Logger.LogInformation("Failed to generate music now playing embed, falling back to default embed.");
       return ValueTask.FromResult(CreateEmbed(defaultEmbedOptions));
     }
   }
@@ -181,9 +179,21 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      Logger.LogError(exception, nameof(GenerateEmbedFooterBuilderFromDiscordUser));
       return new EmbedFooterBuilder();
     }
+  }
+
+  private string GetSourceAsString([CanBeNull] string sourceName)
+  {
+    const string unknown = "Unknown";
+
+    if (string.IsNullOrWhiteSpace(sourceName)) { return unknown; }
+
+    // Convert to enum for easier conversion and string capitalization
+    var source = EnumHelper.ConvertToEnum<LavalinkSourceNames>(sourceName);
+
+    return source.GetDisplayName();
   }
 
 }

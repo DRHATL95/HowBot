@@ -9,7 +9,9 @@ using JetBrains.Annotations;
 using Lavalink4NET;
 using Lavalink4NET.DiscordNet;
 using Lavalink4NET.Players;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
 using static System.Threading.SpinWait;
 
 namespace Howbot.Core.Services;
@@ -19,13 +21,10 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
   // Instance variables
   [NotNull] private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
 
-  [NotNull] private readonly ILoggerAdapter<VoiceService> _logger;
-
   [NotNull] private readonly IAudioService _audioService;
 
-  public VoiceService([NotNull] ILoggerAdapter<VoiceService> logger, [NotNull] IAudioService audioService) : base(logger)
+  public VoiceService([NotNull] IAudioService audioService)
   {
-    _logger = logger;
     _audioService = audioService;
     _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
   }
@@ -46,8 +45,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception has been thrown executing command [{CommandName}]",
-        nameof(JoinVoiceChannelAsync));
+      Logger.LogError(exception, nameof(JoinVoiceChannelAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -77,7 +75,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception thrown in VoiceService.LeaveVoiceChannelAsync");
+      Logger.LogError(exception, nameof(LeaveVoiceChannelAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -98,14 +96,14 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
     var isCancelled = SpinUntil(() => value?.IsCancellationRequested ?? false, timeSpan);
     if (isCancelled)
     {
-      _logger.LogDebug("Auto disconnect cancelled.");
+      Logger.LogDebug("Auto disconnect cancelled.");
       return;
     }
 
     await player.DisconnectAsync(value.Token).ConfigureAwait(false);
   }
 
-  private struct GetPlayerParameters
+  private readonly struct GetPlayerParameters
   {
     public ulong GuildId { get; init; }
 
@@ -143,4 +141,5 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 
     return null;
   }
+
 }

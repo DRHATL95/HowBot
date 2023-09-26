@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Players;
 using JetBrains.Annotations;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
@@ -12,10 +13,11 @@ using Lavalink4NET.Players.Queued;
 
 namespace Howbot.Core.Interfaces;
 
-public interface IMusicService : IServiceBase
+public interface IMusicService
 {
-  public Task<CommandResponse> PlayTrackBySearchTypeAsync<T>(T player, SearchProviderTypes searchProviderType, [NotNull] string searchRequest, [NotNull] IGuildUser user,
-    [NotNull] IVoiceState voiceState, [NotNull] ITextChannel textChannel) where T : ILavalinkPlayer;
+  public Task<CommandResponse> PlayTrackBySearchTypeAsync([NotNull] HowbotPlayer player,
+    SearchProviderTypes searchProviderType, [NotNull] string searchRequest, [NotNull] IGuildUser user,
+    [NotNull] IVoiceState voiceState, [NotNull] ITextChannel textChannel);
 
   public Task<CommandResponse> PauseTrackAsync<T>(T player) where T : ILavalinkPlayer;
 
@@ -31,11 +33,11 @@ public interface IMusicService : IServiceBase
 
   public Task<CommandResponse> ApplyAudioFilterAsync<T>(T player, [NotNull] IPlayerFilters filter) where T : ILavalinkPlayer;
 
-  public Task<CommandResponse> GetLyricsFromTrackAsync<T>(T player) where T : ILavalinkPlayer;
+  // public Task<CommandResponse> GetLyricsFromTrackAsync<T>(T player) where T : ILavalinkPlayer;
 
   public CommandResponse ToggleShuffle<T>(T player) where T : ILavalinkPlayer;
 
-  public ValueTask<IQueuedLavalinkPlayer> GetPlayerByContextAsync(
+  public ValueTask<HowbotPlayer> GetPlayerByContextAsync(
     SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true,
     ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false,
     CancellationToken cancellationToken = default);

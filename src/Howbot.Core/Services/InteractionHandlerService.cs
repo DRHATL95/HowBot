@@ -8,36 +8,28 @@ using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Howbot.Core.Services;
 
-public class InteractionHandlerService : ServiceBase<InteractionHandlerService>, IInteractionHandlerService
+public class InteractionHandlerService : ServiceBase<InteractionHandlerService>, IInteractionHandlerService, IDisposable
 {
   [NotNull] private readonly DiscordSocketClient _discordSocketClient;
   [NotNull] private readonly InteractionService _interactionService;
-  [NotNull] private readonly ILoggerAdapter<InteractionHandlerService> _logger;
   [NotNull] private readonly IServiceProvider _serviceProvider;
 
   public InteractionHandlerService([NotNull] DiscordSocketClient discordSocketClient,[NotNull] InteractionService interactionService,
     [NotNull] IServiceProvider serviceProvider,
-    [NotNull] ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
+    [NotNull] ILogger logger)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;
     _serviceProvider = serviceProvider;
-    _logger = logger;
   }
 
   public new void Initialize()
   {
-    ArgumentNullException.ThrowIfNull(_discordSocketClient);
-    ArgumentNullException.ThrowIfNull(_interactionService);
-
-
-    if (_logger.IsLogLevelEnabled(LogLevel.Debug))
-    {
-      _logger.LogDebug("{ServiceName} is initializing..", typeof(InteractionHandlerService).ToString());
-    }
+    Logger.LogDebug("{ServiceName} is now initializing...", nameof(InteractionHandlerService));
 
     _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
 
@@ -45,36 +37,24 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     _interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
   }
 
-  #region Interaction Service Events
-
   [NotNull]
   private Task InteractionServiceOnLog(LogMessage logMessage)
   {
     try
     {
       var logLevel = DiscordHelper.ConvertLogSeverityToLogLevel(logMessage.Severity);
+      if (logLevel is LogLevel.Error)
+      {
+        throw logMessage.Exception ?? new Exception(logMessage.Message);
+      }
 
-      if (logLevel == LogLevel.Error)
-      {
-        if (logMessage.Exception != null)
-        {
-          _logger.LogError(logMessage.Exception, nameof(InteractionServiceOnLog));
-        }
-        else
-        {
-          _logger.LogError("An error has been thrown in the Interaction Service.");
-        }
-      }
-      else
-      {
-        _logger.Log(logLevel, logMessage.Message ?? string.Empty);
-      }
+      Logger.Log(logLevel, message: logMessage.Message);
 
       return Task.CompletedTask;
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(InteractionServiceOnLog));
+      Logger.LogError(exception, nameof(InteractionServiceOnLog));
       throw;
     }
   }
@@ -92,49 +72,49 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
         switch (result.Error)
         {
           case InteractionCommandError.UnknownCommand:
-            _logger.LogError(Messages.Errors.InteractionUnknownCommandLog);
+            Logger.LogError(Messages.Errors.InteractionUnknownCommandLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionUnknownCommand, ephemeral: true);
             break;
 
           case InteractionCommandError.ConvertFailed:
-            _logger.LogError(Messages.Errors.InteractionConvertFailedLog);
+            Logger.LogError(Messages.Errors.InteractionConvertFailedLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionConvertFailed, ephemeral: true);
             break;
 
           case InteractionCommandError.BadArgs:
-            _logger.LogError(Messages.Errors.InteractionBadArgumentsLog);
+            Logger.LogError(Messages.Errors.InteractionBadArgumentsLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionBadArguments);
             break;
 
           case InteractionCommandError.Exception:
-            _logger.LogError(new Exception(result.ErrorReason), Messages.Errors.InteractionException);
+            Logger.LogError(new Exception(result.ErrorReason), Messages.Errors.InteractionException);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionExceptionLog, ephemeral: true);
             break;
 
           case InteractionCommandError.Unsuccessful:
-            _logger.LogError(Messages.Errors.InteractionUnsuccessfulLog);
+            Logger.LogError(Messages.Errors.InteractionUnsuccessfulLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionUnsuccessful, ephemeral: true);
             break;
 
           case InteractionCommandError.UnmetPrecondition:
-            _logger.LogError(Messages.Errors.InteractionUnmetPreconditionLog);
+            Logger.LogError(Messages.Errors.InteractionUnmetPreconditionLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionUnmetPrecondition, ephemeral: true);
             break;
 
           case InteractionCommandError.ParseFailed:
-            _logger.LogError(Messages.Errors.InteractionParseFailedLog);
+            Logger.LogError(Messages.Errors.InteractionParseFailedLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionParseFailed, ephemeral: true);
             break;
 
           case null:
-            _logger.LogError(Messages.Errors.InteractionNullLog);
+            Logger.LogError(Messages.Errors.InteractionNullLog);
 
             await socketInteraction.RespondAsync(Messages.Errors.InteractionNull, ephemeral: true);
             break;
@@ -146,11 +126,11 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(DiscordSocketClientOnInteractionCreated));
+      Logger.LogError(exception, nameof(DiscordSocketClientOnInteractionCreated));
 
       if (socketInteraction.Type is InteractionType.ApplicationCommand)
       {
-        _logger.LogDebug("Attempting to delete the failed command.");
+        Logger.LogDebug("Attempting to delete the failed command.");
         // If exception is thrown, acknowledgement will still be there. This will clean-up.
         await socketInteraction.GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
       }
@@ -165,7 +145,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
       return;
     }
 
-    _logger.LogWarning("Interaction command did not execute successfully!");
+    Logger.LogError("Interaction command did not execute successfully");
 
     if (!string.IsNullOrEmpty(result.ErrorReason))
     {
@@ -173,6 +153,8 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
   }
 
-  #endregion Interaction Service Events
+  public void Dispose()
+  {
 
+  }
 }

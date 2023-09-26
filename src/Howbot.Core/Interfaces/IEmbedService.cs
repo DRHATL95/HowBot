@@ -8,7 +8,7 @@ using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Interfaces;
 
-public interface IEmbedService : IServiceBase
+public interface IEmbedService
 {
   [NotNull]
   IEmbed CreateEmbed([NotNull] EmbedOptions embedOptions);

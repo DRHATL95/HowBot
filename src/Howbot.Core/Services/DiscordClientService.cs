@@ -20,12 +20,11 @@ using static Howbot.Core.Models.Messages.Errors;
 
 namespace Howbot.Core.Services;
 
-public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordClientService
+public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordClientService, IDisposable
 {
   [NotNull] private readonly DiscordSocketClient _discordSocketClient;
   [NotNull] private readonly InteractionService _interactionService;
   [NotNull] private readonly IAudioService _audioService;
-  [NotNull] private readonly ILoggerAdapter<DiscordClientService> _logger;
   [NotNull] private readonly IServiceProvider _serviceProvider;
   [NotNull] private readonly IVoiceService _voiceService;
 
@@ -43,22 +42,18 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   }
 
   public DiscordClientService([NotNull] DiscordSocketClient discordSocketClient, [NotNull] IServiceProvider serviceProvider, [NotNull] InteractionService interactionService,
-    [NotNull] IVoiceService voiceService, [NotNull] IAudioService audioService, [NotNull] ILoggerAdapter<DiscordClientService> logger) : base(logger)
+    [NotNull] IVoiceService voiceService, [NotNull] IAudioService audioService)
   {
     _discordSocketClient = discordSocketClient;
     _serviceProvider = serviceProvider;
     _interactionService = interactionService;
     _voiceService = voiceService;
     _audioService = audioService;
-    _logger = logger;
   }
 
   public new void Initialize()
   {
-    if (_logger.IsLogLevelEnabled(LogLevel.Debug))
-    {
-      _logger.LogDebug("{ServiceName} is initializing..", typeof(DiscordClientService).ToString());
-    }
+    Logger.LogDebug("{ServiceName} is initializing...", nameof(DiscordClientService));
 
     // Hook up discord client events to this service
     _discordSocketClient.Log += DiscordSocketClientOnLog;
@@ -85,7 +80,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, DiscordClientLogin);
+      Logger.LogError(exception, DiscordClientLogin);
       return false;
     }
   }
@@ -110,7 +105,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, DiscordStart);
+      Logger.LogError(exception, DiscordStart);
       throw;
     }
   }
@@ -125,13 +120,13 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
     catch (FileNotFoundException exception)
     {
-      _logger.LogError(exception, "Unable to find the assembly. Value: {AssemblyName}",
+      Logger.LogError(exception, "Unable to find the assembly. Value: {AssemblyName}",
         Assembly.GetEntryAssembly()?.ToString());
       throw;
     }
     catch (Exception e)
     {
-      _logger.LogError(e);
+      Logger.LogError(e, nameof(AddModulesToDiscordBotAsync));
       throw;
     }
   }
@@ -152,7 +147,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       _ => LogLevel.Information
     };
 
-    _logger.Log(severity, arg.Message);
+    Logger.Log(severity, arg.Message);
 
     return Task.CompletedTask;
   }
@@ -160,7 +155,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   [NotNull] 
   private Task DiscordSocketClientOnUserJoined(SocketGuildUser arg)
   {
-    _logger.LogDebug("{GuildUserName} has joined Guild {GuildTag}", arg.Username, DiscordHelper.GetGuildTag(arg.Guild));
+    Logger.LogDebug("{GuildUserName} has joined Guild {GuildTag}", arg.Username, DiscordHelper.GetGuildTag(arg.Guild));
 
     return Task.CompletedTask;
   }
@@ -171,11 +166,11 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     var guild = _discordSocketClient.Guilds.FirstOrDefault(x => x.Id == arg.GuildId);
     if (guild == null)
     {
-      _logger.LogError(new Exception(), "Unable to look-up guild for event [{EventName}]",
+      Logger.LogError(new Exception(), "Unable to look-up guild for event [{EventName}]",
         nameof(DiscordSocketClientOnSlashCommandExecuted));
     }
 
-    _logger.LogDebug("Command [{CommandName}] has been executed in Guild {GuildTag}", arg.CommandName,
+    Logger.LogDebug("Command [{CommandName}] has been executed in Guild {GuildTag}", arg.CommandName,
       DiscordHelper.GetGuildTag(guild));
 
     return Task.CompletedTask;
@@ -184,7 +179,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   [NotNull]
   private Task DiscordSocketClientOnDisconnected(Exception arg)
   {
-    _logger.LogError(arg, "{Username} has disconnected from the ws.", LoggedInUsername);
+    Logger.LogError(arg, "{Username} has disconnected from the ws.", LoggedInUsername);
 
     return Task.CompletedTask;
   }
@@ -194,33 +189,33 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   {
     LoggedInUsername = _discordSocketClient.CurrentUser.Username;
 
-    _logger.LogDebug(DiscordSocketClientConnected, LoggedInUsername);
+    Logger.LogDebug(DiscordSocketClientConnected, LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private async Task DiscordSocketClientOnReady()
   {
-    _logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
+    Logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
 
     try
     {
       if (Configuration.IsDebug())
       {
-        _logger.LogDebug("Registering commands to DEV Guild.");
+        Logger.LogDebug("Registering commands to DEV Guild.");
         await _interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
       }
       else
       {
-        _logger.LogDebug("Registering commands globally.");
+        Logger.LogDebug("Registering commands globally.");
         await _interactionService.RegisterCommandsGloballyAsync();
       }
 
-      _logger.LogDebug("Successfully registered commands to discord bot.");
+      Logger.LogDebug("Successfully registered commands to discord bot.");
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(DiscordSocketClientOnReady));
+      Logger.LogError(exception, nameof(DiscordSocketClientOnReady));
       throw;
     }
   }
@@ -228,7 +223,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   [NotNull]
   private Task DiscordSocketClientOnLoggedOut()
   {
-    _logger.LogDebug("{Username} has logged out successfully", LoggedInUsername);
+    Logger.LogDebug("{Username} has logged out successfully", LoggedInUsername);
 
     return Task.CompletedTask;
   }
@@ -236,7 +231,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   [NotNull]
   private Task DiscordSocketClientOnLoggedIn()
   {
-    _logger.LogDebug("{Username} has logged in successfully", LoggedInUsername);
+    Logger.LogDebug("{Username} has logged in successfully", LoggedInUsername);
 
     return Task.CompletedTask;
   }
@@ -244,7 +239,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   [NotNull]
   private Task DiscordSocketClientOnJoinedGuild([NotNull] SocketGuild arg)
   {
-    _logger.LogDebug("{Username} has joined Guild {GuildTag}", LoggedInUsername, DiscordHelper.GetGuildTag(arg));
+    Logger.LogDebug("{Username} has joined Guild {GuildTag}", LoggedInUsername, DiscordHelper.GetGuildTag(arg));
 
     return Task.CompletedTask;
   }
@@ -272,4 +267,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   }
 
   #endregion Discord Client Events
+
+  public void Dispose() { }
 }

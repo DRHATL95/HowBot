@@ -4,7 +4,7 @@ using Docker.DotNet.Models;
 
 namespace Howbot.Core.Interfaces;
 
-public interface IDockerService : IServiceBase
+public interface IDockerService
 {
   Task<IList<ContainerListResponse>> ListAllContainers();
 

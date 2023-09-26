@@ -15,7 +15,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, I
   private readonly ILoggerAdapter<LavaNodeService> _logger;
   private readonly IAudioService _audioService;
 
-  public LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
+  public LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger)
   {
     _logger = logger;
     _audioService = audioService;

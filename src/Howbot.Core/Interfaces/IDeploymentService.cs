@@ -1,5 +1,5 @@
 ﻿namespace Howbot.Core.Interfaces;
 
-public interface IDeploymentService : IServiceBase
+public interface IDeploymentService
 {
 }

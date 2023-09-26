@@ -14,8 +14,7 @@ public class EmbedServiceTests
 {
   private static IEmbedService Factory()
   {
-    var logger = new Mock<ILoggerAdapter<EmbedService>>();
-    var embedService = new EmbedService(logger.Object);
+    var embedService = new EmbedService();
 
     return embedService;
   }

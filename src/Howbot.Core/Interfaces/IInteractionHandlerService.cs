@@ -1,5 +1,6 @@
 ﻿namespace Howbot.Core.Interfaces;
 
-public interface IInteractionHandlerService : IServiceBase
+public interface IInteractionHandlerService
 {
+   void Initialize();
 }

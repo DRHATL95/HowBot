@@ -30,7 +30,7 @@ public class Worker : BackgroundService
   {
     try
     {
-      InitializeHowbotServices();
+      InitializeHowbotServices(cancellationToken);
 
       if (!await _discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken).ConfigureAwait(false))
       {
@@ -69,20 +69,28 @@ public class Worker : BackgroundService
     _logger.LogInformation("Discord client has been stopped.");
   }
 
-  private void InitializeHowbotServices()
+  private void InitializeHowbotServices(CancellationToken cancellationToken)
   {
-    _logger.LogDebug("Initializing howbot services..");
+    cancellationToken.ThrowIfCancellationRequested();
+
+    _logger.LogDebug("Starting initialization of Howbot services");
 
     try
     {
-      _serviceProvider.GetService<IDiscordClientService>().Initialize();
+      // Call each service 'initialize' function primarily used for hooking up events
+      using var scope = _serviceProvider.CreateScope();
+
+      scope.ServiceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
+      scope.ServiceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
+
+      /*_serviceProvider.GetService<IDiscordClientService>().Initialize();
       _serviceProvider.GetService<IInteractionHandlerService>().Initialize();
       // _serviceProvider.GetService<IDeploymentService>().Initialize();
       // _serviceProvider.GetService<IDockerService>().Initialize();
       _serviceProvider.GetService<IEmbedService>().Initialize();
       _serviceProvider.GetService<IMusicService>().Initialize();
       _serviceProvider.GetService<IVoiceService>().Initialize();
-      _serviceProvider.GetService<ILavaNodeService>().Initialize();
+      _serviceProvider.GetService<ILavaNodeService>().Initialize();*/
     }
     catch (Exception exception)
     {
