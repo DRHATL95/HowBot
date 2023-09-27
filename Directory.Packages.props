@@ -31,13 +31,13 @@
     <PackageVersion Include="FastEndpoints.Swagger" Version="5.2.1" />
     <PackageVersion Include="FastEndpoints.Swagger.Swashbuckle" Version="2.0.1" />
     <PackageVersion Include="Google.Apis.YouTube.v3" Version="1.60.0.3043" />
-    <PackageVersion Include="Lavalink4NET" Version="3.0.1" />
     <PackageVersion Include="Lavalink4NET.Discord.NET" Version="4.0.0-beta.3-2" />
-    <PackageVersion Include="Lavalink4NET.Integrations.ExtraFilters" Version="4.0.0-beta.3-1" />
+    <PackageVersion Include="Lavalink4NET.Integrations.ExtraFilters" Version="4.0.0-beta.3-2" />
     <PackageVersion Include="Lavalink4NET.Integrations.Lavasearch" Version="4.0.0-beta.3-2" />
     <PackageVersion Include="Lavalink4NET.Integrations.Lavasrc" Version="4.0.0-beta.3-2" />
-    <PackageVersion Include="Lavalink4NET.Integrations.SponsorBlock" Version="4.0.0-beta.3-1" />
-    <PackageVersion Include="Lavalink4NET.Integrations.TextToSpeech" Version="4.0.0-beta.3-1" />
+    <PackageVersion Include="Lavalink4NET.Integrations.SponsorBlock" Version="4.0.0-beta.3-2" />
+    <PackageVersion Include="Lavalink4NET.Integrations.TextToSpeech" Version="4.0.0-beta.3-2" />
+    <PackageVersion Include="Lavalink4NET.InactivityTracking" Version="4.0.0-beta.3-2" />
     <PackageVersion Include="Lavalink4NET.Lyrics" Version="4.0.0-beta.3-2" />
     <PackageVersion Include="MediatR" Version="11.1.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.5" />

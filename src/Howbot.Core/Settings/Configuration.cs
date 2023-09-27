@@ -9,42 +9,35 @@ namespace Howbot.Core.Settings;
 
 public class Configuration
 {
-
-  #region Private Fields
-
   private const string DiscordTokenDev = "DiscordTokenDev";
   private const string DiscordTokenProd = "DiscordTokenProd";
   private const string YouTube = "YoutubeToken";
   private const string Postgres = "PostgresConnectionString";
   private const string Lavalink = "DiscordLavalinkServerPassword";
 
-  #endregion
-
-  #region Public Fields
+  [NotNull]
+  public static string DiscordToken => GetTokenByName(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
 
   [NotNull]
-  public static string DiscordToken => GetEnvironmentalVariableByToken(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
+  public static string YouTubeToken => GetTokenByName(YouTube);
 
-  [NotNull]
-  public static string YouTubeToken => GetEnvironmentalVariableByToken(YouTube);
+  public static string PostgresConnectionString => GetTokenByName(Postgres);
 
-  public static string PostgresConnectionString => GetEnvironmentalVariableByToken(Postgres);
-
-  private static string LavaNodePassword => GetEnvironmentalVariableByToken(Lavalink);
+  private static string LavaNodePassword => GetTokenByName(Lavalink);
 
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
   public static DiscordSocketConfig DiscordSocketConfig =>
     new()
     {
-      // AlwaysDownloadUsers = true,
+      AlwaysDownloadUsers = true,
       GatewayIntents = GatewayIntents,
-      // LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error,
       LogLevel = LogSeverity.Info,
       LogGatewayIntentWarnings = false,
       UseInteractionSnowflakeDate = false
     };
 
+  // Lavalink4Net Configuration 
   public static AudioServiceOptions AudioServiceOptions
   {
     get
@@ -57,10 +50,6 @@ public class Configuration
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
-  public static double MusixMatchVersionNumber => 1.1;
-
-  #endregion
-
   public static bool IsDebug()
   {
     #if DEBUG
@@ -70,7 +59,12 @@ public class Configuration
     #endif
   }
 
-  private static string GetEnvironmentalVariableByToken([NotNull] string tokenName)
+  /// <summary>
+  /// Can be used to retrieve either env. variable or secrets using secret manager
+  /// </summary>
+  /// <param name="tokenName"></param>
+  /// <returns></returns>
+  private static string GetTokenByName([NotNull] string tokenName)
   {
     // Should only be hit if empty, should never be null
     ArgumentException.ThrowIfNullOrEmpty(tokenName);
@@ -82,7 +76,9 @@ public class Configuration
     // Third attempt to get token, using machine environment variables
     token ??= Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Machine);
 
+    // 9/27/23 - Add support for secrets.json
+    token = Helpers.ConfigurationHelper.HostConfiguration[tokenName];
+
     return token ?? string.Empty;
   }
-
 }

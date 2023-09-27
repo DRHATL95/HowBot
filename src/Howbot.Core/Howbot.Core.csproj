@@ -24,6 +24,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Serilog" />
     <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Lavalink4NET.InactivityTracking" />
   </ItemGroup>
 
 </Project>

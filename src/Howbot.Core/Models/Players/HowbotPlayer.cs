@@ -4,15 +4,38 @@ using JetBrains.Annotations;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
 using Serilog;
+using Lavalink4NET.InactivityTracking.Players;
+using Lavalink4NET.InactivityTracking.Trackers;
 
 namespace Howbot.Core.Models.Players;
 
-public class HowbotPlayer : QueuedLavalinkPlayer
+public class HowbotPlayer : QueuedLavalinkPlayer, IInactivityPlayerListener
 {
 
   public HowbotPlayer([NotNull] IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties) : base(properties)
   {
 
+  }
+
+  public ValueTask NotifyPlayerActiveAsync(PlayerTrackingState trackingState, CancellationToken cancellationToken = default)
+  {
+    Log.Debug("Player is being tracked as active.");
+
+    return ValueTask.CompletedTask;
+  }
+
+  public ValueTask NotifyPlayerInactiveAsync(PlayerTrackingState trackingState, CancellationToken cancellationToken = default)
+  {
+    Log.Debug("Player exceeded inactive timeout.");
+
+    return ValueTask.CompletedTask;
+  }
+
+  public ValueTask NotifyPlayerTrackedAsync(PlayerTrackingState trackingState, CancellationToken cancellationToken = default)
+  {
+    Log.Debug("Player is being tracked as inactive.");
+
+    return ValueTask.CompletedTask;
   }
 
   protected override async ValueTask NotifyTrackStartedAsync(ITrackQueueItem queueItem,

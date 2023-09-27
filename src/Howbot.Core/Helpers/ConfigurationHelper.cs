@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Microsoft.Extensions.Configuration;
 
 namespace Howbot.Core.Helpers;
 
@@ -8,6 +9,7 @@ namespace Howbot.Core.Helpers;
 /// </summary>
 public static class ConfigurationHelper
 {
+  public static IConfiguration HostConfiguration { get; set; }
 
   /// <summary>
   /// Adds or updates configuration settings in appsettings.json
@@ -58,5 +60,10 @@ public static class ConfigurationHelper
       // we've got to the end of the tree, set the value
       jsonObj[currentSection] = value;
     }
+  }
+
+  public static void SetHostConfiguration(IConfiguration configuration)
+  {
+    HostConfiguration = configuration;
   }
 }

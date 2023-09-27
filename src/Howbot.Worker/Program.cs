@@ -12,6 +12,7 @@ using Howbot.Core.Settings;
 using Howbot.Infrastructure;
 using JetBrains.Annotations;
 using Lavalink4NET.Extensions;
+using Lavalink4NET.InactivityTracking.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -68,7 +69,6 @@ public class Program
         services.AddSingleton<Configuration>();
         services.AddSingleton(x => new DiscordSocketClient(Configuration.DiscordSocketConfig));
         services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
-        // services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
         services.AddSingleton(x => new YouTubeService(new BaseClientService.Initializer
         {
           ApiKey = Configuration.YouTubeToken,
@@ -79,14 +79,9 @@ public class Program
         {
           x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
         });
+        services.AddInactivityTracking();
 
-        // Currently not working w/ default lyrics provider
-        // https://github.com/NTag/lyrics.ovh/tree/main
-        /*services.AddLyrics();
-        services.ConfigureLyrics(x =>
-        {
-          x.BaseAddress = new Uri($"https://api.musixmatch.com/ws/{Configuration.MusixMatchVersionNumber}/");
-        });*/
+        ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);
 
         // Dynamically insert connection string for DB context
         ConfigurationHelper.AddOrUpdateAppSetting("DefaultConnection", Configuration.PostgresConnectionString);

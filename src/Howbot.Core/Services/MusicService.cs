@@ -15,10 +15,13 @@ using Lavalink4NET.Clients;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
 using Lavalink4NET.Players.Queued;
-using Lavalink4NET.Rest.Entities.Tracks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Lavalink4NET.Integrations.Lavasearch.Extensions;
+using Lavalink4NET.Integrations.Lavasearch;
+using Lavalink4NET.Tracks;
+using Lavalink4NET.Rest.Entities.Tracks;
 
 namespace Howbot.Core.Services;
 
@@ -45,11 +48,25 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       // Convert from enum to Lavalink struct for searching providers (default is YouTube)
       var type = LavalinkHelper.ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
 
-      // TODO: Convert to LavalinkSearch (once stable and ready)
-      var track = await _audioService.Tracks.LoadTrackAsync(searchRequest, type).ConfigureAwait(false);
-      if (track is null)
+      LavalinkTrack track;
+      TrackLoadOptions trackLoadOptions = new TrackLoadOptions(SearchMode: type);
+      // LavaSearch categories to be returned (Tracks, Albums, Artists, etc.)
+      var categories = ImmutableArray.Create(SearchCategory.Track);
+
+      var searchResult = await _audioService.Tracks
+        .SearchAsync(query: searchRequest, loadOptions: trackLoadOptions, categories: categories)
+        .ConfigureAwait(false);
+
+      if (searchResult is null || searchResult.Tracks.IsDefaultOrEmpty)
       {
-        return CommandResponse.CommandNotSuccessful("Unable to find any tracks");
+        // Attempts to use native lavalink native search when lavasearch plugin isn't working or doesn't return results for categories specified
+        track = await _audioService.Tracks
+          .LoadTrackAsync(identifier: searchRequest, loadOptions: trackLoadOptions)
+          .ConfigureAwait(false);
+      }
+      else
+      {
+        track = searchResult.Tracks[0];
       }
 
       await player.PlayAsync(track).ConfigureAwait(false);
@@ -305,5 +322,4 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
     return result.Player;
   }
-
 }
