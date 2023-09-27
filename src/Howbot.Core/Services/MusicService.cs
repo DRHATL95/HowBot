@@ -69,9 +69,14 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         track = searchResult.Tracks[0];
       }
 
-      await player.PlayAsync(track).ConfigureAwait(false);
+      if (track != null)
+      {
+        await player.PlayAsync(track).ConfigureAwait(false);
 
-      return CommandResponse.CommandSuccessful(track);
+        return CommandResponse.CommandSuccessful(track);
+      }
+
+      return CommandResponse.CommandNotSuccessful("Unable to play track.");
     }
     catch (Exception exception)
     {
@@ -129,7 +134,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         return CommandResponse.CommandSuccessful($"Skipped {numberOfTracks} tracks in queue.");
       }
 
-      return CommandResponse.CommandNotSuccessful("Unasble to skip to position in queue.");
+      return CommandResponse.CommandNotSuccessful("Unable to skip to position in queue.");
     }
     catch (Exception exception)
     {
