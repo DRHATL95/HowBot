@@ -19,8 +19,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
   [NotNull] private readonly IServiceProvider _serviceProvider;
 
   public InteractionHandlerService([NotNull] DiscordSocketClient discordSocketClient,[NotNull] InteractionService interactionService,
-    [NotNull] IServiceProvider serviceProvider,
-    [NotNull] ILogger logger)
+    [NotNull] IServiceProvider serviceProvider)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;
