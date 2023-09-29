@@ -12,101 +12,12 @@ namespace Howbot.Core.Services;
 
 public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, IAsyncDisposable
 {
-  private readonly ILoggerAdapter<LavaNodeService> _logger;
   private readonly IAudioService _audioService;
 
   public LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger)
   {
-    _logger = logger;
     _audioService = audioService;
   }
-
-  public new void Initialize()
-  {
-    if (_logger.IsLogLevelEnabled(LogLevel.Debug))
-    {
-      _logger.LogDebug("{ServiceName} is initializing..", typeof(LavaNodeService).ToString());
-    }
-
-    _audioService.StatisticsUpdated += AudioServiceOnStatisticsUpdated;
-    _audioService.TrackEnded += AudioServiceOnTrackEnded;
-    _audioService.TrackException += AudioServiceOnTrackException;
-    _audioService.TrackStarted += AudioServiceOnTrackStarted;
-    _audioService.TrackStuck += AudioServiceOnTrackStuck;
-    _audioService.WebSocketClosed += AudioServiceOnWebSocketClosed;
-
-    _audioService.DiscordClient.VoiceServerUpdated += DiscordClientOnVoiceServerUpdated;
-    _audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
-  }
-
-  #region LavaLink & LavaNode Events
-
-  private Task DiscordClientOnVoiceStateUpdated(object sender, VoiceStateUpdatedEventArgs eventargs)
-  {
-    _logger.LogDebug("Voice state updated.");
-
-    return Task.CompletedTask;
-  }
-
-  private Task DiscordClientOnVoiceServerUpdated(object sender, VoiceServerUpdatedEventArgs eventargs)
-  {
-    _logger.LogDebug("Voice server updated.");
-
-    return Task.CompletedTask;
-  }
-
-  private Task AudioServiceOnWebSocketClosed(object sender, WebSocketClosedEventArgs eventargs)
-  {
-    _logger.LogCritical("Discord websocket has closed for the following reason: {Reason}", eventargs.Reason);
-
-    return Task.CompletedTask;
-  }
-
-  private Task AudioServiceOnTrackStuck(object sender, TrackStuckEventArgs eventargs)
-  {
-    throw new System.NotImplementedException();
-  }
-
-  private Task AudioServiceOnTrackStarted(object sender, TrackStartedEventArgs eventargs)
-  {
-    _logger.LogDebug("Starting track [{TrackTitle}]", eventargs.Track.Title);
-
-    return Task.CompletedTask;
-  }
-
-  private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventargs)
-  {
-    var exception = new Exception(eventargs.Exception.Message);
-
-    _logger.LogError(exception, "[{Severity}] - LavaNode has thrown an exception",
-      eventargs.Exception.Severity);
-
-    return Task.CompletedTask;
-  }
-
-  private Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventargs)
-  {
-    if (eventargs.Reason is not TrackEndReason.Finished)
-    {
-      _logger.LogInformation("Track [{TrackName}] has ended with reason [{Reason}]", eventargs.Track.Title, eventargs.Reason);
-      return Task.CompletedTask;
-    }
-
-    _logger.LogInformation("Current song [{SongName}] has ended.", eventargs.Track.Title);
-
-    return Task.CompletedTask;
-  }
-
-  private Task AudioServiceOnStatisticsUpdated(object sender, StatisticsUpdatedEventArgs eventargs)
-  {
-    _logger.LogInformation("Lavalink has been online for: {UpTime}", eventargs.Statistics.Uptime.ToString("g"));
-
-    _logger.LogDebug(eventargs.Statistics.ToString());
-
-    return Task.CompletedTask;
-  }
-
-  #endregion
 
   /*private async Task<LavalinkTrack> GetUniqueRadioTrack(ILavalinkPlayer player, int attempt = 0)
   {
@@ -184,5 +95,92 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, I
       _audioService.TrackStuck -= AudioServiceOnTrackStuck;
       _audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
     }
+
+    GC.SuppressFinalize(this);
+  }
+
+  public new void Initialize()
+  {
+    if (Logger.IsEnabled(LogLevel.Debug))
+    {
+      Logger.LogDebug("{ServiceName} is initializing..", typeof(LavaNodeService).ToString());
+    }
+
+    _audioService.StatisticsUpdated += AudioServiceOnStatisticsUpdated;
+    _audioService.TrackEnded += AudioServiceOnTrackEnded;
+    _audioService.TrackException += AudioServiceOnTrackException;
+    _audioService.TrackStarted += AudioServiceOnTrackStarted;
+    _audioService.TrackStuck += AudioServiceOnTrackStuck;
+    _audioService.WebSocketClosed += AudioServiceOnWebSocketClosed;
+
+    // Lavalink4Net Events
+    _audioService.DiscordClient.VoiceServerUpdated += DiscordClientOnVoiceServerUpdated;
+    _audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
+  }
+
+  private Task DiscordClientOnVoiceStateUpdated(object sender, VoiceStateUpdatedEventArgs eventargs)
+  {
+    Logger.LogDebug("Voice state updated.");
+
+    return Task.CompletedTask;
+  }
+
+  private Task DiscordClientOnVoiceServerUpdated(object sender, VoiceServerUpdatedEventArgs eventargs)
+  {
+    Logger.LogDebug("Voice server updated.");
+
+    return Task.CompletedTask;
+  }
+
+  private Task AudioServiceOnWebSocketClosed(object sender, WebSocketClosedEventArgs eventargs)
+  {
+    Logger.LogCritical("Discord websocket has closed for the following reason: {Reason}", eventargs.Reason);
+
+    return Task.CompletedTask;
+  }
+
+  private Task AudioServiceOnTrackStuck(object sender, TrackStuckEventArgs eventargs)
+  {
+    Logger.LogInformation("Track {TrackName} is stuck while trying to play.", eventargs.Track.Identifier);
+
+    return Task.CompletedTask;
+  }
+
+  private Task AudioServiceOnTrackStarted(object sender, TrackStartedEventArgs eventargs)
+  {
+    Logger.LogDebug("Starting track [{TrackTitle}]", eventargs.Track.Title);
+
+    return Task.CompletedTask;
+  }
+
+  private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventargs)
+  {
+    var exception = new Exception(eventargs.Exception.Message);
+
+    Logger.LogError(exception, "[{Severity}] - LavaNode has thrown an exception",
+      eventargs.Exception.Severity);
+
+    return Task.CompletedTask;
+  }
+
+  private Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventargs)
+  {
+    if (eventargs.Reason is not TrackEndReason.Finished)
+    {
+      Logger.LogInformation("Track [{TrackName}] has ended with reason [{Reason}]", eventargs.Track.Title,
+        eventargs.Reason);
+      return Task.CompletedTask;
+    }
+
+    Logger.LogDebug("Current song [{SongName}] has ended.", eventargs.Track.Title);
+
+    return Task.CompletedTask;
+  }
+
+  private Task AudioServiceOnStatisticsUpdated(object sender, StatisticsUpdatedEventArgs eventargs)
+  {
+    Logger.LogDebug(eventargs.Statistics.ToString());
+
+    return Task.CompletedTask;
   }
 }

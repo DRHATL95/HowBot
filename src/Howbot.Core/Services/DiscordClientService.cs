@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -15,6 +14,8 @@ using Howbot.Core.Settings;
 using JetBrains.Annotations;
 using Lavalink4NET;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
 using static Howbot.Core.Models.Messages.Debug;
 using static Howbot.Core.Models.Messages.Errors;
 
@@ -22,13 +23,25 @@ namespace Howbot.Core.Services;
 
 public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordClientService, IDisposable
 {
+  [NotNull] private readonly IAudioService _audioService;
   [NotNull] private readonly DiscordSocketClient _discordSocketClient;
   [NotNull] private readonly InteractionService _interactionService;
-  [NotNull] private readonly IAudioService _audioService;
   [NotNull] private readonly IServiceProvider _serviceProvider;
   [NotNull] private readonly IVoiceService _voiceService;
 
   [NotNull] private string _loggedInUsername = string.Empty;
+
+  public DiscordClientService([NotNull] DiscordSocketClient discordSocketClient,
+    [NotNull] IServiceProvider serviceProvider, [NotNull] InteractionService interactionService,
+    [NotNull] IVoiceService voiceService, [NotNull] IAudioService audioService)
+  {
+    _discordSocketClient = discordSocketClient;
+    _serviceProvider = serviceProvider;
+    _interactionService = interactionService;
+    _voiceService = voiceService;
+    _audioService = audioService;
+  }
+
   private string LoggedInUsername
   {
     get => string.IsNullOrEmpty(_loggedInUsername) ? Constants.BotName : _loggedInUsername;
@@ -41,21 +54,13 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
   }
 
-  public DiscordClientService([NotNull] DiscordSocketClient discordSocketClient, [NotNull] IServiceProvider serviceProvider, [NotNull] InteractionService interactionService,
-    [NotNull] IVoiceService voiceService, [NotNull] IAudioService audioService)
+  public override void Initialize()
   {
-    _discordSocketClient = discordSocketClient;
-    _serviceProvider = serviceProvider;
-    _interactionService = interactionService;
-    _voiceService = voiceService;
-    _audioService = audioService;
-  }
+    if (Log.Logger.IsEnabled(LogEventLevel.Debug))
+    {
+      Logger.LogDebug("{ServiceName} is initializing...", nameof(DiscordClientService));
+    }
 
-  public new void Initialize()
-  {
-    Logger.LogDebug("{ServiceName} is initializing...", nameof(DiscordClientService));
-
-    // Hook up discord client events to this service
     _discordSocketClient.Log += DiscordSocketClientOnLog;
     _discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
     _discordSocketClient.JoinedGuild += DiscordSocketClientOnJoinedGuild;
@@ -66,6 +71,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
     _discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
     _discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
+    _discordSocketClient.VoiceServerUpdated += DiscordSocketClient_VoiceServerUpdated;
   }
 
   public async ValueTask<bool> LoginDiscordBotAsync(string discordToken)
@@ -81,8 +87,9 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     catch (Exception exception)
     {
       Logger.LogError(exception, DiscordClientLogin);
-      return false;
     }
+
+    return false;
   }
 
   public async ValueTask<bool> StartDiscordBotAsync()
@@ -106,8 +113,24 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     catch (Exception exception)
     {
       Logger.LogError(exception, DiscordStart);
-      throw;
     }
+
+    return false;
+  }
+
+  public void Dispose()
+  {
+    _discordSocketClient.Log -= DiscordSocketClientOnLog;
+    _discordSocketClient.UserJoined -= DiscordSocketClientOnUserJoined;
+    _discordSocketClient.JoinedGuild -= DiscordSocketClientOnJoinedGuild;
+    _discordSocketClient.LoggedIn -= DiscordSocketClientOnLoggedIn;
+    _discordSocketClient.LoggedOut -= DiscordSocketClientOnLoggedOut;
+    _discordSocketClient.Ready -= DiscordSocketClientOnReady;
+    _discordSocketClient.Connected -= DiscordSocketClientOnConnected;
+    _discordSocketClient.Disconnected -= DiscordSocketClientOnDisconnected;
+    _discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted;
+    _discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
+    _discordSocketClient.VoiceServerUpdated -= DiscordSocketClient_VoiceServerUpdated;
   }
 
   private async Task AddModulesToDiscordBotAsync()
@@ -152,7 +175,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull] 
+  [NotNull]
   private Task DiscordSocketClientOnUserJoined(SocketGuildUser arg)
   {
     Logger.LogDebug("{GuildUserName} has joined Guild {GuildTag}", arg.Username, DiscordHelper.GetGuildTag(arg.Guild));
@@ -244,7 +267,8 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  private async Task DiscordSocketClientOnUserVoiceStateUpdated([NotNull] SocketUser user, SocketVoiceState oldVoiceState,
+  private async Task DiscordSocketClientOnUserVoiceStateUpdated([NotNull] SocketUser user,
+    SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
@@ -266,7 +290,12 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
   }
 
-  #endregion Discord Client Events
+  private Task DiscordSocketClient_VoiceServerUpdated(SocketVoiceServer arg)
+  {
+    Logger.LogDebug("Bot has connected to server {X}", DiscordHelper.GetGuildTag(arg.Guild.Value));
 
-  public void Dispose() { }
+    return Task.CompletedTask;
+  }
+
+  #endregion Discord Client Events
 }

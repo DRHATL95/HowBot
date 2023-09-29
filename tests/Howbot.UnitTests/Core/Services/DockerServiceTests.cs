@@ -15,7 +15,7 @@ public class DockerServiceTests
 
     _ = SetupCreateScope(serviceLocator);
 
-    var dockerService = new DockerService(serviceLocator.Object);
+    var dockerService = new DockerService();
 
     return dockerService;
   }

@@ -2,16 +2,13 @@
 using System.Collections.Immutable;
 using System.Threading.Tasks;
 using Discord;
-using Discord.Audio;
 using Discord.Interactions;
 using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
-using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players.Preconditions;
-using Lavalink4NET.Players.Queued;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
 using static Howbot.Core.Models.Permissions.Bot;
@@ -22,6 +19,7 @@ namespace Howbot.Core.Modules;
 public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 {
   [NotNull] private readonly ILoggerAdapter<MusicModule> _logger;
+
   [NotNull] private readonly IMusicService _musicService;
   // [NotNull] private readonly ILyricsService _lyricsService;
 
@@ -48,7 +46,8 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       if (string.IsNullOrEmpty(searchRequest))
       {
-        await ModifyOriginalResponseAsync(properties => properties.Content = "You must enter a search request!").ConfigureAwait(false);
+        await ModifyOriginalResponseAsync(properties => properties.Content = "You must enter a search request!")
+          .ConfigureAwait(false);
         return;
       }
 
@@ -141,7 +140,9 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await _musicService.GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Paused)).ConfigureAwait(false);
+      var player = await _musicService
+        .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Paused))
+        .ConfigureAwait(false);
 
       if (player is not null)
       {
@@ -187,11 +188,10 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
       var player = await _musicService.GetPlayerByContextAsync(Context).ConfigureAwait(false);
 
-
       TimeSpan timeSpan =
         (timeToSeek == default) ? ModuleHelper.ConvertToTimeSpan(hours, minutes, seconds) : timeToSeek;
 
-      CommandResponse commandResponse = await _musicService.SeekTrackAsync<IQueuedLavalinkPlayer>(player, timeSpan);
+      var commandResponse = await _musicService.SeekTrackAsync(player, timeSpan);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -199,7 +199,8 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 
         if (string.IsNullOrEmpty(commandResponse.Message))
         {
-          await GetOriginalResponseAsync().ContinueWith(([NotNull] task) => task.Result.DeleteAsync().ConfigureAwait(false));
+          await GetOriginalResponseAsync()
+            .ContinueWith(([NotNull] task) => task.Result.DeleteAsync().ConfigureAwait(false));
           return;
         }
       }
@@ -295,7 +296,9 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await _musicService.GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Playing)).ConfigureAwait(false);
+      var player = await _musicService
+        .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Playing))
+        .ConfigureAwait(false);
 
       if (Context.User is not IGuildUser guildUser || Context.Channel is not ITextChannel textChannel) return;
 
@@ -312,13 +315,16 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
           return;
         }
       }
+
       if (commandResponse.Embed != null)
       {
         await ModifyOriginalResponseAsync(properties => properties.Embed = commandResponse.Embed as Embed);
       }
       else
       {
-        await ModifyOriginalResponseAsync(properties => properties.Content = $"Now playing {commandResponse.LavalinkTrack?.Title ?? Context.Interaction.Data.ToString()}");
+        await ModifyOriginalResponseAsync(properties =>
+          properties.Content =
+            $"Now playing {commandResponse.LavalinkTrack?.Title ?? Context.Interaction.Data.ToString()}");
       }
     }
     catch (Exception exception)
@@ -361,7 +367,9 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await _musicService.GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.QueueNotEmpty)).ConfigureAwait(false);
+      var player = await _musicService
+        .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.QueueNotEmpty))
+        .ConfigureAwait(false);
 
       CommandResponse commandResponse = _musicService.ToggleShuffle(player);
 
@@ -375,6 +383,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
           return;
         }
       }
+
       await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
     }
     catch (Exception exception)
@@ -449,5 +458,4 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       throw;
     }
   }*/
-
 }

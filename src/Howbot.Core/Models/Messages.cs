@@ -2,18 +2,33 @@
 
 public abstract record Messages
 {
-  /// <summary>
-  /// Bot constant responses
-  /// </summary>
   public readonly struct Responses
   {
+    // Music Bot Responses
+
+    public const string CommandPlayNotSuccessfulResponse =
+      "Not able to play the current song request. Try again later.";
+
+    public const string CommandPausedSuccessfulResponse = "Current track has been paused.";
+
+    public const string CommandPausedNotSuccessfulResponse =
+      "Current track was not able to be paused. Try again later.";
+
+    public const string CommandResumeSuccessfulResponse = "Current track has been resumed.";
+
+    public const string CommandResumeNotSuccessfulResponse =
+      "Current track was not able to be resumed. Try again later.";
+
+
     public const string BotNotConnectedToVoiceResponseMessage = "I am not connected to a voice channel";
     public const string BotSkipQueueOutOfBounds = "There are not that many songs in queue. Try a smaller number.";
     public const string BotTrackPaused = "Current track has been paused.";
     public const string BotTrackResumed = "Track has been resumed.";
     public const string BotTrackSkipped = "Skipping to track position in server queue.";
     public const string BotUserVoiceConnectionRequired = "You must be in a voice channel to use this command.";
+
     public const string BotLeaveVoiceConnection = "Leaving the voice channel.";
+
     // public const string PlayingRadio = "Now playing radio.";
     public const string BotShuffleQueue = "I have shuffled the music queue currently playing.";
     public const string BotTwoFourSevenOn = "I am turning on 24/7 mode.";
@@ -33,7 +48,10 @@ public abstract record Messages
     public const string Shuffle = "Starting shuffle command.";
     public const string TwoFourSevenOn = "Toggle on 247 command.";
     public const string TwoFourSevenOff = "Toggle off 247 command.";
-    public const string ClientNotConnectedToVoiceChannel = "Client is not connected to voice channel. Unable to execute command.";
+
+    public const string ClientNotConnectedToVoiceChannel =
+      "Client is not connected to voice channel. Unable to execute command.";
+
     public const string ClientQueueOutOfBounds = "Requested number of tracks to skip exceeds queue count.";
     public const string DiscordSocketClientConnected = "{Username} has connected to the web socket.";
   }
@@ -50,7 +68,10 @@ public abstract record Messages
     public const string InteractionBadArguments = "Wrong number of arguments provided for this command";
     public const string InteractionBadArgumentsLog = "Wrong number of arguments provided for command";
     public const string InteractionException = "An error has occured trying to run this command";
-    public const string InteractionExceptionLog = "An exception has been thrown trying to execute an interaction command";
+
+    public const string InteractionExceptionLog =
+      "An exception has been thrown trying to execute an interaction command";
+
     public const string InteractionUnsuccessful = "Command did not run successfully";
     public const string InteractionUnsuccessfulLog = "Interaction command did not run successfully";
     public const string InteractionUnmetPrecondition = "You do not have permission to run this command";

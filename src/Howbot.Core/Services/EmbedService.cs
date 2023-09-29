@@ -2,13 +2,10 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using Howbot.Core.Extensions;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Models.Players;
 using JetBrains.Annotations;
-using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Tracks;
 using Microsoft.Extensions.Logging;
@@ -58,7 +55,8 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     return embedBuilder.Build();
   }
 
-  public ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavalinkTrack track, IGuildUser user, ITextChannel textChannel, TimeSpan? position)
+  public ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavalinkTrack track, IGuildUser user,
+    ITextChannel textChannel, TimeSpan? position)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(track));
     ArgumentException.ThrowIfNullOrEmpty(nameof(user));
@@ -82,9 +80,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
       {
         embedBuilder.Fields.Add(new EmbedFieldBuilder()
         {
-          IsInline = true,
-          Name = "Source",
-          Value = GetSourceAsString(track.SourceName)
+          IsInline = true, Name = "Source", Value = LavalinkHelper.GetSourceAsString(track.SourceName)
         });
       }
 
@@ -92,9 +88,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
       {
         embedBuilder.Fields.Add(new EmbedFieldBuilder()
         {
-          IsInline = true,
-          Name = "Position",
-          Value = position.Value.ToString(@"hh\:mm\:ss")
+          IsInline = true, Name = "Position", Value = position.Value.ToString(@"hh\:mm\:ss")
         });
       }
 
@@ -141,7 +135,6 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     });
 
     return ValueTask.FromResult(embed);
-
   }
 
   public ValueTask<IEmbed> GenerateMusicCurrentQueueEmbedAsync(ITrackQueue queue)
@@ -166,7 +159,6 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     return ValueTask.FromResult(embed);
   }
 
-  [NotNull]
   private EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser([NotNull] IUser user)
   {
     try
@@ -183,17 +175,4 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
       return new EmbedFooterBuilder();
     }
   }
-
-  private string GetSourceAsString([CanBeNull] string sourceName)
-  {
-    const string unknown = "Unknown";
-
-    if (string.IsNullOrWhiteSpace(sourceName)) { return unknown; }
-
-    // Convert to enum for easier conversion and string capitalization
-    var source = EnumHelper.ConvertToEnum<LavalinkSourceNames>(sourceName);
-
-    return source.GetDisplayName();
-  }
-
 }

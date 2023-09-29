@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,40 +10,40 @@ using Howbot.Core.Models.Players;
 using JetBrains.Annotations;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
-using Lavalink4NET.Players.Queued;
 
 namespace Howbot.Core.Interfaces;
 
 public interface IMusicService
 {
-  public Task<CommandResponse> PlayTrackBySearchTypeAsync([NotNull] HowbotPlayer player,
+  ValueTask<CommandResponse> PlayTrackBySearchTypeAsync([NotNull] HowbotPlayer player,
     SearchProviderTypes searchProviderType, [NotNull] string searchRequest, [NotNull] IGuildUser user,
     [NotNull] IVoiceState voiceState, [NotNull] ITextChannel textChannel);
 
-  public Task<CommandResponse> PauseTrackAsync<T>(T player) where T : ILavalinkPlayer;
+  ValueTask<CommandResponse> PauseTrackAsync([NotNull] HowbotPlayer player);
 
-  public Task<CommandResponse> ResumeTrackAsync<T>(T player) where T : ILavalinkPlayer;
+  ValueTask<CommandResponse> ResumeTrackAsync([NotNull] HowbotPlayer player);
 
-  public Task<CommandResponse> SkipTrackAsync<T>(T player, int numberOfTracks) where T : ILavalinkPlayer;
+  ValueTask<CommandResponse> SkipTrackAsync([NotNull] HowbotPlayer player, [CanBeNull] int? numberOfTracks);
 
-  public Task<CommandResponse> SeekTrackAsync<T>(T player, TimeSpan seekPosition) where T : ILavalinkPlayer;
+  ValueTask<CommandResponse> SeekTrackAsync([NotNull] HowbotPlayer player, TimeSpan seekPosition);
 
-  public Task<CommandResponse> ChangeVolumeAsync<T>(T player, [CanBeNull] int? newVolume) where T : ILavalinkPlayer;
+  ValueTask<CommandResponse> ChangeVolumeAsync([NotNull] HowbotPlayer player, [CanBeNull] int? newVolume);
 
-  public Task<CommandResponse> NowPlayingAsync<T>(T player, [NotNull] IGuildUser user, [NotNull] ITextChannel textChannel) where T : ILavalinkPlayer;
+  ValueTask<CommandResponse> NowPlayingAsync([NotNull] HowbotPlayer player, [NotNull] IGuildUser user,
+    [NotNull] ITextChannel textChannel);
 
-  public Task<CommandResponse> ApplyAudioFilterAsync<T>(T player, [NotNull] IPlayerFilters filter) where T : ILavalinkPlayer;
+  ValueTask<CommandResponse> ApplyAudioFilterAsync([NotNull] HowbotPlayer player, [NotNull] IPlayerFilters filter);
 
-  // public Task<CommandResponse> GetLyricsFromTrackAsync<T>(T player) where T : ILavalinkPlayer;
+  ValueTask<CommandResponse> GetLyricsFromTrackAsync([NotNull] HowbotPlayer player);
 
-  public CommandResponse ToggleShuffle<T>(T player) where T : ILavalinkPlayer;
+  CommandResponse ToggleShuffle([NotNull] HowbotPlayer player);
 
-  public ValueTask<HowbotPlayer> GetPlayerByContextAsync(
-    SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true,
+  ValueTask<HowbotPlayer> GetPlayerByContextAsync(
+    [NotNull] SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true,
     ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false,
     CancellationToken cancellationToken = default);
 
-  /*  public CommandResponse ToggleTwoFourSeven(); */
+  CommandResponse ToggleTwoFourSeven([NotNull] HowbotPlayer player);
 
-  /* public Task<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1); */
+  ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId([NotNull] string videoId, int count = 1);
 }

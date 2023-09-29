@@ -8,7 +8,6 @@ using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Howbot.Core.Services;
 
@@ -18,12 +17,21 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
   [NotNull] private readonly InteractionService _interactionService;
   [NotNull] private readonly IServiceProvider _serviceProvider;
 
-  public InteractionHandlerService([NotNull] DiscordSocketClient discordSocketClient,[NotNull] InteractionService interactionService,
+  public InteractionHandlerService([NotNull] DiscordSocketClient discordSocketClient,
+    [NotNull] InteractionService interactionService,
     [NotNull] IServiceProvider serviceProvider)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;
     _serviceProvider = serviceProvider;
+  }
+
+  public void Dispose()
+  {
+    _interactionService.Log -= InteractionServiceOnLog;
+    _interactionService.InteractionExecuted -= InteractionServiceOnInteractionExecuted;
+
+    GC.SuppressFinalize(this);
   }
 
   public new void Initialize()
@@ -51,9 +59,16 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
       return Task.CompletedTask;
     }
+    catch (ArgumentOutOfRangeException exception)
+    {
+      // Should only hit this if unable to convert logging message severity between Serilog and .NET Logging
+      HandleException(exception);
+      throw;
+    }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(InteractionServiceOnLog));
+      // Will be caught by try exception creation for LogLevel.Error
+      HandleException(exception);
       throw;
     }
   }
@@ -125,11 +140,11 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(DiscordSocketClientOnInteractionCreated));
+      HandleException(exception);
 
       if (socketInteraction.Type is InteractionType.ApplicationCommand)
       {
-        Logger.LogDebug("Attempting to delete the failed command.");
+        Logger.LogInformation("Attempting to delete the failed command.");
         // If exception is thrown, acknowledgement will still be there. This will clean-up.
         await socketInteraction.GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
       }
@@ -148,12 +163,12 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
     if (!string.IsNullOrEmpty(result.ErrorReason))
     {
-      await interactionContext.Interaction.RespondAsync(result.ErrorReason);
+      await interactionContext.Interaction.FollowupAsync(result.ErrorReason);
     }
-  }
-
-  public void Dispose()
-  {
-
+    else
+    {
+      await interactionContext.Interaction.FollowupAsync(
+        "Interaction command was not able to execute successfully. Try again later.");
+    }
   }
 }
