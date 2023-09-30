@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using Howbot.Core.Entities;
+using JetBrains.Annotations;
 
 namespace Howbot.Core.Interfaces;
 
@@ -6,5 +7,28 @@ public interface IDatabaseService
 {
   void Initialize();
 
-  ulong AddNewGuild(ulong guildId, [CanBeNull] string prefix, int musicPlayerVolume = 100);
+  /// <summary>
+  ///   Persisting a new guild to the database.
+  /// </summary>
+  /// <param name="guildId">The Discord Guild Id</param>
+  /// <param name="prefix">The message command prefix</param>
+  /// <param name="musicPlayerVolume">The audio player volume</param>
+  /// <returns>The guildId or 0 for error</returns>
+  ulong AddNewGuild(ulong guildId, [CanBeNull] string prefix, float musicPlayerVolume = 100f);
+
+  /// <summary>
+  ///   Get a guild by its Discord guildId
+  /// </summary>
+  /// <param name="guildId">The guild id where command was executed</param>
+  /// <returns>Guild object or null if not able to find</returns>
+  [CanBeNull]
+  Guild GetGuildById(ulong guildId);
+
+  /// <summary>
+  ///   Persists the most current music player volume. Will be called after the command music service's change volume"/>
+  /// </summary>
+  /// <param name="playerGuildId">The Discord guildId used to update the Guilds table</param>
+  /// <param name="newVolume">The new volume to be persisted</param>
+  /// <returns>The new volume saved to database.</returns>
+  float UpdatePlayerVolumeLevel(ulong playerGuildId, float newVolume);
 }

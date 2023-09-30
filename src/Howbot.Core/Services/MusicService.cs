@@ -20,6 +20,7 @@ using Lavalink4NET.Players.Preconditions;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
 using Lavalink4NET.Tracks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -32,16 +33,20 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
   [NotNull] private readonly IEmbedService _embedService;
 
-  public MusicService([NotNull] IEmbedService embedService, [NotNull] IAudioService audioService)
+  [NotNull] private readonly IServiceProvider _serviceProvider;
+
+  public MusicService([NotNull] IEmbedService embedService, [NotNull] IAudioService audioService,
+    [NotNull] IServiceProvider serviceProvider)
   {
     _embedService = embedService;
     _audioService = audioService;
+    _serviceProvider = serviceProvider;
   }
 
   [ItemCanBeNull]
   public async ValueTask<HowbotPlayer> GetPlayerByContextAsync(SocketInteractionContext context,
     bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default,
-    bool isDeferred = false,
+    bool isDeferred = false, float initialVolume = 100f,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -72,7 +77,8 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       DisconnectOnStop = true,
       SelfDeaf = true,
       ClearQueueOnStop = true,
-      ClearHistoryOnStop = true
+      ClearHistoryOnStop = true,
+      InitialVolume = initialVolume
     };
 
     var result = await _audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
@@ -243,22 +249,18 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
   }
 
-  public async ValueTask<CommandResponse> ChangeVolumeAsync(HowbotPlayer player, int? newVolume)
+  public async ValueTask<CommandResponse> ChangeVolumeAsync(HowbotPlayer player, float newVolume)
   {
     try
     {
-      // Since second param is optional, if 0 do nothing but return command success
-      if (!newVolume.HasValue)
+      await player.SetVolumeAsync(newVolume).ConfigureAwait(false);
+
+      using (var scope = _serviceProvider.CreateScope())
       {
-        return CommandResponse.CommandSuccessful();
+        var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
+        db.UpdatePlayerVolumeLevel(player.GuildId, newVolume);
       }
 
-      if (player is not QueuedLavalinkPlayer queuedLavalinkPlayer)
-      {
-        return CommandResponse.CommandNotSuccessful("Unable to change volume.");
-      }
-
-      await queuedLavalinkPlayer.SetVolumeAsync(newVolume.Value / 100f).ConfigureAwait(false);
       return CommandResponse.CommandSuccessful($"Volume set to {newVolume}%");
     }
     catch (Exception exception)
@@ -318,22 +320,12 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
   public CommandResponse ToggleShuffle(HowbotPlayer player)
   {
-    throw new NotImplementedException();
-  }
-
-  public CommandResponse ToggleShuffle<T>(T player) where T : ILavalinkPlayer
-  {
     try
     {
-      if (player is not IQueuedLavalinkPlayer queuedLavalinkPlayer)
-      {
-        return CommandResponse.CommandNotSuccessful("Unable to shuffle queue.");
-      }
-
-      queuedLavalinkPlayer.Shuffle = !queuedLavalinkPlayer.Shuffle;
+      player.Shuffle = !player.Shuffle;
 
       return CommandResponse.CommandSuccessful(
-        $"Shuffle is now {(queuedLavalinkPlayer.Shuffle ? "enabled" : "disabled")}.");
+        $"Shuffle is now {(player.Shuffle ? "enabled" : "disabled")}.");
     }
     catch (Exception exception)
     {

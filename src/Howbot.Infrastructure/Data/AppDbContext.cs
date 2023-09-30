@@ -10,7 +10,7 @@ public class AppDbContext : DbContext
   {
   }
 
-  public DbSet<Guild> Guilds { get; set; }
+  public virtual DbSet<Guild> Guilds { get; set; }
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

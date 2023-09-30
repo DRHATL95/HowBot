@@ -29,7 +29,7 @@ public interface IMusicService
 
   ValueTask<CommandResponse> SeekTrackAsync([NotNull] HowbotPlayer player, TimeSpan seekPosition);
 
-  ValueTask<CommandResponse> ChangeVolumeAsync([NotNull] HowbotPlayer player, [CanBeNull] int? newVolume);
+  ValueTask<CommandResponse> ChangeVolumeAsync([NotNull] HowbotPlayer player, float newVolume);
 
   ValueTask<CommandResponse> NowPlayingAsync([NotNull] HowbotPlayer player, [NotNull] IGuildUser user,
     [NotNull] ITextChannel textChannel);
@@ -42,7 +42,7 @@ public interface IMusicService
 
   ValueTask<HowbotPlayer> GetPlayerByContextAsync(
     [NotNull] SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true,
-    ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false,
+    ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false, float initialVolume = 100f,
     CancellationToken cancellationToken = default);
 
   CommandResponse ToggleTwoFourSeven([NotNull] HowbotPlayer player);

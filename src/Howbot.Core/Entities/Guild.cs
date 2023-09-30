@@ -5,5 +5,5 @@ namespace Howbot.Core.Entities;
 public class Guild : BaseEntity
 {
   [CanBeNull] public string Prefix { get; set; }
-  public int GuildMusicVolumeLevel { get; set; }
+  public int MusicVolumeLevel { get; set; }
 }

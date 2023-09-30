@@ -254,7 +254,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  public async Task VolumeCommandAsync(int newVolume = 0)
+  public async Task VolumeCommandAsync(float newVolume = 0.0f)
   {
     try
     {
