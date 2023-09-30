@@ -1,6 +1,8 @@
-﻿namespace Howbot.Core.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Howbot.Core.Entities;
 
 public abstract class BaseEntity
 {
-  public int Id { get; set; }
+  [Key] public ulong Id { get; set; }
 }

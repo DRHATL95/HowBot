@@ -2,5 +2,5 @@
 
 public interface ILavaNodeService
 {
-
+  void Initialize();
 }

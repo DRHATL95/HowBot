@@ -20,11 +20,9 @@ using Serilog;
 
 namespace Howbot.Worker;
 
+[UsedImplicitly]
 public class Program
 {
-
-  [NotNull] private static readonly ILogger _logger = Log.Logger;
-
   static async Task<int> Main(string[] args)
   {
     try
@@ -33,14 +31,12 @@ public class Program
       var hostBuilder = CreateHostBuilder(args);
 
       // Will run indefinitely until canceled w/ cancellation token or process is stopped.
-      await hostBuilder.RunConsoleAsync();
+      await hostBuilder.RunConsoleAsync().ConfigureAwait(false);
     }
     catch (Exception exception)
     {
-      if (Log.IsEnabled(Serilog.Events.LogEventLevel.Error))
-      {
-        _logger.Error(nameof(Main), exception);
-      }
+      Log.Fatal(exception, "An exception has been thrown while running the application.");
+      return Environment.ExitCode;
     }
 
     // Return exit code to terminal once application has been terminated.
@@ -68,11 +64,11 @@ public class Program
 
         services.AddSingleton<Configuration>();
         services.AddSingleton(x => new DiscordSocketClient(Configuration.DiscordSocketConfig));
-        services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
+        services.AddSingleton(x =>
+          new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
         services.AddSingleton(x => new YouTubeService(new BaseClientService.Initializer
         {
-          ApiKey = Configuration.YouTubeToken,
-          ApplicationName = Constants.BotName
+          ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
         }));
         services.AddLavalink();
         services.ConfigureLavalink(x =>

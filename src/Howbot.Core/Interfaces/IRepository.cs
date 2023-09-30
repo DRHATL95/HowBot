@@ -5,7 +5,7 @@ namespace Howbot.Core.Interfaces;
 
 public interface IRepository
 {
-  T GetById<T>(int id) where T : BaseEntity;
+  T GetById<T>(ulong id) where T : BaseEntity;
 
   List<T> List<T>() where T : BaseEntity;
 

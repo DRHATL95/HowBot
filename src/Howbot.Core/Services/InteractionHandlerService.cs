@@ -34,7 +34,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     GC.SuppressFinalize(this);
   }
 
-  public new void Initialize()
+  public override void Initialize()
   {
     Logger.LogDebug("{ServiceName} is now initializing...", nameof(InteractionHandlerService));
 

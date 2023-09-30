@@ -99,7 +99,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, I
     GC.SuppressFinalize(this);
   }
 
-  public new void Initialize()
+  public override void Initialize()
   {
     if (Logger.IsEnabled(LogLevel.Debug))
     {

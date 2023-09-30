@@ -15,6 +15,8 @@ namespace Howbot.Core.Interfaces;
 
 public interface IMusicService
 {
+  void Initialize();
+
   ValueTask<CommandResponse> PlayTrackBySearchTypeAsync([NotNull] HowbotPlayer player,
     SearchProviderTypes searchProviderType, [NotNull] string searchRequest, [NotNull] IGuildUser user,
     [NotNull] IVoiceState voiceState, [NotNull] ITextChannel textChannel);

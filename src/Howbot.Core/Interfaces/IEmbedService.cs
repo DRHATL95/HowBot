@@ -10,16 +10,18 @@ namespace Howbot.Core.Interfaces;
 
 public interface IEmbedService
 {
+  void Initialize();
+
   [NotNull]
   IEmbed CreateEmbed([NotNull] EmbedOptions embedOptions);
 
   [NotNull]
-  ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync([NotNull] LavalinkTrack queueItem,[NotNull] IGuildUser user,[NotNull] ITextChannel textChannel, TimeSpan? position);
+  ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync([NotNull] LavalinkTrack queueItem, [NotNull] IGuildUser user,
+    [NotNull] ITextChannel textChannel, TimeSpan? position);
 
   [NotNull]
   ValueTask<IEmbed> GenerateMusicNextTrackEmbedAsync([NotNull] ITrackQueue queue);
 
   [NotNull]
   ValueTask<IEmbed> GenerateMusicCurrentQueueEmbedAsync([NotNull] ITrackQueue queue);
-
 }

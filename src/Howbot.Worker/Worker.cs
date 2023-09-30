@@ -15,10 +15,11 @@ namespace Howbot.Worker;
 public class Worker : BackgroundService
 {
   [NotNull] private readonly IDiscordClientService _discordClientService;
-  [NotNull] private readonly IServiceProvider _serviceProvider;
   [NotNull] private readonly DiscordSocketClient _discordSocketClient;
+  [NotNull] private readonly IServiceProvider _serviceProvider;
 
-  public Worker([NotNull] IDiscordClientService discordClientService, [NotNull] IServiceProvider serviceProvider, DiscordSocketClient discordSocketClient)
+  public Worker([NotNull] IDiscordClientService discordClientService, [NotNull] IServiceProvider serviceProvider,
+    DiscordSocketClient discordSocketClient)
   {
     _discordClientService = discordClientService;
     _serviceProvider = serviceProvider;
@@ -72,7 +73,7 @@ public class Worker : BackgroundService
     Log.Logger.Fatal("Discord client has been stopped.");
   }
 
-  private void InitializeHowbotServices(CancellationToken cancellationToken)
+  private void InitializeHowbotServices(CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
@@ -80,11 +81,14 @@ public class Worker : BackgroundService
 
     try
     {
-      // Call each service 'initialize' function primarily used for hooking up events
-      using var scope = _serviceProvider.CreateScope();
+      _serviceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
+      _serviceProvider.GetRequiredService<ILavaNodeService>()?.Initialize();
+      _serviceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
+      _serviceProvider.GetRequiredService<IEmbedService>()?.Initialize();
+      _serviceProvider.GetRequiredService<IMusicService>()?.Initialize();
 
-      scope.ServiceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
-      scope.ServiceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
+      using var scope = _serviceProvider.CreateScope();
+      scope.ServiceProvider.GetRequiredService<IDatabaseService>()?.Initialize();
     }
     catch (Exception exception)
     {
@@ -92,5 +96,4 @@ public class Worker : BackgroundService
       throw;
     }
   }
-  
 }

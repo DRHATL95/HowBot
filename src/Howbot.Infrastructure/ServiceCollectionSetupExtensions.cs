@@ -16,8 +16,8 @@ public static class ServiceCollectionSetupExtensions
   public static void AddDbContext([NotNull] this IServiceCollection services, [NotNull] IConfiguration configuration)
   {
     services.AddDbContext<AppDbContext>(([NotNull] options) =>
-      options.UseNpgsql(
-        configuration.GetConnectionString(DatabaseConnectionStringName)));
+    options.UseNpgsql(
+      configuration.GetConnectionString(DatabaseConnectionStringName)));
   }
 
   // Entity Framework Setup for Postgres
@@ -29,6 +29,7 @@ public static class ServiceCollectionSetupExtensions
   // Adding specific services used related to How.Bot
   public static void AddHowbotServices(this IServiceCollection services)
   {
+    // Singleton Services
     services.AddSingleton<IVoiceService, VoiceService>();
     services.AddSingleton<IMusicService, MusicService>();
     services.AddSingleton<IEmbedService, EmbedService>();
@@ -37,7 +38,9 @@ public static class ServiceCollectionSetupExtensions
     // services.AddSingleton<IDockerService, DockerService>();
     // services.AddSingleton<IDeploymentService, DeploymentService>();
     services.AddSingleton<ILavaNodeService, LavaNodeService>();
+    services.AddScoped<IDatabaseService, DatabaseService>();
 
+    // Transient Services
     services.AddTransient<IHttpService, HttpService>();
   }
 }
