@@ -56,7 +56,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
   }
 
   public ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavalinkTrack track, IGuildUser user,
-    ITextChannel textChannel, TimeSpan? position)
+    ITextChannel textChannel, TimeSpan? position, float volume)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(track));
     ArgumentException.ThrowIfNullOrEmpty(nameof(user));
@@ -88,11 +88,14 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
       {
         embedBuilder.Fields.Add(new EmbedFieldBuilder()
         {
-          IsInline = true, Name = "Position", Value = position.Value.ToString(@"hh\:mm\:ss")
+          IsInline = true,
+          Name = "Position",
+          Value =
+            $@"{position.Value:hh\:mm\:ss}/{track.Duration:hh\:mm\:ss}"
         });
       }
 
-      embedBuilder.AddField("Duration", track.Duration.ToString(@"hh\:mm\:ss"), true);
+      embedBuilder.Fields.Add(new EmbedFieldBuilder { IsInline = true, Name = "Volume", Value = $"{volume * 100}%" });
 
       var embed = embedBuilder.Build();
 

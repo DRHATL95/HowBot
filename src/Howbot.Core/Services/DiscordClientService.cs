@@ -71,7 +71,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
     _discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
     _discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
-    _discordSocketClient.VoiceServerUpdated += DiscordSocketClient_VoiceServerUpdated;
+    _discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
   }
 
   public async ValueTask<bool> LoginDiscordBotAsync(string discordToken)
@@ -130,7 +130,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _discordSocketClient.Disconnected -= DiscordSocketClientOnDisconnected;
     _discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted;
     _discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
-    _discordSocketClient.VoiceServerUpdated -= DiscordSocketClient_VoiceServerUpdated;
+    _discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
   }
 
   private async Task AddModulesToDiscordBotAsync()
@@ -217,6 +217,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
+  [NotNull]
   private async Task DiscordSocketClientOnReady()
   {
     Logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
@@ -267,30 +268,24 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  private async Task DiscordSocketClientOnUserVoiceStateUpdated([NotNull] SocketUser user,
+  [NotNull]
+  private Task DiscordSocketClientOnUserVoiceStateUpdated([NotNull] SocketUser user,
     SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
-    if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id) return;
-
-    var guild = (oldVoiceState.VoiceChannel ?? newVoiceState.VoiceChannel).Guild;
-    if (guild is null) return;
-
-    var player = await _audioService.Players.GetPlayerAsync(guild.Id);
-    if (player is null) return;
-
-    var voiceChannelUsers = await player.DiscordClient.GetChannelUsersAsync(guild.Id, player.VoiceChannelId);
-    if (voiceChannelUsers.IsDefaultOrEmpty) return;
-
-    // If the bot is the last user in the voice channel
-    if (!voiceChannelUsers.Any(x => _discordSocketClient.CurrentUser.Id != x))
+    if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id)
     {
-      await _voiceService.InitiateDisconnectLogicAsync(player, TimeSpan.FromSeconds(30));
+      return Task.CompletedTask;
     }
+
+    Logger.LogDebug("User {Username} has updated voice state.", user.Username);
+
+    return Task.CompletedTask;
   }
 
-  private Task DiscordSocketClient_VoiceServerUpdated(SocketVoiceServer arg)
+  [NotNull]
+  private Task DiscordSocketClientOnVoiceServerUpdated(SocketVoiceServer arg)
   {
     Logger.LogDebug("Bot has connected to server {X}", DiscordHelper.GetGuildTag(arg.Guild.Value));
 

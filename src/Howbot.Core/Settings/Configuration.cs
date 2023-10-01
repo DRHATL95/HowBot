@@ -2,6 +2,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Howbot.Core.Helpers;
 using JetBrains.Annotations;
 using Lavalink4NET;
 
@@ -15,18 +16,20 @@ public class Configuration
   private const string Postgres = "PostgresConnectionString";
   private const string Lavalink = "DiscordLavalinkServerPassword";
 
-  [NotNull]
-  public static string DiscordToken => GetTokenByName(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
+  [NotNull] public static string DiscordToken => GetTokenByName(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
 
-  [NotNull]
-  public static string YouTubeToken => GetTokenByName(YouTube);
+  [NotNull] public static string YouTubeToken => GetTokenByName(YouTube);
 
-  public static string PostgresConnectionString => GetTokenByName(Postgres);
+  [NotNull] public static string PostgresConnectionString => GetTokenByName(Postgres);
 
-  private static string LavaNodePassword => GetTokenByName(Lavalink);
+  [NotNull] private static string LavaNodePassword => GetTokenByName(Lavalink);
 
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
+  /// <summary>
+  ///   DiscordSocketClient configuration
+  /// </summary>
+  [NotNull]
   public static DiscordSocketConfig DiscordSocketConfig =>
     new()
     {
@@ -37,7 +40,10 @@ public class Configuration
       UseInteractionSnowflakeDate = false
     };
 
-  // Lavalink4Net Configuration 
+  /// <summary>
+  ///   Lavalink4NET configuration
+  /// </summary>
+  [NotNull]
   public static AudioServiceOptions AudioServiceOptions
   {
     get
@@ -46,17 +52,24 @@ public class Configuration
     }
   }
 
+  /// <summary>
+  ///   Discord Interactions configuration
+  /// </summary>
   [NotNull]
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
+  /// <summary>
+  ///   Determines if the application is running in debug mode
+  /// </summary>
+  /// <returns>A boolean representing if application was ran in debug mode</returns>
   public static bool IsDebug()
   {
-    #if DEBUG
-      return true;
-    #else
+#if DEBUG
+    return true;
+#else
       return false;
-    #endif
+#endif
   }
 
   /// <summary>
@@ -77,7 +90,7 @@ public class Configuration
     token ??= Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Machine);
 
     // 9/27/23 - Add support for secrets.json
-    token = Helpers.ConfigurationHelper.HostConfiguration[tokenName];
+    token = ConfigurationHelper.HostConfiguration[tokenName];
 
     return token ?? string.Empty;
   }

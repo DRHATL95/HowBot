@@ -48,13 +48,14 @@ public class EmbedServiceTests
     var mockEmbedService = new Mock<IEmbedService>();
     mockEmbedService
       .Setup(service =>
-        service.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object, mockTextChannel.Object, TimeSpan.FromMinutes(1))
+        service.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object, mockTextChannel.Object,
+            TimeSpan.FromMinutes(1), 100)
           .Result)
       .Returns(new EmbedBuilder().Build());
 
     var result =
       embedService.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object,
-        mockTextChannel.Object, TimeSpan.FromMinutes(1));
+        mockTextChannel.Object, TimeSpan.FromMinutes(1), 100);
 
     Assert.NotNull(result.Result);
   }

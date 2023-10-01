@@ -1,22 +1,27 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
-using Lavalink4NET.Players;
 
 namespace Howbot.Core.Interfaces;
 
+// Purpose: Interface for the VoiceService
 public interface IVoiceService
 {
+  /// <summary>
+  ///   Joins the requested voice channel for the guild.
+  /// </summary>
+  /// <param name="guildUser"></param>
+  /// <param name="isDeaf"></param>
+  /// <returns></returns>
+  ValueTask<CommandResponse> JoinVoiceChannelAsync([NotNull] IGuildUser guildUser, bool isDeaf = true);
 
-  [NotNull]
-  Task<CommandResponse> JoinVoiceChannelAsync([NotNull] IGuildUser guildUser, bool isDeaf = true);
-
-  [NotNull]
-  ValueTask<CommandResponse> LeaveVoiceChannelAsync([NotNull] IGuildUser guildUser, [NotNull] IGuildChannel guildChannel);
-
-  [NotNull]
-  Task InitiateDisconnectLogicAsync([NotNull] ILavalinkPlayer lavalinkPlayer, TimeSpan timeSpan);
-
+  /// <summary>
+  ///   Leaves the requested voice channel for the guild.
+  /// </summary>
+  /// <param name="guildUser"></param>
+  /// <param name="guildChannel"></param>
+  /// <returns></returns>
+  ValueTask<CommandResponse> LeaveVoiceChannelAsync([NotNull] IGuildUser guildUser,
+    [NotNull] IGuildChannel guildChannel);
 }

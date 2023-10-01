@@ -3,8 +3,13 @@ using JetBrains.Annotations;
 
 namespace Howbot.Core.Interfaces;
 
+// Purpose: To provide a database service for the bot.
 public interface IDatabaseService
 {
+  /// <summary>
+  ///   Database initialization.
+  ///   TODO: Will create the database if it doesn't exist.
+  /// </summary>
   void Initialize();
 
   /// <summary>
@@ -23,6 +28,13 @@ public interface IDatabaseService
   /// <returns>Guild object or null if not able to find</returns>
   [CanBeNull]
   Guild GetGuildById(ulong guildId);
+
+  /// <summary>
+  ///   Returns the Guild's player volume level.
+  /// </summary>
+  /// <param name="guildId">The command interaction guild id</param>
+  /// <returns></returns>
+  float GetPlayerVolumeLevel(ulong guildId);
 
   /// <summary>
   ///   Persists the most current music player volume. Will be called after the command music service's change volume"/>

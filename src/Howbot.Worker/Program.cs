@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Events;
 
 namespace Howbot.Worker;
 
@@ -35,7 +37,12 @@ public class Program
     }
     catch (Exception exception)
     {
-      Log.Fatal(exception, "An exception has been thrown while running the application.");
+      if (Log.IsEnabled(LogEventLevel.Fatal))
+      {
+        Log.Fatal(exception, "An exception has been thrown while running the application.");
+      }
+
+      Debug.Write("An exception has caused the application to close");
       return Environment.ExitCode;
     }
 

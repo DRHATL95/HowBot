@@ -71,6 +71,14 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       VoiceStateBehavior: requireChannel ? MemberVoiceStateBehavior.RequireSame : MemberVoiceStateBehavior.Ignore,
       Preconditions: preconditions);
 
+    float persistedVolume;
+
+    using (var scope = _serviceProvider.CreateScope())
+    {
+      var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
+      persistedVolume = db.GetPlayerVolumeLevel(guildId);
+    }
+
     HowbotPlayerOptions playerOptions = new HowbotPlayerOptions()
     {
       DisconnectOnDestroy = true,
@@ -78,7 +86,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       SelfDeaf = true,
       ClearQueueOnStop = true,
       ClearHistoryOnStop = true,
-      InitialVolume = initialVolume
+      InitialVolume = persistedVolume > 0 ? persistedVolume : initialVolume
     };
 
     var result = await _audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
@@ -253,7 +261,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   {
     try
     {
-      await player.SetVolumeAsync(newVolume).ConfigureAwait(false);
+      await player.SetVolumeAsync(newVolume / 100f).ConfigureAwait(false);
 
       using (var scope = _serviceProvider.CreateScope())
       {
@@ -281,7 +289,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       }
 
       var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(player.CurrentTrack, user, textChannel,
-        player.Position?.Position);
+        player.Position?.Position, player.Volume).ConfigureAwait(false);
 
       return CommandResponse.CommandSuccessful(embed);
     }

@@ -1,6 +1,11 @@
 ﻿namespace Howbot.Core.Interfaces;
 
+// Purpose: Interface for the InteractionHandlerService
+// TODO: Implement
 public interface IInteractionHandlerService
 {
-   void Initialize();
+  /// <summary>
+  ///   Initializes the InteractionHandlerService
+  /// </summary>
+  void Initialize();
 }

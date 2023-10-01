@@ -1,5 +1,7 @@
 ﻿namespace Howbot.Core.Interfaces;
 
+// Purpose: Interface for docker service
+// TODO: Implement
 public interface IDockerService
 {
   //Task<IList<ContainerListResponse>> ListAllContainers();
