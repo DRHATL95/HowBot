@@ -48,16 +48,15 @@ public class EmbedServiceTests
     var mockEmbedService = new Mock<IEmbedService>();
     mockEmbedService
       .Setup(service =>
-        service.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object, mockTextChannel.Object,
-            TimeSpan.FromMinutes(1), 100)
-          .Result)
+        service.GenerateMusicNowPlayingEmbed(lavalinkTrack.Object, mockGuildUser.Object, mockTextChannel.Object,
+          TimeSpan.FromMinutes(1), 100))
       .Returns(new EmbedBuilder().Build());
 
     var result =
-      embedService.GenerateMusicNowPlayingEmbedAsync(lavalinkTrack.Object, mockGuildUser.Object,
+      embedService.GenerateMusicNowPlayingEmbed(lavalinkTrack.Object, mockGuildUser.Object,
         mockTextChannel.Object, TimeSpan.FromMinutes(1), 100);
 
-    Assert.NotNull(result.Result);
+    Assert.NotNull(result);
   }
 
   [Fact]
@@ -69,12 +68,12 @@ public class EmbedServiceTests
 
     var mockEmbedService = new Mock<IEmbedService>();
     mockEmbedService
-      .Setup(service => service.GenerateMusicNextTrackEmbedAsync(mockQueue.Object).Result)
+      .Setup(service => service.GenerateMusicNextTrackEmbed(mockQueue.Object))
       .Returns(new EmbedBuilder().Build());
 
-    var result = embedService.GenerateMusicNextTrackEmbedAsync(mockQueue.Object);
+    var result = embedService.GenerateMusicNextTrackEmbed(mockQueue.Object);
 
-    Assert.NotNull(result.Result);
+    Assert.NotNull(result);
   }
 
   [Fact]
@@ -86,11 +85,11 @@ public class EmbedServiceTests
 
     var mockEmbedService = new Mock<IEmbedService>();
     mockEmbedService
-      .Setup(service => service.GenerateMusicCurrentQueueEmbedAsync(mockQueue.Object).Result)
+      .Setup(service => service.GenerateMusicCurrentQueueEmbed(mockQueue.Object))
       .Returns(new EmbedBuilder().Build());
 
-    var result = embedService.GenerateMusicCurrentQueueEmbedAsync(mockQueue.Object);
+    var result = embedService.GenerateMusicCurrentQueueEmbed(mockQueue.Object);
 
-    Assert.NotNull(result.Result);
+    Assert.NotNull(result);
   }
 }

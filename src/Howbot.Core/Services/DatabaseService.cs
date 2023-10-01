@@ -1,6 +1,6 @@
 ﻿using System;
+using Ardalis.GuardClauses;
 using Howbot.Core.Entities;
-using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -26,7 +26,7 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 
   public ulong AddNewGuild(ulong guildId, string prefix, float musicPlayerVolume = 100.0f)
   {
-    ArgumentException.ThrowIfNullOrEmpty(prefix);
+    Guard.Against.NullOrEmpty(prefix, nameof(prefix));
 
     var guildEntity = new Guild
     {
@@ -41,19 +41,19 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
     }
     catch (DbUpdateException dbUpdateException)
     {
-      Logger.LogError(dbUpdateException, "Failed to add new guild to database. Likely already exists.");
+      Logger.LogError(dbUpdateException, "Failed to add new guild to database. Likely already exists");
       return 0;
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, "Failed to add new guild to database.");
+      Logger.LogError(exception, "Failed to add new guild to database");
       return 0;
     }
   }
 
   public Guild GetGuildById(ulong guildId)
   {
-    ParameterHelper.EnsureNotNullAndZeroOrGreater(guildId, nameof(guildId));
+    Guard.Against.NegativeOrZero((long)guildId, nameof(guildId));
 
     try
     {
@@ -61,42 +61,37 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
     }
     catch (Exception e)
     {
-      HandleException(e);
+      Logger.LogError(e, "Failed to get guild by id {GuildId}", guildId);
+      return null;
     }
-
-    return null;
   }
 
   public float GetPlayerVolumeLevel(ulong guildId)
   {
-    ParameterHelper.EnsureNotNullAndZeroOrGreater(guildId, nameof(guildId));
+    Guard.Against.NegativeOrZero((long)guildId, nameof(guildId));
 
     try
     {
       var guildEntity = _repository.GetById<Guild>(guildId);
-
-      if (guildEntity == null)
+      if (guildEntity is not null)
       {
-        Logger.LogWarning("Unable to find guild with id {GuildId}", guildId);
-        return 0.0f;
+        return guildEntity.MusicVolumeLevel / 100.0f;
       }
 
-      Logger.LogDebug("Player volume from db: {volume}", guildEntity.MusicVolumeLevel);
-      Logger.LogDebug("Returned value: {volume}", guildEntity.MusicVolumeLevel / 100.0f);
-
-      return guildEntity.MusicVolumeLevel / 100.0f;
+      Logger.LogWarning("Unable to find guild with id {GuildId}", guildId);
+      return 0.0f;
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, "Failed to get guild volume level from database.");
-      throw;
+      Logger.LogError(exception, "Failed to get guild volume level from database");
+      return 0.0f;
     }
   }
 
   public float UpdatePlayerVolumeLevel(ulong playerGuildId, float newVolume)
   {
-    ParameterHelper.EnsureNotNullAndZeroOrGreater(playerGuildId, nameof(playerGuildId));
-    ParameterHelper.EnsureNotNullAndZeroOrGreater(newVolume, nameof(newVolume));
+    Guard.Against.NegativeOrZero((long)playerGuildId, nameof(playerGuildId));
+    Guard.Against.NegativeOrZero((long)newVolume, nameof(newVolume));
 
     try
     {
@@ -110,18 +105,17 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 
       guildEntity.MusicVolumeLevel = (int)Math.Round(newVolume);
 
-      // Persist
       _repository.Update(guildEntity);
 
       return newVolume;
     }
     catch (DbUpdateException dbUpdateException)
     {
-      Logger.LogError(dbUpdateException, "Failed to update guild volume level.");
+      Logger.LogError(dbUpdateException, "Failed to update guild volume level");
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, "Failed to update guild volume level.");
+      Logger.LogError(exception, "Failed to update guild volume level");
     }
 
     return 0.0f;

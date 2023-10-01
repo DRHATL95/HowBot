@@ -303,7 +303,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       if (Context.User is not IGuildUser guildUser || Context.Channel is not ITextChannel textChannel) return;
 
       var commandResponse =
-        await _musicService.NowPlayingAsync(player, guildUser, textChannel);
+        _musicService.NowPlaying(player, guildUser, textChannel);
 
       if (!commandResponse.IsSuccessful)
       {

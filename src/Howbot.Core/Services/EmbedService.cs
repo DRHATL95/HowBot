@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
@@ -55,7 +54,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     return embedBuilder.Build();
   }
 
-  public ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync(LavalinkTrack track, IGuildUser user,
+  public IEmbed GenerateMusicNowPlayingEmbed(LavalinkTrack track, IGuildUser user,
     ITextChannel textChannel, TimeSpan? position, float volume)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(track));
@@ -99,28 +98,27 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
 
       var embed = embedBuilder.Build();
 
-      return ValueTask.FromResult((IEmbed)embed);
+      return embed;
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(GenerateMusicNowPlayingEmbedAsync));
-      Logger.LogInformation("Failed to generate music now playing embed, falling back to default embed.");
-      return ValueTask.FromResult(CreateEmbed(defaultEmbedOptions));
+      Logger.LogError(exception, nameof(GenerateMusicNowPlayingEmbed));
+      return CreateEmbed(defaultEmbedOptions);
     }
   }
 
-  public ValueTask<IEmbed> GenerateMusicNextTrackEmbedAsync(ITrackQueue queue)
+  public IEmbed GenerateMusicNextTrackEmbed(ITrackQueue queue)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
 
     if (!queue.TryPeek(out ITrackQueueItem nextTrackItem))
     {
-      return ValueTask.FromResult(CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." }));
+      return CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." });
     }
 
     if (nextTrackItem?.Track is null)
     {
-      return ValueTask.FromResult(CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." }));
+      return CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." });
     }
 
     var embed = CreateEmbed(new EmbedOptions()
@@ -137,16 +135,16 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
       }
     });
 
-    return ValueTask.FromResult(embed);
+    return embed;
   }
 
-  public ValueTask<IEmbed> GenerateMusicCurrentQueueEmbedAsync(ITrackQueue queue)
+  public IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
 
     if (queue.IsEmpty)
     {
-      return ValueTask.FromResult(CreateEmbed(new EmbedOptions { Title = "There are no songs in the queue." }));
+      return CreateEmbed(new EmbedOptions { Title = "There are no songs in the queue." });
     }
 
     var queueList = queue.Count > 10
@@ -159,7 +157,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
       Fields = new[] { new EmbedFieldBuilder() { IsInline = false, Name = "Songs", Value = queueList } }
     });
 
-    return ValueTask.FromResult(embed);
+    return embed;
   }
 
   private EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser([NotNull] IUser user)

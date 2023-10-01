@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
@@ -33,7 +32,7 @@ public interface IEmbedService
   /// <param name="position"></param>
   /// <param name="volume"></param>
   /// <returns></returns>
-  ValueTask<IEmbed> GenerateMusicNowPlayingEmbedAsync([NotNull] LavalinkTrack queueItem, [NotNull] IGuildUser user,
+  IEmbed GenerateMusicNowPlayingEmbed([NotNull] LavalinkTrack queueItem, [NotNull] IGuildUser user,
     [NotNull] ITextChannel textChannel, TimeSpan? position, float volume);
 
   /// <summary>
@@ -41,12 +40,12 @@ public interface IEmbedService
   /// </summary>
   /// <param name="queue"></param>
   /// <returns></returns>
-  ValueTask<IEmbed> GenerateMusicNextTrackEmbedAsync([NotNull] ITrackQueue queue);
+  IEmbed GenerateMusicNextTrackEmbed([NotNull] ITrackQueue queue);
 
   /// <summary>
   ///   Generates an embed of the current music queue, up to 10 tracks.
   /// </summary>
   /// <param name="queue">The current guild music queue</param>
   /// <returns>An embed of the songs in queue up to 10 tracks.</returns>
-  ValueTask<IEmbed> GenerateMusicCurrentQueueEmbedAsync([NotNull] ITrackQueue queue);
+  IEmbed GenerateMusicCurrentQueueEmbed([NotNull] ITrackQueue queue);
 }

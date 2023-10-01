@@ -81,7 +81,7 @@ public interface IMusicService
   /// <param name="user"></param>
   /// <param name="textChannel"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> NowPlayingAsync([NotNull] HowbotPlayer player, [NotNull] IGuildUser user,
+  CommandResponse NowPlaying([NotNull] HowbotPlayer player, [NotNull] IGuildUser user,
     [NotNull] ITextChannel textChannel);
 
   /// <summary>

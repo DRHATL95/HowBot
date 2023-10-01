@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace Howbot.Core.Helpers;
 
@@ -9,7 +10,7 @@ namespace Howbot.Core.Helpers;
 /// </summary>
 public static class ConfigurationHelper
 {
-  public static IConfiguration HostConfiguration { get; set; }
+  public static IConfiguration HostConfiguration { get; private set; }
 
   /// <summary>
   /// Adds or updates configuration settings in appsettings.json
@@ -23,11 +24,11 @@ public static class ConfigurationHelper
     {
       var filePath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
       string json = File.ReadAllText(filePath);
-      dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject(json);
+      dynamic jsonObj = JsonConvert.DeserializeObject(json);
 
       SetValueRecursively(sectionPathKey, jsonObj, value);
 
-      string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
+      string output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
       File.WriteAllText(filePath, output);
     }
     catch (Exception ex)

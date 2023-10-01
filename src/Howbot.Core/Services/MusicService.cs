@@ -278,7 +278,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
   }
 
-  public async ValueTask<CommandResponse> NowPlayingAsync(HowbotPlayer player, IGuildUser user,
+  public CommandResponse NowPlaying(HowbotPlayer player, IGuildUser user,
     ITextChannel textChannel)
   {
     try
@@ -288,8 +288,8 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         return CommandResponse.CommandNotSuccessful("No track is currently playing.");
       }
 
-      var embed = await _embedService.GenerateMusicNowPlayingEmbedAsync(player.CurrentTrack, user, textChannel,
-        player.Position?.Position, player.Volume).ConfigureAwait(false);
+      var embed = _embedService.GenerateMusicNowPlayingEmbed(player.CurrentTrack, user, textChannel,
+        player.Position?.Position, player.Volume);
 
       return CommandResponse.CommandSuccessful(embed);
     }
