@@ -33,7 +33,8 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   public DiscordClientService([NotNull] DiscordSocketClient discordSocketClient,
     [NotNull] IServiceProvider serviceProvider, [NotNull] InteractionService interactionService,
-    [NotNull] IVoiceService voiceService, [NotNull] IAudioService audioService)
+    [NotNull] IVoiceService voiceService, [NotNull] IAudioService audioService,
+    [NotNull] ILogger<DiscordClientService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _serviceProvider = serviceProvider;
@@ -139,7 +140,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     {
       await _interactionService.AddModuleAsync(typeof(MusicModule), _serviceProvider).ConfigureAwait(false);
       await _interactionService.AddModuleAsync(typeof(AdminModule), _serviceProvider).ConfigureAwait(false);
-      // await _interactionService.AddModuleAsync(typeof(GeneralModule), _serviceProvider);
+      await _interactionService.AddModuleAsync(typeof(GeneralModule), _serviceProvider).ConfigureAwait(false);
     }
     catch (FileNotFoundException exception)
     {

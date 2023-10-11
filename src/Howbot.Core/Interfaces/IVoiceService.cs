@@ -12,9 +12,10 @@ public interface IVoiceService
   ///   Joins the requested voice channel for the guild.
   /// </summary>
   /// <param name="guildUser"></param>
-  /// <param name="isDeaf"></param>
+  /// <param name="guildChannel"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> JoinVoiceChannelAsync([NotNull] IGuildUser guildUser, bool isDeaf = true);
+  ValueTask<CommandResponse>
+    JoinVoiceChannelAsync([NotNull] IGuildUser guildUser, [NotNull] IGuildChannel guildChannel);
 
   /// <summary>
   ///   Leaves the requested voice channel for the guild.

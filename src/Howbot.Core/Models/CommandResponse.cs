@@ -7,23 +7,20 @@ namespace Howbot.Core.Models;
 
 public class CommandResponse
 {
-  public bool IsSuccessful { get; init; }
-
-  [NotNull] public string Message { get; private init; }
-
-  [CanBeNull] public Exception Exception { get; private init; }
-
-  [CanBeNull] public IEmbed Embed { get; private init; }
-
-  [CanBeNull] public LavalinkTrack LavalinkTrack { get; init; }
-
   private CommandResponse()
   {
+    IsSuccessful = false;
     Message = string.Empty;
     Exception = null;
     Embed = null;
     LavalinkTrack = null;
   }
+
+  public bool IsSuccessful { get; private init; }
+  [CanBeNull] public string Message { get; private init; }
+  [CanBeNull] public Exception Exception { get; private init; }
+  [CanBeNull] public IEmbed Embed { get; private init; }
+  [CanBeNull] public LavalinkTrack LavalinkTrack { get; private init; }
 
   [NotNull]
   public static CommandResponse CommandSuccessful()
@@ -52,7 +49,7 @@ public class CommandResponse
   [NotNull]
   public static CommandResponse CommandNotSuccessful()
   {
-    return new CommandResponse();
+    return new CommandResponse { IsSuccessful = false };
   }
 
   [NotNull]

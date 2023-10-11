@@ -59,6 +59,8 @@ public class Configuration
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
+  public static Uri LavalinkUrl { get; } = new("http://192.168.1.232:2333");
+
   /// <summary>
   ///   Determines if the application is running in debug mode
   /// </summary>

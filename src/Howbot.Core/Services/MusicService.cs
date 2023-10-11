@@ -36,7 +36,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   [NotNull] private readonly IServiceProvider _serviceProvider;
 
   public MusicService([NotNull] IEmbedService embedService, [NotNull] IAudioService audioService,
-    [NotNull] IServiceProvider serviceProvider)
+    [NotNull] IServiceProvider serviceProvider, [NotNull] ILogger<MusicService> logger) : base(logger)
   {
     _embedService = embedService;
     _audioService = audioService;
@@ -139,6 +139,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
     return ValueTask.FromResult(new HowbotPlayer(properties));
   }
+
 
   #region Music Module Commands
 

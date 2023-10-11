@@ -2,23 +2,24 @@
 using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
 using Howbot.Core.Services;
 using Lavalink4NET;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Howbot.UnitTests.Core.Services;
 
 public class DiscordClientServiceTest
 {
-  private static (IDiscordClientService, Mock<DiscordSocketClient>, Mock<IAudioService>, Mock<ILoggerAdapter<DiscordClientService>>,
+  private static (IDiscordClientService, Mock<DiscordSocketClient>, Mock<IAudioService>,
+    Mock<ILogger<DiscordClientService>>,
     Mock<IServiceProvider>, Mock<InteractionService>) Factory()
   {
     var serviceLocator = new Mock<IServiceLocator>();
     var discordSocketClient = new Mock<DiscordSocketClient>();
     var serviceProvider = new Mock<IServiceProvider>();
-    var logger = new Mock<ILoggerAdapter<DiscordClientService>>();
+    var logger = new Mock<ILogger<DiscordClientService>>();
     var audioService = new Mock<IAudioService>();
     // Services
     var interactionService = new Mock<InteractionService>();
@@ -26,7 +27,8 @@ public class DiscordClientServiceTest
 
     _ = SetupCreateScope(serviceLocator);
 
-    var discordClientService = new DiscordClientService(discordSocketClient.Object, serviceProvider.Object, interactionService.Object, voiceService.Object, audioService.Object);
+    var discordClientService = new DiscordClientService(discordSocketClient.Object, serviceProvider.Object,
+      interactionService.Object, voiceService.Object, audioService.Object, logger.Object);
 
     return (discordClientService, discordSocketClient, audioService, logger, serviceProvider, interactionService);
   }

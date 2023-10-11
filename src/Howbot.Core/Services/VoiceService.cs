@@ -5,7 +5,6 @@ using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
 using Lavalink4NET;
-using Lavalink4NET.DiscordNet;
 using Lavalink4NET.Players;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,24 +15,30 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 {
   [NotNull] private readonly IAudioService _audioService;
 
-  public VoiceService([NotNull] IAudioService audioService)
+  public VoiceService([NotNull] IAudioService audioService, ILogger<VoiceService> logger) : base(logger)
   {
     _audioService = audioService;
   }
 
-  public async ValueTask<CommandResponse> JoinVoiceChannelAsync(IGuildUser user, bool isDeaf = true)
+  public async ValueTask<CommandResponse> JoinVoiceChannelAsync(IGuildUser user, IGuildChannel channel)
   {
     try
     {
       var voiceChannel = user.VoiceChannel;
-      if (voiceChannel is null)
+
+      Logger.LogDebug("Attempting to join voice channel [{0}].", voiceChannel?.Name ?? "null");
+
+      _ = await GetPlayerAsync(new GetPlayerParameters
       {
-        return CommandResponse.CommandNotSuccessful("User who requested command is not in voice.");
-      }
+        ConnectToVoiceChannel = true,
+        GuildId = channel.GuildId,
+        TextChannel = (ITextChannel)channel,
+        VoiceChannelId = voiceChannel?.Id ?? 0
+      }).ConfigureAwait(false);
 
-      await _audioService.Players.JoinAsync(voiceChannel: voiceChannel).ConfigureAwait(false);
+      Logger.LogDebug("Successfully joined voice channel [{0}].", voiceChannel?.Name ?? "null");
 
-      return CommandResponse.CommandSuccessful("This command is not active.");
+      return CommandResponse.CommandSuccessful();
     }
     catch (Exception exception)
     {
@@ -74,6 +79,13 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 
   private async ValueTask<ILavalinkPlayer> GetPlayerAsync(GetPlayerParameters playerParams)
   {
+    ArgumentNullException.ThrowIfNull(playerParams);
+
+    if (playerParams.VoiceChannelId == 0)
+    {
+      throw new ArgumentException("Voice channel id cannot be 0.", nameof(playerParams));
+    }
+
     var retrieveOptions = new PlayerRetrieveOptions(
       ChannelBehavior: playerParams.ConnectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None);
 

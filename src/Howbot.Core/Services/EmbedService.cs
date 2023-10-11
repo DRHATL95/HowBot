@@ -13,6 +13,10 @@ namespace Howbot.Core.Services;
 
 public class EmbedService : ServiceBase<EmbedService>, IEmbedService
 {
+  public EmbedService(ILogger<EmbedService> logger) : base(logger)
+  {
+  }
+
   public IEmbed CreateEmbed(EmbedOptions options)
   {
     ArgumentNullException.ThrowIfNull(options);

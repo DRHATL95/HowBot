@@ -2,6 +2,7 @@
 using Ardalis.GuardClauses;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -11,17 +12,15 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 {
   private readonly IRepository _repository;
 
-  public DatabaseService(IRepository repository)
+  public DatabaseService([NotNull] IRepository repository, ILogger<DatabaseService> logger) : base(logger)
   {
     _repository = repository;
   }
 
   public override void Initialize()
   {
-    if (Logger.IsEnabled(LogLevel.Debug))
-    {
-      Logger.LogDebug("Initializing {ServiceName}...", nameof(DatabaseService));
-    }
+    // TODO: Check EF Core if database has been created
+    Logger.LogDebug("Initializing {ServiceName}...", nameof(DatabaseService));
   }
 
   public ulong AddNewGuild(ulong guildId, string prefix, float musicPlayerVolume = 100.0f)

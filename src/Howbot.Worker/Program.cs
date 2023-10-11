@@ -77,11 +77,16 @@ public class Program
         {
           ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
         }));
+
+        // Lavalink4Net Configuration
         services.AddLavalink();
         services.ConfigureLavalink(x =>
         {
+          x.BaseAddress = Configuration.LavalinkUrl;
           x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
         });
+
+        // Lavalink4Net Inactivity Tracking
         services.AddInactivityTracking();
 
         ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);

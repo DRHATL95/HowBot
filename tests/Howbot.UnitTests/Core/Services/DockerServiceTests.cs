@@ -3,6 +3,7 @@ using Docker.DotNet;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Howbot.UnitTests.Core.Services;
@@ -15,7 +16,9 @@ public class DockerServiceTests
 
     _ = SetupCreateScope(serviceLocator);
 
-    var dockerService = new DockerService();
+    var logger = new Mock<ILogger<DockerService>>();
+
+    var dockerService = new DockerService(logger.Object);
 
     return dockerService;
   }

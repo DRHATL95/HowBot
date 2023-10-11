@@ -8,6 +8,7 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Permissions.Bot;
 using static Howbot.Core.Models.Permissions.User;
@@ -17,10 +18,11 @@ namespace Howbot.Core.Modules;
 public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
 {
   [NotNull] private readonly InteractionService _interactionService;
+  [NotNull] private readonly ILogger<GeneralModule> _logger;
   [NotNull] private readonly IVoiceService _voiceService;
-  [NotNull] private readonly ILoggerAdapter<GeneralModule> _logger;
 
-  public GeneralModule([NotNull] InteractionService interactionService,[NotNull] IVoiceService voiceService,[NotNull] ILoggerAdapter<GeneralModule> logger)
+  public GeneralModule([NotNull] InteractionService interactionService, [NotNull] IVoiceService voiceService,
+    [NotNull] ILogger<GeneralModule> logger)
   {
     _interactionService = interactionService;
     _voiceService = voiceService;
@@ -32,15 +34,15 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   [RequireBotPermission(GuildBotVoiceCommandPermission)]
   [RequireUserPermission(GuildUserVoiceCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  public async Task JoinCommandAsync()
+  public async Task JoinVoiceChannelCommandAsync()
   {
     try
     {
       await DeferAsync().ConfigureAwait(false);
 
-      if (Context.User is IGuildUser user)
+      if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
-        CommandResponse commandResponse = await _voiceService.JoinVoiceChannelAsync(user);
+        var commandResponse = await _voiceService.JoinVoiceChannelAsync(user, channel);
         if (!commandResponse.IsSuccessful)
         {
           ModuleHelper.HandleCommandFailed(commandResponse);
@@ -51,7 +53,7 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(JoinVoiceChannelCommandAsync));
       throw;
     }
   }
@@ -69,7 +71,8 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
-        CommandResponse commandResponse = await _voiceService.LeaveVoiceChannelAsync(user, channel).ConfigureAwait(false);
+        CommandResponse commandResponse =
+          await _voiceService.LeaveVoiceChannelAsync(user, channel).ConfigureAwait(false);
 
         if (!commandResponse.IsSuccessful)
         {
@@ -91,6 +94,8 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
+      _logger.LogDebug("Ping command invoked.");
+
       var channel = Context.Channel;
       var client = Context.Client;
 
@@ -104,25 +109,37 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
         messageReference: new MessageReference(replyMessage.Id, replyMessage.Channel.Id)).ConfigureAwait(false);
 
       await replyMessage.DeleteAsync().ConfigureAwait(false);
+
+      _logger.LogDebug("Ping command completed.");
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(PingCommandAsync));
       throw;
     }
   }
 
   [NotNull]
   [SlashCommand(HelpCommandName, HelpCommandDescription, true, RunMode.Async)]
-  public Task HelpCommandAsync()
+  public async Task HelpCommandAsync()
   {
-    var commands = _interactionService.SlashCommands;
-    var commandList = string.Join("\n", commands.Select(c => $"`/{c.Name}`: {c.Description}"));
+    try
+    {
+      _logger.LogDebug("Help command invoked.");
 
-    var embedBuilder = new EmbedBuilder { Title = "Command List", Description = commandList };
+      var commands = _interactionService.SlashCommands;
+      var commandList = string.Join("\n", commands.Select(c => $"`/{c.Name}`: {c.Description}"));
 
-    RespondAsync(embeds: new[] { embedBuilder.Build() }).ConfigureAwait(false);
+      var embedBuilder = new EmbedBuilder { Title = "Command List", Description = commandList };
 
-    return Task.CompletedTask;
+      await RespondAsync(embeds: new[] { embedBuilder.Build() }).ConfigureAwait(false);
+
+      _logger.LogDebug("Help command completed.");
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception, nameof(HelpCommandAsync));
+      throw;
+    }
   }
 }

@@ -19,7 +19,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
   public InteractionHandlerService([NotNull] DiscordSocketClient discordSocketClient,
     [NotNull] InteractionService interactionService,
-    [NotNull] IServiceProvider serviceProvider)
+    [NotNull] IServiceProvider serviceProvider, ILogger<InteractionHandlerService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;
@@ -61,15 +61,15 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
     catch (ArgumentOutOfRangeException exception)
     {
-      // Should only hit this if unable to convert logging message severity between Serilog and .NET Logging
-      HandleException(exception);
-      throw;
+      HandleException(exception, nameof(InteractionServiceOnLog));
+
+      return Task.FromException(exception);
     }
     catch (Exception exception)
     {
-      // Will be caught by try exception creation for LogLevel.Error
-      HandleException(exception);
-      throw;
+      HandleException(exception, nameof(InteractionServiceOnLog));
+
+      return Task.FromException(exception);
     }
   }
 
@@ -140,13 +140,18 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
     catch (Exception exception)
     {
-      HandleException(exception);
+      HandleException(exception, nameof(DiscordSocketClientOnInteractionCreated));
 
       if (socketInteraction.Type is InteractionType.ApplicationCommand)
       {
-        Logger.LogInformation("Attempting to delete the failed command.");
+        Logger.LogInformation("Attempting to delete the failed command..");
+
         // If exception is thrown, acknowledgement will still be there. This will clean-up.
-        await socketInteraction.GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+        await socketInteraction.GetOriginalResponseAsync().ContinueWith(async task =>
+          await task.Result.DeleteAsync().ConfigureAwait(false)
+        );
+
+        Logger.LogInformation("Successfully deleted the failed command.");
       }
     }
   }
@@ -154,6 +159,15 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
   private async Task InteractionServiceOnInteractionExecuted([NotNull] ICommandInfo commandInfo,
     [NotNull] IInteractionContext interactionContext, [NotNull] IResult result)
   {
+    try
+    {
+    }
+    catch (Exception exception)
+    {
+      HandleException(exception, nameof(InteractionServiceOnInteractionExecuted));
+      throw;
+    }
+
     if (result.IsSuccess)
     {
       return;

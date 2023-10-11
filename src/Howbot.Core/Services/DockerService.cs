@@ -1,9 +1,14 @@
 ﻿using Howbot.Core.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
 public class DockerService : ServiceBase<DockerService>, IDockerService
 {
+  public DockerService(ILogger<DockerService> logger) : base(logger)
+  {
+  }
+
 //  private readonly IServiceLocator _serviceLocator;
 
 //  public DockerService(IServiceLocator serviceLocator)

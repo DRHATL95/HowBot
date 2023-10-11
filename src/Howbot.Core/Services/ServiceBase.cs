@@ -8,11 +8,6 @@ public abstract class ServiceBase<T>
 {
   private readonly string _serviceName = nameof(T);
 
-  protected ServiceBase()
-  {
-    Logger = new LoggerFactory().CreateLogger<T>();
-  }
-
   protected ServiceBase([NotNull] ILogger<T> logger)
   {
     Logger = logger;
@@ -28,11 +23,29 @@ public abstract class ServiceBase<T>
     }
   }
 
-  protected void HandleException(Exception exception)
+  protected void HandleException(Exception exception, bool isFatal = false)
   {
-    if (Logger.IsEnabled(LogLevel.Error))
+    if (isFatal)
+    {
+      Logger.LogCritical(exception, "A fatal exception has been thrown in {ServiceName}.", _serviceName);
+    }
+    else
     {
       Logger.LogError(exception, "An exception has been thrown in {ServiceName}.", _serviceName);
+    }
+  }
+
+  protected void HandleException(Exception exception, string callingFunctionName, bool isFatal = false)
+  {
+    if (isFatal)
+    {
+      Logger.LogCritical(exception, "A fatal exception has been thrown in {ServiceName} in {FunctionName}.",
+        _serviceName, callingFunctionName);
+    }
+    else
+    {
+      Logger.LogError(exception, "An exception has been thrown in {ServiceName} in {FunctionName}.", _serviceName,
+        callingFunctionName);
     }
   }
 }
