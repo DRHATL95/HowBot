@@ -3,18 +3,20 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
+using Howbot.Core.Models;
 using JetBrains.Annotations;
 using Lavalink4NET;
 
 namespace Howbot.Core.Settings;
 
-public class Configuration
+public static class Configuration
 {
   private const string DiscordTokenDev = "DiscordTokenDev";
   private const string DiscordTokenProd = "DiscordTokenProd";
   private const string YouTube = "YoutubeToken";
   private const string Postgres = "PostgresConnectionString";
   private const string Lavalink = "DiscordLavalinkServerPassword";
+  private const string LavalinkAddress = "DiscordLavalinkServerAddress";
 
   [NotNull] public static string DiscordToken => GetTokenByName(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
 
@@ -23,6 +25,8 @@ public class Configuration
   [NotNull] public static string PostgresConnectionString => GetTokenByName(Postgres);
 
   [NotNull] private static string LavaNodePassword => GetTokenByName(Lavalink);
+
+  [NotNull] private static string LavaNodeAddress => GetTokenByName(LavalinkAddress);
 
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
@@ -33,9 +37,9 @@ public class Configuration
   public static DiscordSocketConfig DiscordSocketConfig =>
     new()
     {
-      AlwaysDownloadUsers = true,
+      AlwaysDownloadUsers = !IsDebug(),
       GatewayIntents = GatewayIntents,
-      LogLevel = LogSeverity.Info,
+      LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error,
       LogGatewayIntentWarnings = false,
       UseInteractionSnowflakeDate = false
     };
@@ -44,13 +48,10 @@ public class Configuration
   ///   Lavalink4NET configuration
   /// </summary>
   [NotNull]
-  public static AudioServiceOptions AudioServiceOptions
+  public static AudioServiceOptions AudioServiceOptions => new()
   {
-    get
-    {
-      return new AudioServiceOptions { Passphrase = LavaNodePassword };
-    }
-  }
+    Passphrase = LavaNodePassword, BaseAddress = LavalinkUrl, HttpClientName = Constants.BotName
+  };
 
   /// <summary>
   ///   Discord Interactions configuration
@@ -59,7 +60,7 @@ public class Configuration
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
-  public static Uri LavalinkUrl { get; } = new("http://192.168.1.232:2333");
+  public static Uri LavalinkUrl { get; } = new(LavaNodeAddress);
 
   /// <summary>
   ///   Determines if the application is running in debug mode

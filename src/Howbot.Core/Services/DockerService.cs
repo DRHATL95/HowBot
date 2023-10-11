@@ -1,11 +1,10 @@
 ﻿using Howbot.Core.Interfaces;
-using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
 public class DockerService : ServiceBase<DockerService>, IDockerService
 {
-  public DockerService(ILogger<DockerService> logger) : base(logger)
+  public DockerService(ILoggerAdapter<DockerService> logger) : base(logger)
   {
   }
 

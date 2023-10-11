@@ -19,7 +19,7 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
   public InteractionHandlerService([NotNull] DiscordSocketClient discordSocketClient,
     [NotNull] InteractionService interactionService,
-    [NotNull] IServiceProvider serviceProvider, ILogger<InteractionHandlerService> logger) : base(logger)
+    [NotNull] IServiceProvider serviceProvider, ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;

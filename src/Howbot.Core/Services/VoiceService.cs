@@ -6,7 +6,6 @@ using Howbot.Core.Models;
 using JetBrains.Annotations;
 using Lavalink4NET;
 using Lavalink4NET.Players;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Howbot.Core.Services;
@@ -15,7 +14,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 {
   [NotNull] private readonly IAudioService _audioService;
 
-  public VoiceService([NotNull] IAudioService audioService, ILogger<VoiceService> logger) : base(logger)
+  public VoiceService([NotNull] IAudioService audioService, ILoggerAdapter<VoiceService> logger) : base(logger)
   {
     _audioService = audioService;
   }

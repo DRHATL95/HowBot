@@ -63,6 +63,10 @@ public static class ConfigurationHelper
     }
   }
 
+  /// <summary>
+  ///   Allows for setting the host configuration globally.
+  /// </summary>
+  /// <param name="configuration">The configuration to assign to global variable.</param>
   public static void SetHostConfiguration(IConfiguration configuration)
   {
     HostConfiguration = configuration;

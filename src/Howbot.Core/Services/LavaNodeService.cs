@@ -7,7 +7,6 @@ using Lavalink4NET.Clients.Events;
 using Lavalink4NET.Events;
 using Lavalink4NET.Events.Players;
 using Lavalink4NET.Protocol.Payloads.Events;
-using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
@@ -15,7 +14,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, I
 {
   [NotNull] private readonly IAudioService _audioService;
 
-  public LavaNodeService([NotNull] IAudioService audioService, ILogger<LavaNodeService> logger) : base(logger)
+  public LavaNodeService([NotNull] IAudioService audioService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
   {
     _audioService = audioService;
   }

@@ -16,31 +16,32 @@ public class Worker : BackgroundService
 {
   [NotNull] private readonly IDiscordClientService _discordClientService;
   [NotNull] private readonly DiscordSocketClient _discordSocketClient;
+  [NotNull] private readonly ILoggerAdapter<Worker> _logger;
   [NotNull] private readonly IServiceProvider _serviceProvider;
 
   public Worker([NotNull] IDiscordClientService discordClientService, [NotNull] IServiceProvider serviceProvider,
-    DiscordSocketClient discordSocketClient)
+    [NotNull] DiscordSocketClient discordSocketClient, [NotNull] ILoggerAdapter<Worker> logger)
   {
     _discordClientService = discordClientService;
     _serviceProvider = serviceProvider;
     _discordSocketClient = discordSocketClient;
+    _logger = logger;
   }
 
   protected override async Task ExecuteAsync(CancellationToken cancellationToken)
   {
-    cancellationToken.ThrowIfCancellationRequested();
-
     try
     {
+      cancellationToken.ThrowIfCancellationRequested();
+
       InitializeHowbotServices(cancellationToken);
 
       if (!await _discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken).ConfigureAwait(false))
       {
-        Log.Fatal(
-          "Unable to login to discord with provided token."); // New exception type? (DiscordLoginException)
+        _logger.LogCritical("Unable to login to discord API with token.");
 
         // Stop worker, cannot continue without being authenticated
-        await StopAsync(cancellationToken);
+        await StopAsync(cancellationToken).ConfigureAwait(false);
 
         throw new DiscordLoginException("Unable to login to discord API with token.");
       }
@@ -52,12 +53,12 @@ public class Worker : BackgroundService
     }
     catch (DiscordLoginException loginException)
     {
-      Log.Error(loginException, "An exception has been thrown logging into Discord.");
+      _logger.LogError(loginException, "An exception has been thrown logging into Discord.", Array.Empty<object>());
       throw;
     }
     catch (Exception exception)
     {
-      Log.Error(exception, "An exception has been thrown in the main worker");
+      _logger.LogError(exception, "An exception has been thrown in the main worker", Array.Empty<object>());
       throw;
     }
   }
@@ -75,12 +76,12 @@ public class Worker : BackgroundService
 
   private void InitializeHowbotServices(CancellationToken cancellationToken = default)
   {
-    cancellationToken.ThrowIfCancellationRequested();
-
-    Log.Debug("Starting initialization of Howbot services");
-
     try
     {
+      cancellationToken.ThrowIfCancellationRequested();
+
+      _logger.LogDebug("Starting initialization of Howbot services..");
+
       _serviceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
       _serviceProvider.GetRequiredService<ILavaNodeService>()?.Initialize();
       _serviceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
@@ -92,7 +93,7 @@ public class Worker : BackgroundService
     }
     catch (Exception exception)
     {
-      Log.Error(exception, nameof(InitializeHowbotServices));
+      _logger.LogError(exception, nameof(InitializeHowbotServices));
       throw;
     }
   }

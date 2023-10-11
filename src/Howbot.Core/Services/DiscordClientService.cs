@@ -34,7 +34,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   public DiscordClientService([NotNull] DiscordSocketClient discordSocketClient,
     [NotNull] IServiceProvider serviceProvider, [NotNull] InteractionService interactionService,
     [NotNull] IVoiceService voiceService, [NotNull] IAudioService audioService,
-    [NotNull] ILogger<DiscordClientService> logger) : base(logger)
+    [NotNull] ILoggerAdapter<DiscordClientService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _serviceProvider = serviceProvider;
@@ -171,7 +171,9 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       _ => LogLevel.Information
     };
 
-    Logger.Log(severity, arg.Message);
+    var message = arg.Message ?? arg.Exception?.Message ?? "No message provided";
+
+    Logger.Log(severity, message);
 
     return Task.CompletedTask;
   }

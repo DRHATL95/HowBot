@@ -21,7 +21,6 @@ using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
 using Lavalink4NET.Tracks;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -36,7 +35,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   [NotNull] private readonly IServiceProvider _serviceProvider;
 
   public MusicService([NotNull] IEmbedService embedService, [NotNull] IAudioService audioService,
-    [NotNull] IServiceProvider serviceProvider, [NotNull] ILogger<MusicService> logger) : base(logger)
+    [NotNull] IServiceProvider serviceProvider, [NotNull] ILoggerAdapter<MusicService> logger) : base(logger)
   {
     _embedService = embedService;
     _audioService = audioService;

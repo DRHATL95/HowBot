@@ -1,37 +1,39 @@
 ﻿using System;
+using Howbot.Core.Interfaces;
 using JetBrains.Annotations;
-using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
 public abstract class ServiceBase<T>
 {
-  private readonly string _serviceName = nameof(T);
+  private const string ServiceName = nameof(ServiceBase<T>);
 
-  protected ServiceBase([NotNull] ILogger<T> logger)
+  protected ServiceBase([NotNull] ILoggerAdapter<T> logger)
   {
     Logger = logger;
   }
 
-  [NotNull] protected ILogger<T> Logger { get; }
+  [NotNull] protected ILoggerAdapter<T> Logger { get; }
 
+  /// <summary>
+  ///   Every service needs to implement this method. This will hook up events primarily,
+  ///   but will also log that the service has been initialized.
+  /// </summary>
   public virtual void Initialize()
   {
-    if (Logger.IsEnabled(LogLevel.Debug))
-    {
-      Logger.LogDebug("{ServiceName} is initializing..", _serviceName);
-    }
+    // Generically obtain the service name class and log that it is initializing.
+    Logger.LogDebug("{ServiceName} is initializing..", ServiceName);
   }
 
   protected void HandleException(Exception exception, bool isFatal = false)
   {
     if (isFatal)
     {
-      Logger.LogCritical(exception, "A fatal exception has been thrown in {ServiceName}.", _serviceName);
+      Logger.LogCritical(exception, "A fatal exception has been thrown in {ServiceName}.", ServiceName);
     }
     else
     {
-      Logger.LogError(exception, "An exception has been thrown in {ServiceName}.", _serviceName);
+      Logger.LogError(exception, "An exception has been thrown in {ServiceName}.", ServiceName);
     }
   }
 
@@ -40,11 +42,11 @@ public abstract class ServiceBase<T>
     if (isFatal)
     {
       Logger.LogCritical(exception, "A fatal exception has been thrown in {ServiceName} in {FunctionName}.",
-        _serviceName, callingFunctionName);
+        ServiceName, callingFunctionName);
     }
     else
     {
-      Logger.LogError(exception, "An exception has been thrown in {ServiceName} in {FunctionName}.", _serviceName,
+      Logger.LogError(exception, "An exception has been thrown in {ServiceName} in {FunctionName}.", ServiceName,
         callingFunctionName);
     }
   }

@@ -5,7 +5,6 @@ using Howbot.Core.Interfaces;
 using Howbot.Core.Services;
 using Lavalink4NET;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace Howbot.UnitTests.Core.Services;
@@ -13,13 +12,13 @@ namespace Howbot.UnitTests.Core.Services;
 public class DiscordClientServiceTest
 {
   private static (IDiscordClientService, Mock<DiscordSocketClient>, Mock<IAudioService>,
-    Mock<ILogger<DiscordClientService>>,
+    Mock<ILoggerAdapter<DiscordClientService>>,
     Mock<IServiceProvider>, Mock<InteractionService>) Factory()
   {
     var serviceLocator = new Mock<IServiceLocator>();
     var discordSocketClient = new Mock<DiscordSocketClient>();
     var serviceProvider = new Mock<IServiceProvider>();
-    var logger = new Mock<ILogger<DiscordClientService>>();
+    var logger = new Mock<ILoggerAdapter<DiscordClientService>>();
     var audioService = new Mock<IAudioService>();
     // Services
     var interactionService = new Mock<InteractionService>();

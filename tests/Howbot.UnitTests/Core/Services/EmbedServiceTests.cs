@@ -5,7 +5,6 @@ using Howbot.Core.Models;
 using Howbot.Core.Services;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Tracks;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -15,7 +14,7 @@ public class EmbedServiceTests
 {
   private static IEmbedService Factory()
   {
-    var logger = new Mock<ILogger<EmbedService>>();
+    var logger = new Mock<ILoggerAdapter<EmbedService>>();
 
     var embedService = new EmbedService(logger.Object);
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -39,11 +38,8 @@ public class Program
     {
       if (Log.IsEnabled(LogEventLevel.Fatal))
       {
-        Log.Fatal(exception, "An exception has been thrown while running the application.");
+        Log.Fatal(exception, "A fatal exception has been thrown while running the application.");
       }
-
-      Debug.Write("An exception has caused the application to close");
-      return Environment.ExitCode;
     }
 
     // Return exit code to terminal once application has been terminated.
@@ -56,8 +52,7 @@ public class Program
       .UseSerilog(([NotNull] context, [NotNull] configuration) =>
       {
         configuration
-          .ReadFrom.Configuration(context.Configuration)
-          .Enrich.FromLogContext();
+          .ReadFrom.Configuration(context.Configuration);
       })
       .ConfigureServices(([NotNull] hostContext, [NotNull] services) =>
       {
@@ -69,11 +64,10 @@ public class Program
         // Add in-memory cache
         services.AddMemoryCache();
 
-        services.AddSingleton<Configuration>();
-        services.AddSingleton(x => new DiscordSocketClient(Configuration.DiscordSocketConfig));
+        services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
         services.AddSingleton(x =>
           new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
-        services.AddSingleton(x => new YouTubeService(new BaseClientService.Initializer
+        services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
         {
           ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
         }));
@@ -89,10 +83,12 @@ public class Program
         // Lavalink4Net Inactivity Tracking
         services.AddInactivityTracking();
 
+        // Add configuration for access globally
         ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);
 
         // Dynamically insert connection string for DB context
-        ConfigurationHelper.AddOrUpdateAppSetting("DefaultConnection", Configuration.PostgresConnectionString);
+        ConfigurationHelper.AddOrUpdateAppSetting("ConnectionStrings:DefaultConnection",
+          Configuration.PostgresConnectionString);
 
         // Infrastructure.ContainerSetup
         services.AddDbContext(hostContext.Configuration);

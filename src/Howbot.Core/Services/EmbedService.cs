@@ -7,13 +7,12 @@ using Howbot.Core.Models;
 using JetBrains.Annotations;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Tracks;
-using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
 public class EmbedService : ServiceBase<EmbedService>, IEmbedService
 {
-  public EmbedService(ILogger<EmbedService> logger) : base(logger)
+  public EmbedService(ILoggerAdapter<EmbedService> logger) : base(logger)
   {
   }
 
