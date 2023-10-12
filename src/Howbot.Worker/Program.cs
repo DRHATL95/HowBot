@@ -51,6 +51,7 @@ public class Program
     return Host.CreateDefaultBuilder(args)
       .UseSerilog(([NotNull] context, [NotNull] configuration) =>
       {
+        context.Configuration["ConnectionStrings:DefaultConnection"] = Configuration.PostgresConnectionString;
         configuration
           .ReadFrom.Configuration(context.Configuration);
       })
@@ -87,8 +88,8 @@ public class Program
         ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);
 
         // Dynamically insert connection string for DB context
-        ConfigurationHelper.AddOrUpdateAppSetting("ConnectionStrings:DefaultConnection",
-          Configuration.PostgresConnectionString);
+        // ConfigurationHelper.AddOrUpdateAppSetting("ConnectionStrings:DefaultConnection",
+        // Configuration.PostgresConnectionString);
 
         // Infrastructure.ContainerSetup
         services.AddDbContext(hostContext.Configuration);

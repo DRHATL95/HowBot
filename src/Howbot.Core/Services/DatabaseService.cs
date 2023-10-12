@@ -64,7 +64,7 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
     }
   }
 
-  public float GetPlayerVolumeLevel(ulong guildId)
+  public int GetPlayerVolumeLevel(ulong guildId)
   {
     Guard.Against.NegativeOrZero((long)guildId, nameof(guildId));
 
@@ -73,16 +73,16 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
       var guildEntity = _repository.GetById<Guild>(guildId);
       if (guildEntity is not null)
       {
-        return guildEntity.MusicVolumeLevel / 100.0f;
+        return guildEntity.MusicVolumeLevel;
       }
 
       Logger.LogWarning("Unable to find guild with id {GuildId}", guildId);
-      return 0.0f;
+      return 0;
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, "Failed to get guild volume level from database");
-      return 0.0f;
+      return 0;
     }
   }
 

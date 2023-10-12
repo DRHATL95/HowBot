@@ -34,7 +34,7 @@ public interface IDatabaseService
   /// </summary>
   /// <param name="guildId">The command interaction guild id</param>
   /// <returns></returns>
-  float GetPlayerVolumeLevel(ulong guildId);
+  int GetPlayerVolumeLevel(ulong guildId);
 
   /// <summary>
   ///   Persists the most current music player volume. Will be called after the command music service's change volume"/>

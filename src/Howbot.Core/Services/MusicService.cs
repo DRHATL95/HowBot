@@ -45,7 +45,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
   [ItemCanBeNull]
   public async ValueTask<HowbotPlayer> GetPlayerByContextAsync(SocketInteractionContext context,
     bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default,
-    bool isDeferred = false, float initialVolume = 100f,
+    bool isDeferred = false, int initialVolume = 100,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -70,7 +70,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       VoiceStateBehavior: requireChannel ? MemberVoiceStateBehavior.RequireSame : MemberVoiceStateBehavior.Ignore,
       Preconditions: preconditions);
 
-    float persistedVolume;
+    int persistedVolume;
 
     using (var scope = _serviceProvider.CreateScope())
     {
@@ -257,11 +257,11 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     }
   }
 
-  public async ValueTask<CommandResponse> ChangeVolumeAsync(HowbotPlayer player, float newVolume)
+  public async ValueTask<CommandResponse> ChangeVolumeAsync(HowbotPlayer player, int newVolume)
   {
     try
     {
-      await player.SetVolumeAsync(newVolume / 100f).ConfigureAwait(false);
+      await player.SetVolumeAsync(newVolume).ConfigureAwait(false);
 
       using (var scope = _serviceProvider.CreateScope())
       {

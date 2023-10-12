@@ -72,7 +72,7 @@ public interface IMusicService
   /// <param name="player"></param>
   /// <param name="newVolume"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> ChangeVolumeAsync([NotNull] HowbotPlayer player, float newVolume);
+  ValueTask<CommandResponse> ChangeVolumeAsync([NotNull] HowbotPlayer player, int newVolume);
 
   /// <summary>
   ///   Generates an embed for the current track playing for the guild.
@@ -119,7 +119,7 @@ public interface IMusicService
   /// <returns></returns>
   ValueTask<HowbotPlayer> GetPlayerByContextAsync(
     [NotNull] SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true,
-    ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false, float initialVolume = 100f,
+    ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false, int initialVolume = 100,
     CancellationToken cancellationToken = default);
 
   /// <summary>

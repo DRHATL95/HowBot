@@ -2,6 +2,7 @@
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace Howbot.Core.Helpers;
 
@@ -33,7 +34,7 @@ public static class ConfigurationHelper
     }
     catch (Exception ex)
     {
-      Console.WriteLine("Error writing app settings | {0}", ex.Message);
+      Log.Logger.Error(ex, "Error writing app settings");
     }
   }
 
