@@ -92,8 +92,11 @@ public static class Configuration
     // Third attempt to get token, using machine environment variables
     token ??= Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Machine);
 
-    // 9/27/23 - Add support for secrets.json
-    token = ConfigurationHelper.HostConfiguration[tokenName];
+    if (string.IsNullOrEmpty(token))
+    {
+      // 9/27/23 - Add support for secrets.json
+      token = ConfigurationHelper.HostConfiguration[tokenName];
+    }
 
     return token ?? string.Empty;
   }

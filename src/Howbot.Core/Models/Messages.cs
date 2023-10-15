@@ -36,9 +36,6 @@ public abstract record Messages
     public const string BotInvalidTimeArgs = "You have provided an invalid time to seek.";
   }
 
-  /// <summary>
-  /// Debug constant messages
-  /// </summary>
   public readonly struct Debug
   {
     public const string PlayingRadio = "Starting play radio command.";
@@ -56,9 +53,6 @@ public abstract record Messages
     public const string DiscordSocketClientConnected = "{Username} has connected to the web socket.";
   }
 
-  /// <summary>
-  /// Error constant messages
-  /// </summary>
   public readonly struct Errors
   {
     public const string InteractionUnknownCommand = "Unknown command used. Please try another command!";

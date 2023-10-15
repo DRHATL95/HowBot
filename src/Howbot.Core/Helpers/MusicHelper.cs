@@ -9,14 +9,14 @@ namespace Howbot.Core.Helpers;
 /// </summary>
 public static class MusicHelper
 {
-
   /// <summary>
-  /// Checks if two <see cref="ITrackQueueItem"/> are similar based on Levenshtein distance. Compares the track's title, author and URL.
+  /// Checks if two <see cref="ITrackQueueItem"/> are similar based on Levenshtein distance.
+  /// Compares the track's title, author and URL.
   /// </summary>
   /// <param name="queueItem"></param>
   /// <param name="secondQueueItem"></param>
   /// <returns></returns>
-  public static bool AreTracksSimilar([NotNull]ITrackQueueItem queueItem, [NotNull]ITrackQueueItem secondQueueItem)
+  public static bool AreTracksSimilar([NotNull] ITrackQueueItem queueItem, [NotNull] ITrackQueueItem secondQueueItem)
   {
     if (queueItem.Track is null || secondQueueItem.Track is null)
     {
@@ -31,12 +31,13 @@ public static class MusicHelper
   }
 
   /// <summary>
-  /// Algorithm used to compare if two strings are similar. This will be used to recommend new songs based on songs already played avoiding duplicates. 
+  /// Algorithm used to compare if two strings are similar.
+  /// This will be used to recommend new songs based on songs already played avoiding duplicates. 
   /// </summary>
   /// <param name="a"></param>
   /// <param name="b"></param>
   /// <returns></returns>
-  private static int CalculateLevenshteinDistance([NotNull]string a, [NotNull]string b)
+  private static int CalculateLevenshteinDistance([NotNull] string a, [NotNull] string b)
   {
     var distance = new int[a.Length + 1, b.Length + 1];
 
@@ -65,5 +66,4 @@ public static class MusicHelper
 
     return distance[a.Length, b.Length];
   }
-
 }

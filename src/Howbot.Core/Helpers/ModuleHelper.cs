@@ -10,9 +10,9 @@ namespace Howbot.Core.Helpers;
 /// </summary>
 public static class ModuleHelper
 {
-
   /// <summary>
-  ///   /// Helper function to handle Module Command failed. Should handle exceptions or responses returned from Services.
+  /// Helper function to handle Module Command failed.
+  /// Should handle exceptions or responses returned from Services.
   /// </summary>
   /// <param name="commandResponse"></param>
   /// <exception cref="CommandException"></exception>
@@ -71,5 +71,4 @@ public static class ModuleHelper
 
     return new TimeSpan(hours, minutes, seconds);
   }
-
 }
