@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -74,6 +73,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
     _discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
     _discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
+    _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
   }
 
   public async ValueTask<bool> LoginDiscordBotAsync(string discordToken)
@@ -133,7 +133,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted;
     _discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
     _discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
-    _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
+    _discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
   }
 
   private async Task AddModulesToDiscordBotAsync()
@@ -231,9 +231,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     {
       await _discordSocketClient.Rest.DeleteAllGlobalCommandsAsync().ConfigureAwait(false);
     });
-
-    // TODO: Investigate, currently setting thread sleep to avoid other thread from not deleting all commands in time
-    Thread.Sleep(5000);
 
     try
     {

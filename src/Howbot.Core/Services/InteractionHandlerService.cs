@@ -39,10 +39,10 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
 
     _interactionService.Log += InteractionServiceOnLog;
     _interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
-    _interactionService.SlashCommandExecuted += InteractionServiceOnSlashCommandExecuted;
-    _interactionService.ContextCommandExecuted += InteractionServiceOnContextCommandExecuted;
-    _interactionService.AutocompleteCommandExecuted += InteractionServiceOnAutocompleteCommandExecuted;
-    _interactionService.AutocompleteHandlerExecuted += InteractionServiceOnAutocompleteHandlerExecuted;
+    // _interactionService.SlashCommandExecuted += InteractionServiceOnSlashCommandExecuted;
+    // _interactionService.ContextCommandExecuted += InteractionServiceOnContextCommandExecuted;
+    // _interactionService.AutocompleteCommandExecuted += InteractionServiceOnAutocompleteCommandExecuted;
+    // _interactionService.AutocompleteHandlerExecuted += InteractionServiceOnAutocompleteHandlerExecuted;
   }
 
   private Task InteractionServiceOnAutocompleteHandlerExecuted(IAutocompleteHandler arg1, IInteractionContext arg2,

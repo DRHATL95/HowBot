@@ -85,7 +85,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       SelfDeaf = true,
       ClearQueueOnStop = true,
       ClearHistoryOnStop = true,
-      InitialVolume = persistedVolume > 0 ? persistedVolume : initialVolume
+      InitialVolume = persistedVolume > 0 ? persistedVolume / 100f : initialVolume / 100f
     };
 
     var result = await _audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
@@ -259,9 +259,14 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
   public async ValueTask<CommandResponse> ChangeVolumeAsync(HowbotPlayer player, int newVolume)
   {
+    if (newVolume is > 1000 or < 0)
+    {
+      return CommandResponse.CommandNotSuccessful("Volume out of range: 0% - 1000%!");
+    }
+
     try
     {
-      await player.SetVolumeAsync(newVolume).ConfigureAwait(false);
+      await player.SetVolumeAsync(newVolume / 100f).ConfigureAwait(false);
 
       using (var scope = _serviceProvider.CreateScope())
       {
