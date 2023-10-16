@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -132,6 +133,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     _discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted;
     _discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
     _discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
+    _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
   }
 
   private async Task AddModulesToDiscordBotAsync()
@@ -225,6 +227,14 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   {
     Logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
 
+    await Task.Run(async () =>
+    {
+      await _discordSocketClient.Rest.DeleteAllGlobalCommandsAsync().ConfigureAwait(false);
+    });
+
+    // TODO: Investigate, currently setting thread sleep to avoid other thread from not deleting all commands in time
+    Thread.Sleep(5000);
+
     try
     {
       if (Configuration.IsDebug())
@@ -293,6 +303,90 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     Logger.LogDebug("Bot has connected to server {X}", DiscordHelper.GetGuildTag(arg.Guild.Value));
 
     return Task.CompletedTask;
+  }
+
+  [NotNull]
+  private async Task DiscordSocketClientOnInteractionCreated([NotNull] SocketInteraction socketInteraction)
+  {
+    try
+    {
+      var context = new SocketInteractionContext(_discordSocketClient, socketInteraction);
+      var result = await _interactionService.ExecuteCommandAsync(context, _serviceProvider);
+
+      if (!result.IsSuccess)
+      {
+        // Error
+        switch (result.Error)
+        {
+          case InteractionCommandError.UnknownCommand:
+            Logger.LogError(InteractionUnknownCommandLog);
+
+            await socketInteraction.RespondAsync(InteractionUnknownCommand, ephemeral: true);
+            break;
+
+          case InteractionCommandError.ConvertFailed:
+            Logger.LogError(InteractionConvertFailedLog);
+
+            await socketInteraction.RespondAsync(InteractionConvertFailed, ephemeral: true);
+            break;
+
+          case InteractionCommandError.BadArgs:
+            Logger.LogError(InteractionBadArgumentsLog);
+
+            await socketInteraction.RespondAsync(InteractionBadArguments);
+            break;
+
+          case InteractionCommandError.Exception:
+            Logger.LogError(new Exception(result.ErrorReason), InteractionException);
+
+            await socketInteraction.RespondAsync(InteractionExceptionLog, ephemeral: true);
+            break;
+
+          case InteractionCommandError.Unsuccessful:
+            Logger.LogError(InteractionUnsuccessfulLog);
+
+            await socketInteraction.RespondAsync(InteractionUnsuccessful, ephemeral: true);
+            break;
+
+          case InteractionCommandError.UnmetPrecondition:
+            Logger.LogError(InteractionUnmetPreconditionLog);
+
+            await socketInteraction.RespondAsync(InteractionUnmetPrecondition, ephemeral: true);
+            break;
+
+          case InteractionCommandError.ParseFailed:
+            Logger.LogError(InteractionParseFailedLog);
+
+            await socketInteraction.RespondAsync(InteractionParseFailed, ephemeral: true);
+            break;
+
+          case null:
+            Logger.LogError(InteractionNullLog);
+
+            await socketInteraction.RespondAsync(InteractionNull, ephemeral: true);
+            break;
+
+          default:
+            throw new ArgumentOutOfRangeException();
+        }
+      }
+    }
+    catch (Exception exception)
+    {
+      HandleException(exception, nameof(DiscordSocketClientOnInteractionCreated));
+
+      if (socketInteraction.Type is InteractionType.ApplicationCommand)
+      {
+        Logger.LogInformation("Attempting to delete the failed command..");
+
+        // If exception is thrown, acknowledgement will still be there. This will clean-up.
+        await socketInteraction.GetOriginalResponseAsync().ContinueWith(async task =>
+          await task.Result.DeleteAsync().ConfigureAwait(false)
+        );
+
+        Logger.LogInformation("Successfully deleted the failed command.");
+      }
+    }
   }
 
   #endregion Discord Client Events

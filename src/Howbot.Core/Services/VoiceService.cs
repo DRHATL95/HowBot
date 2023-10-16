@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Discord;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
@@ -24,8 +25,9 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
     try
     {
       var voiceChannel = user.VoiceChannel;
+      var guildTag = DiscordHelper.GetGuildTag(user.Guild);
 
-      Logger.LogDebug("Attempting to join voice channel [{0}].", voiceChannel?.Name ?? "null");
+      Logger.LogDebug("Attempting to join voice channel {0}.", guildTag);
 
       _ = await GetPlayerAsync(new GetPlayerParameters
       {
@@ -35,9 +37,9 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
         VoiceChannelId = voiceChannel?.Id ?? 0
       }).ConfigureAwait(false);
 
-      Logger.LogDebug("Successfully joined voice channel [{0}].", voiceChannel?.Name ?? "null");
+      Logger.LogDebug("Successfully joined voice channel {0}.", guildTag);
 
-      return CommandResponse.CommandSuccessful();
+      return CommandResponse.CommandSuccessful("Successfully joined voice channel.", true);
     }
     catch (Exception exception)
     {

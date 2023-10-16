@@ -4,8 +4,14 @@ using System.Linq;
 using System.Reflection;
 
 namespace Howbot.Core.Extensions;
+
 public static class EnumExtensions
 {
+  /// <summary>
+  ///   Get the display name attribute of an enum value
+  /// </summary>
+  /// <param name="enumValue">The enum value to get display name</param>
+  /// <returns>The display name for that enum or empty string</returns>
   public static string GetDisplayName(this Enum enumValue)
   {
     Type type = enumValue.GetType();

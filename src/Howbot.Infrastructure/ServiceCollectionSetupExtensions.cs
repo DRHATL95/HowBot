@@ -13,6 +13,12 @@ public static class ServiceCollectionSetupExtensions
 {
   private const string DatabaseConnectionStringName = "DefaultConnection";
 
+  /// <summary>
+  ///   Add the EF DbContext to the service collection.
+  ///   Also, configure Npgsql to use the connection string from the appsettings.json file.
+  /// </summary>
+  /// <param name="services">The service collection where DbContext is added</param>
+  /// <param name="configuration">The host builder configuration</param>
   public static void AddDbContext([NotNull] this IServiceCollection services, [NotNull] IConfiguration configuration)
   {
     services.AddDbContext<AppDbContext>(([NotNull] options) =>
@@ -20,13 +26,20 @@ public static class ServiceCollectionSetupExtensions
       configuration.GetConnectionString(DatabaseConnectionStringName)));
   }
 
-  // Entity Framework Setup for Postgres
+  /// <summary>
+  ///   Add the EfRepository to the service collection used for Entity Framework and Postgres.
+  /// </summary>
+  /// <param name="services">The service collection where the repository is added.</param>
   public static void AddRepositories(this IServiceCollection services)
   {
     services.AddScoped<IRepository, EfRepository>();
   }
 
-  // Adding specific services used related to How.Bot
+  /// <summary>
+  ///   Adding the howbot specific services to the service collection.
+  ///   Also adds an HttpClient from the Howbot.Infrastructure.Http namespace.
+  /// </summary>
+  /// <param name="services">The service collection where the services are added.</param>
   public static void AddHowbotServices(this IServiceCollection services)
   {
     // Singleton Services

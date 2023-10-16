@@ -77,5 +77,6 @@ public abstract record Messages
     public const string DiscordClientLogin = "Unable to login successfully to discord using provided API token.";
     public const string DiscordStart = "Unable to start discord bot.";
     public const string UnableToGetPlayerForGuild = "Unable to get audio player for Guild VoiceChannel.";
+    public const string InteractionTextChannelRequired = "This command can only be used in a server text channel.";
   }
 }

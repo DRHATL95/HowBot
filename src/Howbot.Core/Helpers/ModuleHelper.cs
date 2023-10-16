@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Threading.Tasks;
+using Discord;
+using Discord.Interactions;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Exceptions;
 using Serilog;
@@ -70,5 +73,41 @@ public static class ModuleHelper
     if (hours < 0 || minutes < 0 || seconds < 0) return new TimeSpan();
 
     return new TimeSpan(hours, minutes, seconds);
+  }
+
+  public static async Task HandleCommandResponseAsync(CommandResponse response, SocketInteractionContext context,
+    bool shouldDelete = false)
+  {
+    if (shouldDelete)
+    {
+      var originalResponse = await context.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
+      await originalResponse.DeleteAsync().ConfigureAwait(false);
+    }
+
+    if (response.IsSuccessful)
+    {
+      if (response.Embed != null)
+      {
+        await context.Interaction.RespondAsync(embed: response.Embed as Embed).ConfigureAwait(false);
+        return;
+      }
+
+      if (!string.IsNullOrEmpty(response.Message))
+      {
+        await context.Interaction.RespondAsync(response.Message).ConfigureAwait(false);
+      }
+    }
+    else
+    {
+      if (response.Exception != null)
+      {
+        throw new CommandException(response.Exception.Message, response.Exception.InnerException);
+      }
+
+      if (!string.IsNullOrEmpty(response.Message))
+      {
+        await context.Interaction.FollowupAsync(response.Message).ConfigureAwait(false);
+      }
+    }
   }
 }

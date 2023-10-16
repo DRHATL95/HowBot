@@ -7,6 +7,7 @@ using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Exceptions;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Constants.Commands;
@@ -38,7 +39,7 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync().ConfigureAwait(false);
+      await DeferAsync(true).ConfigureAwait(false);
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
@@ -46,9 +47,16 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
         if (!commandResponse.IsSuccessful)
         {
           ModuleHelper.HandleCommandFailed(commandResponse);
+
+          await FollowupAsync(commandResponse.Message).ConfigureAwait(false);
+
+          return;
         }
 
-        await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
+        if (!string.IsNullOrEmpty(commandResponse.Message))
+        {
+          await FollowupAsync(commandResponse.Message).ConfigureAwait(false);
+        }
       }
     }
     catch (Exception exception)
@@ -67,20 +75,19 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync().ConfigureAwait(false);
+      await DeferAsync(true).ConfigureAwait(false);
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
         CommandResponse commandResponse =
           await _voiceService.LeaveVoiceChannelAsync(user, channel).ConfigureAwait(false);
 
-        if (!commandResponse.IsSuccessful)
-        {
-          ModuleHelper.HandleCommandFailed(commandResponse);
-        }
+        await ModuleHelper.HandleCommandResponseAsync(commandResponse, Context).ConfigureAwait(false);
       }
-
-      await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
+      else
+      {
+        throw new CommandException("Unable to leave channel. Not in a voice channel or guild user null.");
+      }
     }
     catch (Exception exception)
     {
@@ -96,19 +103,16 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
     {
       _logger.LogDebug("Ping command invoked.");
 
-      var channel = Context.Channel;
+      await Context.Interaction.RespondAsync("Ping?").ConfigureAwait(false);
+
       var client = Context.Client;
-
-      var replyMessage = await channel.SendMessageAsync("Ping?").ConfigureAwait(false);
-
+      var responseTime = await Context.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
       var latency = client.Latency;
       var message =
-        $"Pong! Bot WebSocket latency {latency}ms. Discord API latency {(DateTimeOffset.UtcNow - replyMessage.CreatedAt).TotalMilliseconds}ms";
+        $"Pong! Bot WebSocket latency {latency}ms. Discord API latency {(DateTimeOffset.UtcNow - responseTime.CreatedAt).TotalMilliseconds}ms";
 
-      await Context.Channel.SendMessageAsync(message,
-        messageReference: new MessageReference(replyMessage.Id, replyMessage.Channel.Id)).ConfigureAwait(false);
-
-      await replyMessage.DeleteAsync().ConfigureAwait(false);
+      await Context.Interaction.ModifyOriginalResponseAsync(properties => properties.Content = message)
+        .ConfigureAwait(false);
 
       _logger.LogDebug("Ping command completed.");
     }
@@ -119,7 +123,6 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  [NotNull]
   [SlashCommand(HelpCommandName, HelpCommandDescription, true, RunMode.Async)]
   public async Task HelpCommandAsync()
   {

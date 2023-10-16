@@ -35,7 +35,7 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, I
 
   public override void Initialize()
   {
-    Logger.LogDebug("{ServiceName} is initializing..", typeof(LavaNodeService).ToString());
+    Logger.LogDebug("{ServiceName} is initializing..", nameof(LavaNodeService));
 
     _audioService.StatisticsUpdated += AudioServiceOnStatisticsUpdated;
     _audioService.TrackEnded += AudioServiceOnTrackEnded;
