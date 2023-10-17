@@ -13,6 +13,7 @@ using Howbot.Infrastructure;
 using JetBrains.Annotations;
 using Lavalink4NET.Extensions;
 using Lavalink4NET.InactivityTracking.Extensions;
+using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -81,15 +82,13 @@ public class Program
           x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
         });
 
+        services.AddLyrics();
+
         // Lavalink4Net Inactivity Tracking
         services.AddInactivityTracking();
 
         // Add configuration for access globally
         ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);
-
-        // Dynamically insert connection string for DB context
-        // ConfigurationHelper.AddOrUpdateAppSetting("ConnectionStrings:DefaultConnection",
-        // Configuration.PostgresConnectionString);
 
         // Infrastructure.ContainerSetup
         services.AddDbContext(hostContext.Configuration);

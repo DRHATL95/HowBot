@@ -118,4 +118,11 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 
     return 0.0f;
   }
+
+  public bool DoesGuildExist(ulong guildId)
+  {
+    var guild = GetGuildById(guildId);
+
+    return guild is not null;
+  }
 }

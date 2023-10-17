@@ -211,7 +211,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       await player.ResumeAsync().ConfigureAwait(false);
 
-      return CommandResponse.CommandSuccessful();
+      return CommandResponse.CommandSuccessful("Successfully resumed track.");
     }
     catch (Exception exception)
     {
@@ -268,10 +268,18 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       await player.SetVolumeAsync(newVolume / 100f).ConfigureAwait(false);
 
-      using (var scope = _serviceProvider.CreateScope())
+      using var scope = _serviceProvider.CreateScope();
+      var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
+
+      // Entry already exists in db
+      if (db.DoesGuildExist(player.GuildId))
       {
-        var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
         db.UpdatePlayerVolumeLevel(player.GuildId, newVolume);
+      }
+      else
+      {
+        // Needs to be added to db
+        db.AddNewGuild(player.GuildId, Constants.DefaultPrefix, newVolume);
       }
 
       return CommandResponse.CommandSuccessful($"Volume set to {newVolume}%");

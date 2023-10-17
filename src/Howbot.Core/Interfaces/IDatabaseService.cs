@@ -43,4 +43,11 @@ public interface IDatabaseService
   /// <param name="newVolume">The new volume to be persisted</param>
   /// <returns>The new volume saved to database.</returns>
   float UpdatePlayerVolumeLevel(ulong playerGuildId, float newVolume);
+
+  /// <summary>
+  ///   Checks if a Guild exists in the database.
+  /// </summary>
+  /// <param name="guildId">The Guild to check.</param>
+  /// <returns>True, if Guild exists.</returns>
+  public bool DoesGuildExist(ulong guildId);
 }

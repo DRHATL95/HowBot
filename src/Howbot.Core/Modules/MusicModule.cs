@@ -8,6 +8,7 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using JetBrains.Annotations;
+using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
@@ -19,13 +20,14 @@ namespace Howbot.Core.Modules;
 public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 {
   [NotNull] private readonly ILoggerAdapter<MusicModule> _logger;
+  [NotNull] private readonly ILyricsService _lyricsService;
 
   [NotNull] private readonly IMusicService _musicService;
-  // [NotNull] private readonly ILyricsService _lyricsService;
 
-  public MusicModule(IMusicService musicService, ILoggerAdapter<MusicModule> logger)
+  public MusicModule(IMusicService musicService, ILyricsService lyricsService, ILoggerAdapter<MusicModule> logger)
   {
     _musicService = musicService;
+    _lyricsService = lyricsService;
     _logger = logger;
   }
 
@@ -393,7 +395,8 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
   }
 
-  /*[SlashCommand("lyrics", description: "Searches for lyrics", runMode: RunMode.Async)]
+  [SlashCommand(LyricsCommandName, LyricsCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
   [RequireOwner]
   public async Task LyricsCommandAsync()
   {
@@ -424,7 +427,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
 
     await FollowupAsync($"📃 Lyrics for {track.Title} by {track.Author}:\n{lyrics}").ConfigureAwait(false);
-  }*/
+  }
 
   /*[SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]

@@ -17,6 +17,7 @@ public abstract record Constants
   public const int RelatedSearchResultsLimit = 3;
   public const int ApplicationTimeoutInMs = 3000;
   public const int MaximumMessageCount = 10000;
+  public const string DefaultPrefix = "!~";
 
   public readonly struct Commands
   {
@@ -112,11 +113,18 @@ public abstract record Constants
     public const string TwoFourSevenCommandDescription =
       "Toggles 24/7 for playing music based off related.";
 
+    // Lyrics Command
+    public const string LyricsCommandName = "lyrics";
+    public const string LyricsCommandDescription = "Gets lyrics from lyrics.ovh for the current playing track.";
+
     #region Admin Commands
 
     // Purge Command
     public const string PurgeCommandName = "purge";
     public const string PurgeCommandDescription = "Purge current text channel from up to 10,000 messages.";
+
+    public const string BanCommandName = "ban";
+    public const string BanCommandDescription = "Permanently ban a user from the server.";
 
     #endregion
   }
