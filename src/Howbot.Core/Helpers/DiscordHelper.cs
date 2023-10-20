@@ -4,17 +4,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Helpers;
 
+/// <summary>
+/// Class of static helpers used for interacting with Discord API.
+/// </summary>
 public static class DiscordHelper
 {
+
   /// <summary>
   ///   Convert Discord <see cref="LogSeverity" /> to Microsoft Logging <see cref="LogLevel" />.
   /// </summary>
   /// <param name="logSeverity">Discord logging severity</param>
   /// <returns></returns>
-  /// <exception cref="ArgumentOutOfRangeException">
-  ///   Throws exception if log severity cannot convert to Microsoft logging
-  ///   level
-  /// </exception>
+  /// <exception cref="ArgumentOutOfRangeException"></exception>
   public static LogLevel ConvertLogSeverityToLogLevel(LogSeverity logSeverity)
   {
     return logSeverity switch
@@ -28,4 +29,15 @@ public static class DiscordHelper
       _ => throw new ArgumentOutOfRangeException(nameof(logSeverity), logSeverity, null)
     };
   }
+
+  /// <summary>
+  /// Helper function to create a tag consisting of guild name and guild id.
+  /// </summary>
+  /// <param name="guild"></param>
+  /// <returns></returns>
+  public static string GetGuildTag(IGuild guild)
+  {
+    return guild == null ? string.Empty : $"[{guild.Name} - {guild.Id}]";
+  }
+
 }

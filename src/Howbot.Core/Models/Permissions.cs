@@ -16,13 +16,13 @@ public abstract record Permissions
     public const GuildPermission GuildBotVoicePlayCommandPermission =
       GuildBotVoiceCommandPermission | GuildPermission.Speak;
 
-    #endregion
+    #endregion Guild Permissions
 
     #region Non-Guild Permissions
 
     // TODO: dhoward
 
-    #endregion
+    #endregion Non-Guild Permissions
   }
 
   public struct User
@@ -38,12 +38,12 @@ public abstract record Permissions
     public const GuildPermission GuildUserVoicePlayCommandPermission =
       GuildUserVoiceCommandPermission | GuildPermission.Speak;
 
-    #endregion
+    #endregion Guild Permissions
 
     #region Non-Guild Permissions
 
     // TODO: dhoward
 
-    #endregion
+    #endregion Non-Guild Permissions
   }
 }

@@ -10,58 +10,53 @@ using Howbot.Core.Models;
 using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
+using JetBrains.Annotations;
+using Lavalink4NET.Extensions;
+using Lavalink4NET.InactivityTracking.Extensions;
+using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog;
-using Victoria.Node;
-using Victoria.Player;
+using Serilog.Events;
 
 namespace Howbot.Worker;
 
-public abstract class Program
+[UsedImplicitly]
+public class Program
 {
-  public static async Task<int> Main(string[] args)
+  static async Task<int> Main(string[] args)
   {
     try
     {
       // Create host builder that will be used to handle application (console) life-cycle.
       var hostBuilder = CreateHostBuilder(args);
-    
-      // Create Serilog instance
-      Log.Logger = new LoggerConfiguration()
-        .ReadFrom.Configuration(Configuration.SerilogConfiguration)
-        .CreateLogger();
 
       // Will run indefinitely until canceled w/ cancellation token or process is stopped.
-      await hostBuilder.RunConsoleAsync();
-
-      // Return exit code to terminal once application has been terminated.
-      return Environment.ExitCode;
+      await hostBuilder.RunConsoleAsync().ConfigureAwait(false);
     }
     catch (Exception exception)
     {
-      Console.WriteLine(exception);
-      throw;
+      if (Log.IsEnabled(LogEventLevel.Fatal))
+      {
+        Log.Fatal(exception, "A fatal exception has been thrown while running the application.");
+      }
     }
+
+    // Return exit code to terminal once application has been terminated.
+    return Environment.ExitCode;
   }
 
-  /// <summary>
-  ///   Create the main host builder used to host the service
-  /// </summary>
-  /// <param name="args">The arguments provided when running</param>
-  /// <returns></returns>
-  private static IHostBuilder CreateHostBuilder(string[] args)
+  private static IHostBuilder CreateHostBuilder([NotNull] string[] args)
   {
     return Host.CreateDefaultBuilder(args)
-      .UseSerilog(((context, configuration) =>
+      .UseSerilog(([NotNull] context, [NotNull] configuration) =>
       {
+        context.Configuration["ConnectionStrings:DefaultConnection"] = Configuration.PostgresConnectionString;
         configuration
-          .ReadFrom.Configuration(context.Configuration)
-          .Enrich.FromLogContext();
-      }))
-      .ConfigureServices((hostContext, services) =>
+          .ReadFrom.Configuration(context.Configuration);
+      })
+      .ConfigureServices(([NotNull] hostContext, [NotNull] services) =>
       {
         services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
         services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
@@ -71,24 +66,29 @@ public abstract class Program
         // Add in-memory cache
         services.AddMemoryCache();
 
-        services.AddSingleton<Configuration>();
-        services.AddSingleton(x => new DiscordSocketClient(Configuration.DiscordSocketConfig));
-        services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(),
-          x.GetRequiredService<Configuration>().InteractionServiceConfig));
-        services.AddSingleton(provider =>
-        {
-          var discordClient = provider.GetRequiredService<DiscordSocketClient>();
-          var logger = provider.GetRequiredService<ILogger<LavaNode<Player<LavaTrack>, LavaTrack>>>();
-          return new LavaNode<Player<LavaTrack>, LavaTrack>(discordClient, Configuration.NodeConfiguration, logger);
-        });
-        // services.AddSingleton(x => new DockerClientConfiguration().CreateClient());
-        services.AddSingleton(x => new YouTubeService(new BaseClientService.Initializer
+        services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
+        services.AddSingleton(x =>
+          new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
+        services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
         {
           ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
         }));
-        
-        // Dynamically insert connection string for DB context
-        ConfigurationHelper.AddOrUpdateAppSetting("DefaultConnection", Configuration.PostgresConnectionString);
+
+        // Lavalink4Net Configuration
+        services.AddLavalink();
+        services.ConfigureLavalink(x =>
+        {
+          x.BaseAddress = Configuration.LavalinkUrl;
+          x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
+        });
+
+        services.AddLyrics();
+
+        // Lavalink4Net Inactivity Tracking
+        services.AddInactivityTracking();
+
+        // Add configuration for access globally
+        ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);
 
         // Infrastructure.ContainerSetup
         services.AddDbContext(hostContext.Configuration);

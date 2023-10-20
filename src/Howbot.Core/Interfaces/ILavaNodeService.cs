@@ -1,11 +1,10 @@
-﻿using System;
-using System.Threading.Tasks;
-using Howbot.Core.Models;
-using Victoria.Player;
+﻿namespace Howbot.Core.Interfaces;
 
-namespace Howbot.Core.Interfaces;
-
-public interface ILavaNodeService : IServiceBase
+// Purpose: Interface for the LavaNodeService
+public interface ILavaNodeService
 {
-  Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan);
+  /// <summary>
+  ///   Initializes the LavaNodeService
+  /// </summary>
+  void Initialize();
 }

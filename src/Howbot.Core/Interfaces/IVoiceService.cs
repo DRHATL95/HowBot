@@ -1,12 +1,28 @@
 ﻿using System.Threading.Tasks;
 using Discord;
-using Howbot.Core.Entities;
 using Howbot.Core.Models;
+using JetBrains.Annotations;
 
 namespace Howbot.Core.Interfaces;
 
-public interface IVoiceService : IServiceBase
+// Purpose: Interface for the VoiceService
+public interface IVoiceService
 {
-  public Task<CommandResponse> JoinVoiceAsync(IGuildUser user, ITextChannel textChannel);
-  public Task<CommandResponse> LeaveVoiceChannelAsync(IGuildUser user);
+  /// <summary>
+  ///   Joins the requested voice channel for the guild.
+  /// </summary>
+  /// <param name="guildUser"></param>
+  /// <param name="guildChannel"></param>
+  /// <returns></returns>
+  ValueTask<CommandResponse>
+    JoinVoiceChannelAsync([NotNull] IGuildUser guildUser, [NotNull] IGuildChannel guildChannel);
+
+  /// <summary>
+  ///   Leaves the requested voice channel for the guild.
+  /// </summary>
+  /// <param name="guildUser"></param>
+  /// <param name="guildChannel"></param>
+  /// <returns></returns>
+  ValueTask<CommandResponse> LeaveVoiceChannelAsync([NotNull] IGuildUser guildUser,
+    [NotNull] IGuildChannel guildChannel);
 }

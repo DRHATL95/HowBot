@@ -1,9 +1,26 @@
 ﻿using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace Howbot.Core.Interfaces;
 
-public interface IDiscordClientService : IServiceBase
+// Purpose: Interface for discord client service
+public interface IDiscordClientService
 {
-  public ValueTask<bool> LoginDiscordBotAsync(string discordToken);
-  public ValueTask<bool> StartDiscordBotAsync();
+  /// <summary>
+  ///   Initialize the discord client service
+  /// </summary>
+  void Initialize();
+
+  /// <summary>
+  ///   Login the discord bot
+  /// </summary>
+  /// <param name="discordToken">The discord API token</param>
+  /// <returns>True, if login was a success</returns>
+  ValueTask<bool> LoginDiscordBotAsync([NotNull] string discordToken);
+
+  /// <summary>
+  ///   Calls to start the discord bot
+  /// </summary>
+  /// <returns>True, if bot was started successfully</returns>
+  ValueTask<bool> StartDiscordBotAsync();
 }

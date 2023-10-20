@@ -5,165 +5,124 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
-using Victoria.Node;
-using Victoria.Player;
 
 namespace Howbot.Core.Services;
 
-public class InteractionHandlerService : ServiceBase<InteractionHandlerService>, IInteractionHandlerService
+public class InteractionHandlerService : ServiceBase<InteractionHandlerService>, IInteractionHandlerService, IDisposable
 {
-  private readonly DiscordSocketClient _discordSocketClient;
-  private readonly InteractionService _interactionService;
-  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
-  private readonly ILoggerAdapter<InteractionHandlerService> _logger;
-  private readonly IServiceProvider _serviceProvider;
+  [NotNull] private readonly DiscordSocketClient _discordSocketClient;
+  [NotNull] private readonly InteractionService _interactionService;
+  [NotNull] private readonly IServiceProvider _serviceProvider;
 
-  public InteractionHandlerService(DiscordSocketClient discordSocketClient, InteractionService interactionService,
-    IServiceProvider serviceProvider, LavaNode<Player<LavaTrack>, LavaTrack> lavaNode,
-    ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
+  public InteractionHandlerService([NotNull] DiscordSocketClient discordSocketClient,
+    [NotNull] InteractionService interactionService,
+    [NotNull] IServiceProvider serviceProvider, ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;
     _serviceProvider = serviceProvider;
-    _lavaNode = lavaNode;
-    _logger = logger;
   }
 
-  public new void Initialize()
+  public void Dispose()
   {
-    if (_discordSocketClient == null)
-    {
-      return;
-    }
+    _interactionService.Log -= InteractionServiceOnLog;
+    _interactionService.InteractionExecuted -= InteractionServiceOnInteractionExecuted;
 
-    if (_interactionService == null)
-    {
-      return;
-    }
+    GC.SuppressFinalize(this);
+  }
 
-    if (_logger.IsLogLevelEnabled(LogLevel.Debug))
-    {
-      _logger.LogDebug("{ServiceName} is initializing..", typeof(InteractionHandlerService).ToString());
-    }
-
-    _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
+  public override void Initialize()
+  {
+    Logger.LogDebug("{ServiceName} is now initializing...", nameof(InteractionHandlerService));
 
     _interactionService.Log += InteractionServiceOnLog;
     _interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
+    // _interactionService.SlashCommandExecuted += InteractionServiceOnSlashCommandExecuted;
+    // _interactionService.ContextCommandExecuted += InteractionServiceOnContextCommandExecuted;
+    // _interactionService.AutocompleteCommandExecuted += InteractionServiceOnAutocompleteCommandExecuted;
+    // _interactionService.AutocompleteHandlerExecuted += InteractionServiceOnAutocompleteHandlerExecuted;
   }
 
-  private async Task InteractionServiceOnInteractionExecuted(ICommandInfo commandInfo,
-    IInteractionContext interactionContext, IResult result)
+  private Task InteractionServiceOnAutocompleteHandlerExecuted(IAutocompleteHandler arg1, IInteractionContext arg2,
+    IResult arg3)
   {
-    if (result.IsSuccess)
-    {
-      return;
-    }
-
-    _logger.LogWarning("Slash command did not execute successfully!");
-
-    if (!string.IsNullOrEmpty(result.ErrorReason))
-    {
-      await interactionContext.Interaction.RespondAsync(result.ErrorReason);
-    }
+    throw new NotImplementedException();
   }
 
-  #region Interaction Service Events
+  private Task InteractionServiceOnAutocompleteCommandExecuted(AutocompleteCommandInfo arg1, IInteractionContext arg2,
+    IResult arg3)
+  {
+    throw new NotImplementedException();
+  }
 
+  private Task InteractionServiceOnContextCommandExecuted(ContextCommandInfo arg1, IInteractionContext arg2,
+    IResult arg3)
+  {
+    throw new NotImplementedException();
+  }
+
+  private Task InteractionServiceOnSlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
+  {
+    throw new NotImplementedException();
+  }
+
+  [NotNull]
   private Task InteractionServiceOnLog(LogMessage logMessage)
   {
     try
     {
       var logLevel = DiscordHelper.ConvertLogSeverityToLogLevel(logMessage.Severity);
+      if (logLevel is LogLevel.Error)
+      {
+        throw logMessage.Exception ?? new Exception(logMessage.Message);
+      }
 
-      if (logLevel == LogLevel.Error)
-      {
-        _logger.LogError(logMessage.Exception, "Exception thrown logging interaction service");
-      }
-      else
-      {
-        _logger.Log(logLevel, logMessage.Message ?? string.Empty);
-      }
+      Logger.Log(logLevel, message: logMessage.Message);
 
       return Task.CompletedTask;
     }
+    catch (ArgumentOutOfRangeException exception)
+    {
+      HandleException(exception, nameof(InteractionServiceOnLog));
+
+      return Task.FromException(exception);
+    }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(InteractionServiceOnLog));
-      throw;
+      HandleException(exception, nameof(InteractionServiceOnLog));
+
+      return Task.FromException(exception);
     }
   }
 
-  private async Task DiscordSocketClientOnInteractionCreated(SocketInteraction socketInteraction)
+  private async Task InteractionServiceOnInteractionExecuted([NotNull] ICommandInfo commandInfo,
+    [NotNull] IInteractionContext interactionContext, [NotNull] IResult result)
   {
     try
     {
-      var context = new SocketInteractionContext(_discordSocketClient, socketInteraction);
-      var result = await _interactionService.ExecuteCommandAsync(context, _serviceProvider);
-
-      if (!result.IsSuccess)
+      if (result.IsSuccess)
       {
-        // Error
-        switch (result.Error)
-        {
-          case InteractionCommandError.UnknownCommand:
-            _logger.LogError(Messages.Errors.InteractionUnknownCommandLog);
+        return;
+      }
 
-            await socketInteraction.RespondAsync(Messages.Errors.InteractionUnknownCommand, ephemeral: true);
-            break;
-          case InteractionCommandError.ConvertFailed:
-            _logger.LogError(Messages.Errors.InteractionConvertFailedLog);
+      Logger.LogError("Interaction command did not execute successfully");
 
-            await socketInteraction.RespondAsync(Messages.Errors.InteractionConvertFailed, ephemeral: true);
-            break;
-          case InteractionCommandError.BadArgs:
-            _logger.LogError(Messages.Errors.InteractionBadArgumentsLog);
-
-            await socketInteraction.RespondAsync(Messages.Errors.InteractionBadArguments);
-            break;
-          case InteractionCommandError.Exception:
-            _logger.LogError(new Exception(result.ErrorReason), Messages.Errors.InteractionException);
-
-            await socketInteraction.RespondAsync(Messages.Errors.InteractionExceptionLog, ephemeral: true);
-            break;
-          case InteractionCommandError.Unsuccessful:
-            _logger.LogError(Messages.Errors.InteractionUnsuccessfulLog);
-
-            await socketInteraction.RespondAsync(Messages.Errors.InteractionUnsuccessful, ephemeral: true);
-            break;
-          case InteractionCommandError.UnmetPrecondition:
-            _logger.LogError(Messages.Errors.InteractionUnmetPreconditionLog);
-
-            await socketInteraction.RespondAsync(Messages.Errors.InteractionUnmetPrecondition, ephemeral: true);
-            break;
-          case InteractionCommandError.ParseFailed:
-            _logger.LogError(Messages.Errors.InteractionParseFailedLog);
-
-            await socketInteraction.RespondAsync(Messages.Errors.InteractionParseFailed, ephemeral: true);
-            break;
-          case null:
-            _logger.LogError(Messages.Errors.InteractionNullLog);
-
-            await socketInteraction.RespondAsync(Messages.Errors.InteractionNull, ephemeral: true);
-            break;
-          default:
-            throw new ArgumentOutOfRangeException();
-        }
+      if (!string.IsNullOrEmpty(result.ErrorReason))
+      {
+        await interactionContext.Interaction.FollowupAsync(result.ErrorReason);
+      }
+      else
+      {
+        await interactionContext.Interaction.FollowupAsync(
+          "Interaction command was not able to execute successfully. Try again later.");
       }
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "An exception has been thrown trying to run an interaction command");
-
-      if (socketInteraction.Type is InteractionType.ApplicationCommand)
-      {
-        // If exception is thrown, acknowledgement will still be there. This will clean-up.
-        await socketInteraction.GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
-      }
+      HandleException(exception, nameof(InteractionServiceOnInteractionExecuted));
+      throw;
     }
   }
-
-  #endregion
 }

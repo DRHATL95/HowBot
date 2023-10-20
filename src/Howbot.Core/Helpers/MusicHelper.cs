@@ -1,26 +1,43 @@
 ﻿using System;
-using Victoria.Player;
-using Victoria.Responses.Search;
+using JetBrains.Annotations;
+using Lavalink4NET.Players.Queued;
 
 namespace Howbot.Core.Helpers;
 
+/// <summary>
+/// Class of static helpers that help with Music Module Commands.
+/// </summary>
 public static class MusicHelper
 {
-  public static bool IsSearchResponsePlaylist(SearchResponse searchResponse)
+  /// <summary>
+  /// Checks if two <see cref="ITrackQueueItem"/> are similar based on Levenshtein distance.
+  /// Compares the track's title, author and URL.
+  /// </summary>
+  /// <param name="queueItem"></param>
+  /// <param name="secondQueueItem"></param>
+  /// <returns></returns>
+  public static bool AreTracksSimilar([NotNull] ITrackQueueItem queueItem, [NotNull] ITrackQueueItem secondQueueItem)
   {
-    return !string.IsNullOrEmpty(searchResponse.Playlist.Name);
-  }
+    if (queueItem.Track is null || secondQueueItem.Track is null)
+    {
+      return false;
+    }
 
-  public static bool AreTracksSimilar(LavaTrack track, LavaTrack secondTrack)
-  {
-    var titleDistance = CalculateLevenshteinDistance(track.Title, secondTrack.Title);
-    var authorDistance = CalculateLevenshteinDistance(track.Author, secondTrack.Author);
-    var urlDistance = CalculateLevenshteinDistance(track.Url, secondTrack.Url);
+    var titleDistance = CalculateLevenshteinDistance(queueItem.Track!.Title, secondQueueItem.Track!.Title);
+    var authorDistance = CalculateLevenshteinDistance(queueItem.Track!.Author, secondQueueItem.Track!.Author);
+    var urlDistance = CalculateLevenshteinDistance(queueItem.Track!.Identifier, secondQueueItem.Track!.Identifier);
 
     return titleDistance < 5 && authorDistance < 5 && urlDistance < 5;
   }
 
-  private static int CalculateLevenshteinDistance(string a, string b)
+  /// <summary>
+  /// Algorithm used to compare if two strings are similar.
+  /// This will be used to recommend new songs based on songs already played avoiding duplicates. 
+  /// </summary>
+  /// <param name="a"></param>
+  /// <param name="b"></param>
+  /// <returns></returns>
+  private static int CalculateLevenshteinDistance([NotNull] string a, [NotNull] string b)
   {
     var distance = new int[a.Length + 1, b.Length + 1];
 

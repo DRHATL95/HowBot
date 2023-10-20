@@ -329,3 +329,13 @@ ASALocalRun/
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
 codealike.json
+
+# Ignore Lavalink log output directories
+logs/
+
+# Ignore config for lavalink 
+/src/Howbot.Worker/application.yml
+
+# Ignore docker compose bc config vars
+/src/Howbot.Worker/docker-compose.yml
+/Howbot.sln.DotSettings

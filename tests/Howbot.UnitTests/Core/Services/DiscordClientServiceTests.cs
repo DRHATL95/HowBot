@@ -1,43 +1,38 @@
 ﻿using System;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Howbot.Core;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
 using Howbot.Core.Services;
+using Lavalink4NET;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Victoria.Node;
-using Victoria.Player;
 
 namespace Howbot.UnitTests.Core.Services;
 
 public class DiscordClientServiceTest
 {
-  private static (IDiscordClientService, Mock<DiscordSocketClient>, Mock<ILoggerAdapter<DiscordClientService>>,
-    Mock<IServiceProvider>, Mock<InteractionService>, Mock<LavaNodeService>,
-    Mock<LavaNode<Player<LavaTrack>, LavaTrack>>) Factory()
+  private static (IDiscordClientService, Mock<DiscordSocketClient>, Mock<IAudioService>,
+    Mock<ILoggerAdapter<DiscordClientService>>,
+    Mock<IServiceProvider>, Mock<InteractionService>) Factory()
   {
     var serviceLocator = new Mock<IServiceLocator>();
     var discordSocketClient = new Mock<DiscordSocketClient>();
     var serviceProvider = new Mock<IServiceProvider>();
-    var lavaNode = new Mock<LavaNode<Player<LavaTrack>, LavaTrack>>();
     var logger = new Mock<ILoggerAdapter<DiscordClientService>>();
+    var audioService = new Mock<IAudioService>();
     // Services
     var interactionService = new Mock<InteractionService>();
-    var lavaNodeService = new Mock<LavaNodeService>();
+    var voiceService = new Mock<VoiceService>();
 
     _ = SetupCreateScope(serviceLocator);
 
-    var discordClientService = new DiscordClientService(discordSocketClient.Object, lavaNodeService.Object,
-      serviceProvider.Object, interactionService.Object, lavaNode.Object, logger.Object);
+    var discordClientService = new DiscordClientService(discordSocketClient.Object, serviceProvider.Object,
+      interactionService.Object, voiceService.Object, audioService.Object, logger.Object);
 
-    return (discordClientService, discordSocketClient, logger, serviceProvider, interactionService, lavaNodeService,
-      lavaNode);
+    return (discordClientService, discordSocketClient, audioService, logger, serviceProvider, interactionService);
   }
 
-  private static Tuple<Mock<DiscordSocketClient>, Mock<LavaNode<Player<LavaTrack>, LavaTrack>>, Mock<LavaNodeService>>
-    SetupCreateScope(Mock<IServiceLocator> serviceLocator)
+  private static Mock<DiscordSocketClient> SetupCreateScope(Mock<IServiceLocator> serviceLocator)
   {
     var fakeScope = new Mock<IServiceScope>();
     serviceLocator
@@ -52,8 +47,7 @@ public class DiscordClientServiceTest
     return SetupCustomInjection(serviceProvider);
   }
 
-  private static Tuple<Mock<DiscordSocketClient>, Mock<LavaNode<Player<LavaTrack>, LavaTrack>>, Mock<LavaNodeService>>
-    SetupCustomInjection(Mock<IServiceProvider> serviceProvider)
+  private static Mock<DiscordSocketClient> SetupCustomInjection(Mock<IServiceProvider> serviceProvider)
   {
     // GetRequiredService is an extension method, but GetService is not
     var discordSocketClient = new Mock<DiscordSocketClient>();
@@ -61,18 +55,7 @@ public class DiscordClientServiceTest
       .Setup(x => x.GetService(typeof(DiscordSocketClient)))
       .Returns(discordSocketClient);
 
-    var lavaNode = new Mock<LavaNode<Player<LavaTrack>, LavaTrack>>();
-    serviceProvider
-      .Setup(x => x.GetService(typeof(LavaNode<Player<LavaTrack>, LavaTrack>)))
-      .Returns(lavaNode);
-
-    var lavaNodeService = new Mock<LavaNodeService>();
-    serviceProvider
-      .Setup(x => x.GetService(typeof(LavaNodeService)))
-      .Returns(lavaNodeService);
-
-    return new Tuple<Mock<DiscordSocketClient>, Mock<LavaNode<Player<LavaTrack>, LavaTrack>>, Mock<LavaNodeService>>(
-      discordSocketClient, lavaNode, lavaNodeService);
+    return new Mock<DiscordSocketClient>(discordSocketClient);
   }
 
   /*[Fact]
