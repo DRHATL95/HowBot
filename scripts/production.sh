@@ -1,8 +1,6 @@
 ﻿#!/bin/bash
 
-set -e
-
-if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
+if ( ( command -v docker &> /dev/null && command -v dotnet &> /dev/null ) ); then
     echo "Docker and .NET are installed!"
     
     # Check docker if howbot is already running
@@ -16,19 +14,23 @@ if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
     fi
     
     # Change to project directory
-    cd "$(DeploymentPath)"
+    cd Code/Production/HowBot || exit
+    
+    echo "Giving Howbot.Worker executable permissions..."
     
     echo  "Giving Howbot.Worker permissions..."
     
     # Give the worker executable permissions
-    chmod 777 ./Howbot.Worker
+    chmod +x ./Howbot.Worker || exit
+    
+    echo "Starting Howbot.Worker..."
     
     echo "Successfully gave Howbot.Worker permissions!"
     
     echo "Howbot.Worker is now running!"
 else
     # Check if Docker is installed
-    if command -v docker &> /dev/null
+    if ( ( command -v docker &> /dev/null ) )
     then
         echo "Docker is installed"
     else
@@ -36,7 +38,7 @@ else
     fi
     
     # Check if .NET is installed
-    if command -v dotnet &> /dev/null
+    if ( ( command -v dotnet &> /dev/null ) )
     then
         echo ".NET is installed"
     else
