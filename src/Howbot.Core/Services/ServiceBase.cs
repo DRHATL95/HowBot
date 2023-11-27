@@ -8,12 +8,12 @@ public abstract class ServiceBase<T>
 {
   private const string ServiceName = nameof(ServiceBase<T>);
 
-  protected ServiceBase([NotNull] ILoggerAdapter<T> logger)
+  protected ServiceBase(ILoggerAdapter<T> logger)
   {
     Logger = logger;
   }
 
-  [NotNull] protected ILoggerAdapter<T> Logger { get; }
+  protected ILoggerAdapter<T> Logger { get; }
 
   /// <summary>
   ///   Every service needs to implement this method. This will hook up events primarily,

@@ -23,18 +23,18 @@ namespace Howbot.Core.Services;
 
 public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordClientService, IDisposable
 {
-  [NotNull] private readonly IAudioService _audioService;
-  [NotNull] private readonly DiscordSocketClient _discordSocketClient;
-  [NotNull] private readonly InteractionService _interactionService;
-  [NotNull] private readonly IServiceProvider _serviceProvider;
-  [NotNull] private readonly IVoiceService _voiceService;
+  private readonly IAudioService _audioService;
+  private readonly DiscordSocketClient _discordSocketClient;
+  private readonly InteractionService _interactionService;
+  private readonly IServiceProvider _serviceProvider;
+  private readonly IVoiceService _voiceService;
 
-  [NotNull] private string _loggedInUsername = string.Empty;
+  private string _loggedInUsername = string.Empty;
 
-  public DiscordClientService([NotNull] DiscordSocketClient discordSocketClient,
-    [NotNull] IServiceProvider serviceProvider, [NotNull] InteractionService interactionService,
-    [NotNull] IVoiceService voiceService, [NotNull] IAudioService audioService,
-    [NotNull] ILoggerAdapter<DiscordClientService> logger) : base(logger)
+  public DiscordClientService(DiscordSocketClient discordSocketClient,
+    IServiceProvider serviceProvider, InteractionService interactionService,
+    IVoiceService voiceService, IAudioService audioService,
+    ILoggerAdapter<DiscordClientService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _serviceProvider = serviceProvider;
@@ -159,7 +159,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   #region Discord Client Events
 
-  [NotNull]
   private Task DiscordSocketClientOnLog(LogMessage arg)
   {
     var severity = arg.Severity switch
@@ -180,7 +179,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull]
   private Task DiscordSocketClientOnUserJoined(SocketGuildUser arg)
   {
     Logger.LogDebug("{GuildUserName} has joined Guild {GuildTag}", arg.Username, DiscordHelper.GetGuildTag(arg.Guild));
@@ -188,7 +186,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull]
   private Task DiscordSocketClientOnSlashCommandExecuted(SocketSlashCommand arg)
   {
     var guild = _discordSocketClient.Guilds.FirstOrDefault(x => x.Id == arg.GuildId);
@@ -204,7 +201,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull]
   private Task DiscordSocketClientOnDisconnected(Exception arg)
   {
     Logger.LogError(arg, "{Username} has disconnected from the ws.", LoggedInUsername);
@@ -212,7 +208,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull]
   private Task DiscordSocketClientOnConnected()
   {
     LoggedInUsername = _discordSocketClient.CurrentUser.Username;
@@ -222,7 +217,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull]
   private async Task DiscordSocketClientOnReady()
   {
     Logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
@@ -254,7 +248,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     }
   }
 
-  [NotNull]
   private Task DiscordSocketClientOnLoggedOut()
   {
     Logger.LogDebug("{Username} has logged out successfully", LoggedInUsername);
@@ -262,7 +255,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull]
   private Task DiscordSocketClientOnLoggedIn()
   {
     Logger.LogDebug("{Username} has logged in successfully", LoggedInUsername);
@@ -270,16 +262,14 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull]
-  private Task DiscordSocketClientOnJoinedGuild([NotNull] SocketGuild arg)
+  private Task DiscordSocketClientOnJoinedGuild(SocketGuild arg)
   {
     Logger.LogDebug("{Username} has joined Guild {GuildTag}", LoggedInUsername, DiscordHelper.GetGuildTag(arg));
 
     return Task.CompletedTask;
   }
 
-  [NotNull]
-  private Task DiscordSocketClientOnUserVoiceStateUpdated([NotNull] SocketUser user,
+  private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user,
     SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
@@ -294,7 +284,6 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull]
   private Task DiscordSocketClientOnVoiceServerUpdated(SocketVoiceServer arg)
   {
     Logger.LogDebug("Bot has connected to server {X}", DiscordHelper.GetGuildTag(arg.Guild.Value));
@@ -302,8 +291,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     return Task.CompletedTask;
   }
 
-  [NotNull]
-  private async Task DiscordSocketClientOnInteractionCreated([NotNull] SocketInteraction socketInteraction)
+  private async Task DiscordSocketClientOnInteractionCreated(SocketInteraction socketInteraction)
   {
     try
     {

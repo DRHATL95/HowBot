@@ -7,7 +7,6 @@ using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using JetBrains.Annotations;
 using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
@@ -19,10 +18,9 @@ namespace Howbot.Core.Modules;
 
 public class MusicModule : InteractionModuleBase<SocketInteractionContext>
 {
-  [NotNull] private readonly ILoggerAdapter<MusicModule> _logger;
-  [NotNull] private readonly ILyricsService _lyricsService;
-
-  [NotNull] private readonly IMusicService _musicService;
+  private readonly ILoggerAdapter<MusicModule> _logger;
+  private readonly ILyricsService _lyricsService;
+  private readonly IMusicService _musicService;
 
   public MusicModule(IMusicService musicService, ILyricsService lyricsService, ILoggerAdapter<MusicModule> logger)
   {
@@ -37,7 +35,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
   public async Task PlayCommandAsync(
-    [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)] [NotNull]
+    [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
     string searchRequest,
     [Summary(PlaySearchTypeArgumentName, PlaySearchTypeArgumentDescription)]
     SearchProviderTypes searchProviderType)
@@ -202,7 +200,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
         if (string.IsNullOrEmpty(commandResponse.Message))
         {
           await GetOriginalResponseAsync()
-            .ContinueWith(([NotNull] task) => task.Result.DeleteAsync().ConfigureAwait(false));
+            .ContinueWith((task) => task.Result.DeleteAsync().ConfigureAwait(false));
           return;
         }
       }

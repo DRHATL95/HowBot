@@ -1,5 +1,4 @@
 ﻿using System;
-using JetBrains.Annotations;
 using Lavalink4NET.Players.Queued;
 
 namespace Howbot.Core.Helpers;
@@ -9,6 +8,7 @@ namespace Howbot.Core.Helpers;
 /// </summary>
 public static class MusicHelper
 {
+
   /// <summary>
   /// Checks if two <see cref="ITrackQueueItem"/> are similar based on Levenshtein distance.
   /// Compares the track's title, author and URL.
@@ -16,7 +16,7 @@ public static class MusicHelper
   /// <param name="queueItem"></param>
   /// <param name="secondQueueItem"></param>
   /// <returns></returns>
-  public static bool AreTracksSimilar([NotNull] ITrackQueueItem queueItem, [NotNull] ITrackQueueItem secondQueueItem)
+  public static bool AreTracksSimilar(ITrackQueueItem queueItem, ITrackQueueItem secondQueueItem)
   {
     if (queueItem.Track is null || secondQueueItem.Track is null)
     {
@@ -37,7 +37,7 @@ public static class MusicHelper
   /// <param name="a"></param>
   /// <param name="b"></param>
   /// <returns></returns>
-  private static int CalculateLevenshteinDistance([NotNull] string a, [NotNull] string b)
+  private static int CalculateLevenshteinDistance(string a, string b)
   {
     var distance = new int[a.Length + 1, b.Length + 1];
 

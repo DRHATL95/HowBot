@@ -28,21 +28,18 @@ namespace Howbot.Core.Services;
 
 public class MusicService : ServiceBase<MusicService>, IMusicService
 {
-  [NotNull] private readonly IAudioService _audioService;
+  private readonly IAudioService _audioService;
+  private readonly IEmbedService _embedService;
+  private readonly IServiceProvider _serviceProvider;
 
-  [NotNull] private readonly IEmbedService _embedService;
-
-  [NotNull] private readonly IServiceProvider _serviceProvider;
-
-  public MusicService([NotNull] IEmbedService embedService, [NotNull] IAudioService audioService,
-    [NotNull] IServiceProvider serviceProvider, [NotNull] ILoggerAdapter<MusicService> logger) : base(logger)
+  public MusicService(IEmbedService embedService, IAudioService audioService,
+    IServiceProvider serviceProvider, ILoggerAdapter<MusicService> logger) : base(logger)
   {
     _embedService = embedService;
     _audioService = audioService;
     _serviceProvider = serviceProvider;
   }
 
-  [ItemCanBeNull]
   public async ValueTask<HowbotPlayer> GetPlayerByContextAsync(SocketInteractionContext context,
     bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default,
     bool isDeferred = false, int initialVolume = 100,

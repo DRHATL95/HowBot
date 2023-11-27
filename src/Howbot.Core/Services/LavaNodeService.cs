@@ -12,9 +12,9 @@ namespace Howbot.Core.Services;
 
 public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, IAsyncDisposable
 {
-  [NotNull] private readonly IAudioService _audioService;
+  private readonly IAudioService _audioService;
 
-  public LavaNodeService([NotNull] IAudioService audioService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
+  public LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
   {
     _audioService = audioService;
   }

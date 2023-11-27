@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -10,7 +11,6 @@ using Howbot.Core.Models;
 using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
-using JetBrains.Annotations;
 using Lavalink4NET.Extensions;
 using Lavalink4NET.InactivityTracking.Extensions;
 using Lavalink4NET.Lyrics.Extensions;
@@ -22,8 +22,7 @@ using Serilog.Events;
 
 namespace Howbot.Worker;
 
-[UsedImplicitly]
-public class Program
+public static class Program
 {
   static async Task<int> Main(string[] args)
   {
@@ -47,16 +46,16 @@ public class Program
     return Environment.ExitCode;
   }
 
-  private static IHostBuilder CreateHostBuilder([NotNull] string[] args)
+  private static IHostBuilder CreateHostBuilder(string[] args)
   {
     return Host.CreateDefaultBuilder(args)
-      .UseSerilog(([NotNull] context, [NotNull] configuration) =>
+      .UseSerilog((context, configuration) =>
       {
         context.Configuration["ConnectionStrings:DefaultConnection"] = Configuration.PostgresConnectionString;
         configuration
           .ReadFrom.Configuration(context.Configuration);
       })
-      .ConfigureServices(([NotNull] hostContext, [NotNull] services) =>
+      .ConfigureServices((hostContext, services) =>
       {
         services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
         services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();

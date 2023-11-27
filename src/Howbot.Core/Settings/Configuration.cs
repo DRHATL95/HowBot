@@ -18,22 +18,21 @@ public static class Configuration
   private const string Lavalink = "DiscordLavalinkServerPassword";
   private const string LavalinkAddress = "DiscordLavalinkServerAddress";
 
-  [NotNull] public static string DiscordToken => GetTokenByName(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
+  public static string DiscordToken => GetTokenByName(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
 
-  [NotNull] public static string YouTubeToken => GetTokenByName(YouTube);
+  public static string YouTubeToken => GetTokenByName(YouTube);
 
-  [NotNull] public static string PostgresConnectionString => GetTokenByName(Postgres);
+  public static string PostgresConnectionString => GetTokenByName(Postgres);
 
-  [NotNull] private static string LavaNodePassword => GetTokenByName(Lavalink);
+  private static string LavaNodePassword => GetTokenByName(Lavalink);
 
-  [NotNull] private static string LavaNodeAddress => GetTokenByName(LavalinkAddress);
+  private static string LavaNodeAddress => GetTokenByName(LavalinkAddress);
 
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
   /// <summary>
   ///   DiscordSocketClient configuration
   /// </summary>
-  [NotNull]
   public static DiscordSocketConfig DiscordSocketConfig =>
     new()
     {
@@ -47,7 +46,6 @@ public static class Configuration
   /// <summary>
   ///   Lavalink4NET configuration
   /// </summary>
-  [NotNull]
   public static AudioServiceOptions AudioServiceOptions => new()
   {
     Passphrase = LavaNodePassword, BaseAddress = LavalinkUrl, HttpClientName = Constants.BotName
@@ -56,7 +54,6 @@ public static class Configuration
   /// <summary>
   ///   Discord Interactions configuration
   /// </summary>
-  [NotNull]
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
@@ -80,7 +77,7 @@ public static class Configuration
   /// </summary>
   /// <param name="tokenName"></param>
   /// <returns></returns>
-  private static string GetTokenByName([NotNull] string tokenName)
+  private static string GetTokenByName(string tokenName)
   {
     // Should only be hit if empty, should never be null
     ArgumentException.ThrowIfNullOrEmpty(tokenName);

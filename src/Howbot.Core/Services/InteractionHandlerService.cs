@@ -12,13 +12,13 @@ namespace Howbot.Core.Services;
 
 public class InteractionHandlerService : ServiceBase<InteractionHandlerService>, IInteractionHandlerService, IDisposable
 {
-  [NotNull] private readonly DiscordSocketClient _discordSocketClient;
-  [NotNull] private readonly InteractionService _interactionService;
-  [NotNull] private readonly IServiceProvider _serviceProvider;
+  private readonly DiscordSocketClient _discordSocketClient;
+  private readonly InteractionService _interactionService;
+  private readonly IServiceProvider _serviceProvider;
 
-  public InteractionHandlerService([NotNull] DiscordSocketClient discordSocketClient,
-    [NotNull] InteractionService interactionService,
-    [NotNull] IServiceProvider serviceProvider, ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
+  public InteractionHandlerService(DiscordSocketClient discordSocketClient,
+    InteractionService interactionService,
+    IServiceProvider serviceProvider, ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
   {
     _discordSocketClient = discordSocketClient;
     _interactionService = interactionService;
@@ -68,7 +68,6 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     throw new NotImplementedException();
   }
 
-  [NotNull]
   private Task InteractionServiceOnLog(LogMessage logMessage)
   {
     try
@@ -97,8 +96,8 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
     }
   }
 
-  private async Task InteractionServiceOnInteractionExecuted([NotNull] ICommandInfo commandInfo,
-    [NotNull] IInteractionContext interactionContext, [NotNull] IResult result)
+  private async Task InteractionServiceOnInteractionExecuted(ICommandInfo commandInfo,
+    IInteractionContext interactionContext, IResult result)
   {
     try
     {

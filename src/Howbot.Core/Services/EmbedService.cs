@@ -163,7 +163,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     return embed;
   }
 
-  private EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser([NotNull] IUser user)
+  private EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser(IUser user)
   {
     try
     {

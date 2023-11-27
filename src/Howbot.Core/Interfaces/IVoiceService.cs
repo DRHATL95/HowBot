@@ -15,7 +15,7 @@ public interface IVoiceService
   /// <param name="guildChannel"></param>
   /// <returns></returns>
   ValueTask<CommandResponse>
-    JoinVoiceChannelAsync([NotNull] IGuildUser guildUser, [NotNull] IGuildChannel guildChannel);
+    JoinVoiceChannelAsync(IGuildUser guildUser, IGuildChannel guildChannel);
 
   /// <summary>
   ///   Leaves the requested voice channel for the guild.
@@ -23,6 +23,6 @@ public interface IVoiceService
   /// <param name="guildUser"></param>
   /// <param name="guildChannel"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> LeaveVoiceChannelAsync([NotNull] IGuildUser guildUser,
-    [NotNull] IGuildChannel guildChannel);
+  ValueTask<CommandResponse> LeaveVoiceChannelAsync(IGuildUser guildUser,
+    IGuildChannel guildChannel);
 }

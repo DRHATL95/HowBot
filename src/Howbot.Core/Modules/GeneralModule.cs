@@ -18,12 +18,12 @@ namespace Howbot.Core.Modules;
 
 public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
 {
-  [NotNull] private readonly InteractionService _interactionService;
-  [NotNull] private readonly ILogger<GeneralModule> _logger;
-  [NotNull] private readonly IVoiceService _voiceService;
+  private readonly InteractionService _interactionService;
+  private readonly ILogger<GeneralModule> _logger;
+  private readonly IVoiceService _voiceService;
 
-  public GeneralModule([NotNull] InteractionService interactionService, [NotNull] IVoiceService voiceService,
-    [NotNull] ILogger<GeneralModule> logger)
+  public GeneralModule(InteractionService interactionService, IVoiceService voiceService,
+    ILogger<GeneralModule> logger)
   {
     _interactionService = interactionService;
     _voiceService = voiceService;

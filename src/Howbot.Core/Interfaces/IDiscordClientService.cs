@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using JetBrains.Annotations;
 
 namespace Howbot.Core.Interfaces;
 
@@ -16,7 +15,7 @@ public interface IDiscordClientService
   /// </summary>
   /// <param name="discordToken">The discord API token</param>
   /// <returns>True, if login was a success</returns>
-  ValueTask<bool> LoginDiscordBotAsync([NotNull] string discordToken);
+  ValueTask<bool> LoginDiscordBotAsync(string discordToken);
 
   /// <summary>
   ///   Calls to start the discord bot

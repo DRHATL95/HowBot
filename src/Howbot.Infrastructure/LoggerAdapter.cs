@@ -12,9 +12,9 @@ namespace Howbot.Infrastructure;
 /// <typeparam name="T"></typeparam>
 public class LoggerAdapter<T> : ILoggerAdapter<T>
 {
-  [NotNull] private readonly ILogger<LoggerAdapter<T>> _logger;
+  private readonly ILogger<LoggerAdapter<T>> _logger;
 
-  public LoggerAdapter([NotNull] ILogger<LoggerAdapter<T>> logger)
+  public LoggerAdapter(ILogger<LoggerAdapter<T>> logger)
   {
     _logger = logger;
   }

@@ -20,8 +20,7 @@ public interface IEmbedService
   /// </summary>
   /// <param name="embedOptions">Embed options used to create embed</param>
   /// <returns>The embed created from <see cref="EmbedOptions" /></returns>
-  [NotNull]
-  IEmbed CreateEmbed([NotNull] EmbedOptions embedOptions);
+  IEmbed CreateEmbed(EmbedOptions embedOptions);
 
   /// <summary>
   ///   Generates an embed of the current track playing in the guild.
@@ -32,20 +31,20 @@ public interface IEmbedService
   /// <param name="position"></param>
   /// <param name="volume"></param>
   /// <returns></returns>
-  IEmbed GenerateMusicNowPlayingEmbed([NotNull] LavalinkTrack queueItem, [NotNull] IGuildUser user,
-    [NotNull] ITextChannel textChannel, TimeSpan? position, float volume);
+  IEmbed GenerateMusicNowPlayingEmbed(LavalinkTrack queueItem, IGuildUser user,
+    ITextChannel textChannel, TimeSpan? position, float volume);
 
   /// <summary>
   ///   Peeks at the next track in the queue and generates an embed of the next track.
   /// </summary>
   /// <param name="queue"></param>
   /// <returns></returns>
-  IEmbed GenerateMusicNextTrackEmbed([NotNull] ITrackQueue queue);
+  IEmbed GenerateMusicNextTrackEmbed(ITrackQueue queue);
 
   /// <summary>
   ///   Generates an embed of the current music queue, up to 10 tracks.
   /// </summary>
   /// <param name="queue">The current guild music queue</param>
   /// <returns>An embed of the songs in queue up to 10 tracks.</returns>
-  IEmbed GenerateMusicCurrentQueueEmbed([NotNull] ITrackQueue queue);
+  IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue);
 }

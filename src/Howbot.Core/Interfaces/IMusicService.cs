@@ -7,7 +7,6 @@ using Discord;
 using Discord.Interactions;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Players;
-using JetBrains.Annotations;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
 
@@ -32,23 +31,23 @@ public interface IMusicService
   /// <param name="voiceState"></param>
   /// <param name="textChannel"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> PlayTrackBySearchTypeAsync([NotNull] HowbotPlayer player,
-    SearchProviderTypes searchProviderType, [NotNull] string searchRequest, [NotNull] IGuildUser user,
-    [NotNull] IVoiceState voiceState, [NotNull] ITextChannel textChannel);
+  ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player,
+    SearchProviderTypes searchProviderType, string searchRequest, IGuildUser user,
+    IVoiceState voiceState, ITextChannel textChannel);
 
   /// <summary>
   ///   Pauses the current track playing in the requested guild.
   /// </summary>
   /// <param name="player"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> PauseTrackAsync([NotNull] HowbotPlayer player);
+  ValueTask<CommandResponse> PauseTrackAsync(HowbotPlayer player);
 
   /// <summary>
   ///   Resumes the current track paused in the requested guild.
   /// </summary>
   /// <param name="player"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> ResumeTrackAsync([NotNull] HowbotPlayer player);
+  ValueTask<CommandResponse> ResumeTrackAsync(HowbotPlayer player);
 
   /// <summary>
   ///   Skips the current track playing or the number of tracks requested in the guild.
@@ -56,7 +55,7 @@ public interface IMusicService
   /// <param name="player"></param>
   /// <param name="numberOfTracks"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> SkipTrackAsync([NotNull] HowbotPlayer player, [CanBeNull] int? numberOfTracks);
+  ValueTask<CommandResponse> SkipTrackAsync(HowbotPlayer player, int? numberOfTracks);
 
   /// <summary>
   ///   Attempts to seek on the current playing track.
@@ -64,7 +63,7 @@ public interface IMusicService
   /// <param name="player"></param>
   /// <param name="seekPosition"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> SeekTrackAsync([NotNull] HowbotPlayer player, TimeSpan seekPosition);
+  ValueTask<CommandResponse> SeekTrackAsync(HowbotPlayer player, TimeSpan seekPosition);
 
   /// <summary>
   ///   Attempts to change the current volume of the player.
@@ -72,7 +71,7 @@ public interface IMusicService
   /// <param name="player"></param>
   /// <param name="newVolume"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> ChangeVolumeAsync([NotNull] HowbotPlayer player, int newVolume);
+  ValueTask<CommandResponse> ChangeVolumeAsync(HowbotPlayer player, int newVolume);
 
   /// <summary>
   ///   Generates an embed for the current track playing for the guild.
@@ -81,8 +80,8 @@ public interface IMusicService
   /// <param name="user"></param>
   /// <param name="textChannel"></param>
   /// <returns></returns>
-  CommandResponse NowPlaying([NotNull] HowbotPlayer player, [NotNull] IGuildUser user,
-    [NotNull] ITextChannel textChannel);
+  CommandResponse NowPlaying(HowbotPlayer player, IGuildUser user,
+    ITextChannel textChannel);
 
   /// <summary>
   ///   Applies audio filter the current track playing for the guild.
@@ -90,21 +89,21 @@ public interface IMusicService
   /// <param name="player"></param>
   /// <param name="filter"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> ApplyAudioFilterAsync([NotNull] HowbotPlayer player, [NotNull] IPlayerFilters filter);
+  ValueTask<CommandResponse> ApplyAudioFilterAsync(HowbotPlayer player, IPlayerFilters filter);
 
   /// <summary>
   ///   Creates an embed of lyrics for the current track playing for the guild.
   /// </summary>
   /// <param name="player"></param>
   /// <returns></returns>
-  ValueTask<CommandResponse> GetLyricsFromTrackAsync([NotNull] HowbotPlayer player);
+  ValueTask<CommandResponse> GetLyricsFromTrackAsync(HowbotPlayer player);
 
   /// <summary>
   ///   Toggles shuffles on the current playing player for the guild.
   /// </summary>
   /// <param name="player"></param>
   /// <returns></returns>
-  CommandResponse ToggleShuffle([NotNull] HowbotPlayer player);
+  CommandResponse ToggleShuffle(HowbotPlayer player);
 
   /// <summary>
   ///   Get the player for the command context guild. If the player does not exist, it will be created.
@@ -118,7 +117,7 @@ public interface IMusicService
   /// <param name="cancellationToken"></param>
   /// <returns></returns>
   ValueTask<HowbotPlayer> GetPlayerByContextAsync(
-    [NotNull] SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true,
+    SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true,
     ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false, int initialVolume = 100,
     CancellationToken cancellationToken = default);
 
@@ -128,7 +127,7 @@ public interface IMusicService
   /// </summary>
   /// <param name="player"></param>
   /// <returns></returns>
-  CommandResponse ToggleTwoFourSeven([NotNull] HowbotPlayer player);
+  CommandResponse ToggleTwoFourSeven(HowbotPlayer player);
 
   /// <summary>
   ///   Calls YouTube API to get recommended video id for the given video id.
@@ -136,5 +135,5 @@ public interface IMusicService
   /// <param name="videoId"></param>
   /// <param name="count"></param>
   /// <returns></returns>
-  ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId([NotNull] string videoId, int count = 1);
+  ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1);
 }

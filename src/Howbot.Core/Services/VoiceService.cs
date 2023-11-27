@@ -13,9 +13,9 @@ namespace Howbot.Core.Services;
 
 public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 {
-  [NotNull] private readonly IAudioService _audioService;
+  private readonly IAudioService _audioService;
 
-  public VoiceService([NotNull] IAudioService audioService, ILoggerAdapter<VoiceService> logger) : base(logger)
+  public VoiceService(IAudioService audioService, ILoggerAdapter<VoiceService> logger) : base(logger)
   {
     _audioService = audioService;
   }
@@ -119,7 +119,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 
     public ulong VoiceChannelId { get; init; }
 
-    [NotNull] public ITextChannel TextChannel { get; init; }
+    public ITextChannel TextChannel { get; init; }
 
     public bool ConnectToVoiceChannel { get; init; }
   }

@@ -11,7 +11,7 @@ namespace Howbot.Core.Models.Players;
 
 public class HowbotPlayer : QueuedLavalinkPlayer, IInactivityPlayerListener
 {
-  public HowbotPlayer([NotNull] IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties) : base(properties)
+  public HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties) : base(properties)
   {
   }
 

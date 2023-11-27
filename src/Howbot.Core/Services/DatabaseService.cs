@@ -11,7 +11,7 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 {
   private readonly IRepository _repository;
 
-  public DatabaseService([NotNull] IRepository repository, ILoggerAdapter<DatabaseService> logger) : base(logger)
+  public DatabaseService(IRepository repository, ILoggerAdapter<DatabaseService> logger) : base(logger)
   {
     _repository = repository;
   }

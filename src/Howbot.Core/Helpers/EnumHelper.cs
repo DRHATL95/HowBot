@@ -1,11 +1,10 @@
 ﻿using System;
 using System.ComponentModel;
-using JetBrains.Annotations;
 
 namespace Howbot.Core.Helpers;
 public static class EnumHelper
 {
-  public static T GetValueFromDescription<T>([CanBeNull] string description) where T : Enum
+  public static T GetValueFromDescription<T>(string description) where T : Enum
   {
     foreach (var field in typeof(T).GetFields())
     {
@@ -35,7 +34,7 @@ public static class EnumHelper
     {
       return (TEnum)Enum.Parse(typeof(TEnum), value, true);
     }
-    catch (ArgumentException)
+    catch
     {
       // Handle the case when the string does not represent a valid enum value
       throw new ArgumentException($"'{value}' is not a valid {typeof(TEnum).Name} value");

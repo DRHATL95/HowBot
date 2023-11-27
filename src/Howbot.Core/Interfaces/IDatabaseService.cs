@@ -1,5 +1,4 @@
 ﻿using Howbot.Core.Entities;
-using JetBrains.Annotations;
 
 namespace Howbot.Core.Interfaces;
 
@@ -19,14 +18,13 @@ public interface IDatabaseService
   /// <param name="prefix">The message command prefix</param>
   /// <param name="musicPlayerVolume">The audio player volume</param>
   /// <returns>The guildId or 0 for error</returns>
-  ulong AddNewGuild(ulong guildId, [CanBeNull] string prefix, float musicPlayerVolume = 100f);
+  ulong AddNewGuild(ulong guildId, string prefix, float musicPlayerVolume = 100f);
 
   /// <summary>
   ///   Get a guild by its Discord guildId
   /// </summary>
   /// <param name="guildId">The guild id where command was executed</param>
   /// <returns>Guild object or null if not able to find</returns>
-  [CanBeNull]
   Guild GetGuildById(ulong guildId);
 
   /// <summary>

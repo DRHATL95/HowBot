@@ -19,9 +19,9 @@ public static class ServiceCollectionSetupExtensions
   /// </summary>
   /// <param name="services">The service collection where DbContext is added</param>
   /// <param name="configuration">The host builder configuration</param>
-  public static void AddDbContext([NotNull] this IServiceCollection services, [NotNull] IConfiguration configuration)
+  public static void AddDbContext(this IServiceCollection services, IConfiguration configuration)
   {
-    services.AddDbContext<AppDbContext>(([NotNull] options) =>
+    services.AddDbContext<AppDbContext>((options) =>
     options.UseNpgsql(
       configuration.GetConnectionString(DatabaseConnectionStringName)));
   }

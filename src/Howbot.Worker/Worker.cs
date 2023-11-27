@@ -5,7 +5,6 @@ using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models.Exceptions;
 using Howbot.Core.Settings;
-using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -14,13 +13,13 @@ namespace Howbot.Worker;
 
 public class Worker : BackgroundService
 {
-  [NotNull] private readonly IDiscordClientService _discordClientService;
-  [NotNull] private readonly DiscordSocketClient _discordSocketClient;
-  [NotNull] private readonly ILoggerAdapter<Worker> _logger;
-  [NotNull] private readonly IServiceProvider _serviceProvider;
+  private readonly IDiscordClientService _discordClientService;
+  private readonly DiscordSocketClient _discordSocketClient;
+  private readonly ILoggerAdapter<Worker> _logger;
+  private readonly IServiceProvider _serviceProvider;
 
-  public Worker([NotNull] IDiscordClientService discordClientService, [NotNull] IServiceProvider serviceProvider,
-    [NotNull] DiscordSocketClient discordSocketClient, [NotNull] ILoggerAdapter<Worker> logger)
+  public Worker(IDiscordClientService discordClientService, IServiceProvider serviceProvider,
+    DiscordSocketClient discordSocketClient, ILoggerAdapter<Worker> logger)
   {
     _discordClientService = discordClientService;
     _serviceProvider = serviceProvider;
