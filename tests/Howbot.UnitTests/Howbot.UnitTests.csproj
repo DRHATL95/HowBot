@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-    <PackageReference Include="Moq"/>
-    <PackageReference Include="xunit"/>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -21,12 +21,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Howbot.Core\Howbot.Core.csproj"/>
-    <ProjectReference Include="..\..\src\Howbot.Infrastructure\Howbot.Infrastructure.csproj"/>
+    <ProjectReference Include="..\..\src\Howbot.Core\Howbot.Core.csproj" />
+    <ProjectReference Include="..\..\src\Howbot.Infrastructure\Howbot.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Worker"/>
+    <Folder Include="Worker" />
   </ItemGroup>
 
 </Project>

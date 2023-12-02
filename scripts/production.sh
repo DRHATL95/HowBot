@@ -1,42 +1,36 @@
 ﻿#!/bin/bash
 
-set -e
-
-if command -v docker &> /dev/null && command -v dotnet &> /dev/null; then
+if ( ( command -v docker &> /dev/null && command -v dotnet &> /dev/null ) ); then
     echo "Docker and .NET are installed!"
     
-    LAVANODE_STATUS="$(docker ps -q -f name=lavanode)"
+    # Check docker if howbot is already running
+    HOWBOT_STATUS="$(docker ps -q -f name=howbot)"
     
-    if [ -z "$LAVANODE_STATUS" ]; then
-        echo "Starting lavalink docker container..."
-        docker run -d -p 2333:2333 --name lavanode fredboat/lavalink:latest
+    if [ -z "$HOWBOT_STATUS" ]; then
+        echo "Starting howbot docker compose w/ Lavalink..."
+        docker compose -f docker-compose.yml up -d
     else
-        echo "Lava Node is already running! No need to run."
-    fi  
-    
-    # Define environment variables
-    DiscordTokenProd=$(DiscordTokenProd)
-    DiscordLavalinkServerPassword=$(DiscordLavalinkServerPassword)
-    YoutubeToken=$(Youtube)
-    
-    # Export environment variables separately to avoid masking the return values
-    export DiscordTokenProd
-    export DiscordLavalinkServerPassword
-    export YoutubeToken
+        echo "Howbot is already running! No need to run."
+    fi
     
     # Change to project directory
-    cd "$(DeploymentPath)"
+    cd Code/Production/HowBot || exit
+    
+    echo "Giving Howbot.Worker executable permissions..."
+    
+    echo  "Giving Howbot.Worker permissions..."
     
     # Give the worker executable permissions
-    chmod 777 ./Howbot.Worker
+    chmod +x ./Howbot.Worker || exit
     
-    # Run the worker using nohup to prevent the process from being killed when the SSH session ends
-    nohup ./Howbot.Worker > ~/Code/Production/HowBot/Howbot.Worker.log 2>&1 &
+    echo "Starting Howbot.Worker..."
+    
+    echo "Successfully gave Howbot.Worker permissions!"
     
     echo "Howbot.Worker is now running!"
 else
     # Check if Docker is installed
-    if command -v docker &> /dev/null
+    if ( ( command -v docker &> /dev/null ) )
     then
         echo "Docker is installed"
     else
@@ -44,7 +38,7 @@ else
     fi
     
     # Check if .NET is installed
-    if command -v dotnet &> /dev/null
+    if ( ( command -v dotnet &> /dev/null ) )
     then
         echo ".NET is installed"
     else

@@ -12,11 +12,12 @@ public class DockerServiceTests
   private static IDockerService /*, Mock<IServiceLocator>*/ Factory()
   {
     var serviceLocator = new Mock<IServiceLocator>();
-    var logger = new Mock<ILoggerAdapter<DockerService>>();
 
     _ = SetupCreateScope(serviceLocator);
 
-    var dockerService = new DockerService(serviceLocator.Object, logger.Object);
+    var logger = new Mock<ILoggerAdapter<DockerService>>();
+
+    var dockerService = new DockerService(logger.Object);
 
     return dockerService;
   }

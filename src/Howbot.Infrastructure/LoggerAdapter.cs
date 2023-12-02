@@ -1,5 +1,7 @@
 ﻿using System;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models.Exceptions;
+using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 
 namespace Howbot.Infrastructure;
@@ -19,82 +21,139 @@ public class LoggerAdapter<T> : ILoggerAdapter<T>
 
   public void Log(LogLevel severity, string message, params object[] args)
   {
-    _logger.Log(severity, message, args);
+    try
+    {
+      ArgumentException.ThrowIfNullOrEmpty(message);
+
+      _logger.Log(severity, message, args);
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, nameof(Log));
+      throw new LoggingException(e.Message);
+    }
   }
 
   public void LogError(Exception exception)
   {
-    if (exception == null)
+    try
     {
-      throw new ArgumentNullException(nameof(exception));
-    }
+      ArgumentNullException.ThrowIfNull(exception);
 
-    _logger.LogError(exception, null);
+      _logger.LogError(exception, null);
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, nameof(LogError));
+      throw new LoggingException(e.Message);
+    }
   }
 
   public void LogError(string message, params object[] args)
   {
-    if (string.IsNullOrEmpty(message))
+    try
     {
-      throw new ArgumentNullException(nameof(message));
-    }
+      ArgumentException.ThrowIfNullOrEmpty(message);
 
-    _logger.Log(LogLevel.Error, message);
+      _logger.LogError(message, args);
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, nameof(LogError));
+      throw new LoggingException(e.Message);
+    }
   }
 
-  public void LogError(Exception ex, string message, params object[] args)
+  public void LogError(Exception exception, string message, params object[] args)
   {
-    if (string.IsNullOrEmpty(message))
+    try
     {
-      throw new ArgumentNullException(nameof(message));
-    }
+      ArgumentNullException.ThrowIfNull(exception);
+      ArgumentException.ThrowIfNullOrEmpty(message);
 
-    if (ex.Equals(null))
+      _logger.LogError(exception, message, args);
+    }
+    catch (Exception e)
     {
-      throw new ArgumentNullException(nameof(ex));
+      _logger.LogError(e, nameof(LogError));
+      throw new LoggingException(e.Message);
     }
-
-    _logger.LogError(ex, message, args);
   }
 
   public void LogInformation(string message, params object[] args)
   {
-    if (string.IsNullOrEmpty(message))
+    try
     {
-      throw new ArgumentNullException(nameof(message));
-    }
+      ArgumentException.ThrowIfNullOrEmpty(message);
 
-    _logger.LogInformation(message, args);
+      _logger.LogInformation(message, args);
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, nameof(LogInformation));
+      throw new LoggingException(e.Message);
+    }
   }
 
   public void LogDebug(string message, params object[] args)
   {
-    if (string.IsNullOrEmpty(message))
+    try
     {
-      throw new ArgumentNullException(nameof(message));
-    }
+      ArgumentException.ThrowIfNullOrEmpty(message);
 
-    _logger.LogDebug(message, args);
+      _logger.LogDebug(message, args);
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, nameof(LogDebug));
+      throw new LoggingException(e.Message);
+    }
   }
 
   public void LogWarning(string message, params object[] args)
   {
-    if (string.IsNullOrEmpty(message))
+    try
     {
-      throw new ArgumentNullException(nameof(message));
-    }
+      ArgumentException.ThrowIfNullOrEmpty(message);
 
-    _logger.LogWarning(message, args);
+      _logger.LogWarning(message, args);
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, nameof(LogWarning));
+      throw new LoggingException(e.Message);
+    }
+  }
+
+  public void LogCritical(Exception exception, string message, params object[] args)
+  {
+    try
+    {
+      ArgumentNullException.ThrowIfNull(exception);
+      ArgumentException.ThrowIfNullOrEmpty(message);
+
+      _logger.LogCritical(exception, message, args);
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, nameof(LogCritical));
+      throw new LoggingException(e.Message);
+    }
   }
 
   public void LogCritical(string message, params object[] args)
   {
-    if (string.IsNullOrEmpty(message))
+    try
     {
-      throw new ArgumentNullException(nameof(message));
-    }
+      ArgumentException.ThrowIfNullOrEmpty(message);
 
-    _logger.LogCritical(message, args);
+      _logger.LogCritical(message, args);
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, nameof(LogCritical));
+      throw new LoggingException(e.Message);
+    }
   }
 
   public void LogCommandFailed(string commandName)

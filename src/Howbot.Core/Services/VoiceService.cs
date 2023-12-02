@@ -1,140 +1,126 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Victoria.Node;
-using Victoria.Player;
-using static System.Threading.SpinWait;
-using static Howbot.Core.Models.Messages.Responses;
+using JetBrains.Annotations;
+using Lavalink4NET;
+using Lavalink4NET.Players;
+using Microsoft.Extensions.Options;
 
 namespace Howbot.Core.Services;
 
 public class VoiceService : ServiceBase<VoiceService>, IVoiceService
 {
-  // Instance variables
-  private readonly LavaNode<Player<LavaTrack>, LavaTrack> _lavaNode;
+  private readonly IAudioService _audioService;
 
-  private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
-  private readonly ILoggerAdapter<VoiceService> _logger;
-
-  // Constructor
-  public VoiceService(LavaNode<Player<LavaTrack>, LavaTrack> lavaNode, ILoggerAdapter<VoiceService> logger) :
-    base(logger)
+  public VoiceService(IAudioService audioService, ILoggerAdapter<VoiceService> logger) : base(logger)
   {
-    _lavaNode = lavaNode;
-    _logger = logger;
-    _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
+    _audioService = audioService;
   }
 
-  public async Task<CommandResponse> JoinVoiceAsync(IGuildUser user, ITextChannel textChannel)
+  public async ValueTask<CommandResponse> JoinVoiceChannelAsync(IGuildUser user, IGuildChannel channel)
   {
     try
     {
-      if (user is IVoiceState voiceState)
-      {
-        var lavaPlayer = await JoinGuildVoiceChannelAsync(voiceState, textChannel);
+      var voiceChannel = user.VoiceChannel;
+      var guildTag = DiscordHelper.GetGuildTag(user.Guild);
 
-        return lavaPlayer == null
-          ? CommandResponse.CommandNotSuccessful(
-            new Exception("Exception thrown creating lava player while joining voice channel"))
-          : CommandResponse.CommandSuccessful(lavaPlayer);
-      }
+      Logger.LogDebug("Attempting to join voice channel {0}.", guildTag);
+
+      _ = await GetPlayerAsync(new GetPlayerParameters
+      {
+        ConnectToVoiceChannel = true,
+        GuildId = channel.GuildId,
+        TextChannel = (ITextChannel)channel,
+        VoiceChannelId = voiceChannel?.Id ?? 0
+      }).ConfigureAwait(false);
+
+      Logger.LogDebug("Successfully joined voice channel {0}.", guildTag);
+
+      return CommandResponse.CommandSuccessful("Successfully joined voice channel.", true);
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception has been thrown executing command [{CommandName}]",
-        nameof(JoinVoiceAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
-    }
-
-    return CommandResponse.CommandNotSuccessful("Unable to join voice channel.");
-  }
-
-  public async Task<CommandResponse> LeaveVoiceChannelAsync(IGuildUser user)
-  {
-    try
-    {
-      if (user is not IVoiceState voiceState)
-      {
-        return CommandResponse.CommandNotSuccessful("Unable to leave voice channel");
-      }
-
-      // Get lava player instance
-      if (!_lavaNode.HasPlayer(user.Guild))
-      {
-        _logger.LogDebug("Cannot leave voice, not in voice channel.");
-        return CommandResponse.CommandNotSuccessful(BotNotConnectedToVoiceResponseMessage);
-      }
-
-      _logger.LogDebug("Leaving voice channel");
-      await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
-      return CommandResponse.CommandSuccessful(BotLeaveVoiceConnection);
-    }
-    catch (Exception exception)
-    {
-      _logger.LogError(exception, "Exception thrown in VoiceService.LeaveVoiceChannelAsync");
+      Logger.LogError(exception, nameof(JoinVoiceChannelAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
 
-  public async Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan)
+  public async ValueTask<CommandResponse> LeaveVoiceChannelAsync(IGuildUser user, IGuildChannel guildChannel)
   {
-    if (!_disconnectTokens.TryGetValue(lavaPlayer.VoiceChannel.Id, out var value))
+    try
     {
-      value = new CancellationTokenSource();
-      _disconnectTokens.TryAdd(lavaPlayer.VoiceChannel.Id, value);
-    }
-    else if (value.IsCancellationRequested)
-    {
-      _disconnectTokens.TryUpdate(lavaPlayer.VoiceChannel.Id, new CancellationTokenSource(), value);
-      value = _disconnectTokens[lavaPlayer.VoiceChannel.Id];
-    }
+      var player = await GetPlayerAsync(new GetPlayerParameters()
+      {
+        ConnectToVoiceChannel = false,
+        GuildId = guildChannel.GuildId,
+        TextChannel = (ITextChannel)guildChannel,
+        VoiceChannelId = user.VoiceChannel.Id
+      }).ConfigureAwait(false);
 
-    await lavaPlayer.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
-    var isCancelled = SpinUntil(() => value.IsCancellationRequested, timeSpan);
-    if (isCancelled)
-    {
-      _logger.LogDebug("Auto disconnect cancelled.");
-      return;
-    }
+      if (player is null)
+      {
+        return CommandResponse.CommandNotSuccessful("Unable to leave channel. Not in a voice channel.");
+      }
 
-    await _lavaNode.LeaveAsync(lavaPlayer.VoiceChannel);
-    _logger.LogDebug("Howbot has disconnected from voice channel.");
+      // Using lavalink player disconnect from the voice channel.
+      await player.DisconnectAsync().ConfigureAwait(false);
+
+      // Return successful response
+      return CommandResponse.CommandSuccessful("Successfully disconnected from voice channel.");
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, nameof(LeaveVoiceChannelAsync));
+      return CommandResponse.CommandNotSuccessful(exception);
+    }
   }
 
-  private async Task<Player<LavaTrack>> JoinGuildVoiceChannelAsync(IVoiceState voiceState, ITextChannel textChannel)
+  private async ValueTask<ILavalinkPlayer> GetPlayerAsync(GetPlayerParameters playerParams)
   {
-    // Parameter error handling
-    ArgumentNullException.ThrowIfNull(voiceState);
-    ArgumentNullException.ThrowIfNull(textChannel);
+    ArgumentNullException.ThrowIfNull(playerParams);
 
-    // Check if user is in a voice channel
-    if (voiceState.VoiceChannel == null)
+    if (playerParams.VoiceChannelId == 0)
     {
-      _logger.LogInformation("Requested user is not in a voice channel");
-      return null;
+      throw new ArgumentException("Voice channel id cannot be 0.", nameof(playerParams));
     }
 
-    // Check if bot is already connect
-    if (!IsBotAlreadyConnected(textChannel.Guild))
+    var retrieveOptions = new PlayerRetrieveOptions(
+      ChannelBehavior: playerParams.ConnectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None);
+
+    var result = await _audioService.Players
+      .RetrieveAsync(guildId: playerParams.GuildId, memberVoiceChannel: playerParams.VoiceChannelId,
+        playerFactory: PlayerFactory.Default,
+        options: new OptionsWrapper<LavalinkPlayerOptions>(new LavalinkPlayerOptions()),
+        retrieveOptions: retrieveOptions);
+
+    if (result.IsSuccess)
     {
-      // Not in voice, join active voice channel
-      var lavaPlayer = await _lavaNode.JoinAsync(voiceState.VoiceChannel, textChannel);
-      return lavaPlayer;
+      return result.Player;
     }
 
-    // Get already created lava player (already connected to voice channel)
-    _lavaNode.TryGetPlayer(textChannel.Guild, out var player);
-    return player;
+    var errorMessage = result.Status switch
+    {
+      PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
+      PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected.",
+      _ => "Unknown error.",
+    };
+
+    await playerParams.TextChannel.SendMessageAsync(errorMessage).ConfigureAwait(false);
+
+    return null;
   }
 
-  private bool IsBotAlreadyConnected(IGuild guild)
+  private readonly struct GetPlayerParameters
   {
-    ArgumentNullException.ThrowIfNull(guild);
+    public ulong GuildId { get; init; }
 
-    return _lavaNode.HasPlayer(guild);
+    public ulong VoiceChannelId { get; init; }
+
+    public ITextChannel TextChannel { get; init; }
+
+    public bool ConnectToVoiceChannel { get; init; }
   }
 }

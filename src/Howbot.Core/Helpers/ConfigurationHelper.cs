@@ -1,13 +1,18 @@
 ﻿using System;
 using System.IO;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using Serilog;
 
 namespace Howbot.Core.Helpers;
 
 /// <summary>
 /// Class of static helpers used for handling configuration.
 /// </summary>
-public class ConfigurationHelper
+public static class ConfigurationHelper
 {
+  public static IConfiguration HostConfiguration { get; private set; }
+
   /// <summary>
   /// Adds or updates configuration settings in appsettings.json
   /// </summary>
@@ -20,16 +25,16 @@ public class ConfigurationHelper
     {
       var filePath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
       string json = File.ReadAllText(filePath);
-      dynamic jsonObj = Newtonsoft.Json.JsonConvert.DeserializeObject(json);
+      dynamic jsonObj = JsonConvert.DeserializeObject(json);
 
       SetValueRecursively(sectionPathKey, jsonObj, value);
 
-      string output = Newtonsoft.Json.JsonConvert.SerializeObject(jsonObj, Newtonsoft.Json.Formatting.Indented);
+      string output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented);
       File.WriteAllText(filePath, output);
     }
     catch (Exception ex)
     {
-      Console.WriteLine("Error writing app settings | {0}", ex.Message);
+      Log.Logger.Error(ex, "Error writing app settings");
     }
   }
 
@@ -48,7 +53,7 @@ public class ConfigurationHelper
     var currentSection = remainingSections[0];
     if (remainingSections.Length > 1)
     {
-      // continue with the procress, moving down the tree
+      // continue with the process, moving down the tree
       var nextSection = remainingSections[1];
       SetValueRecursively(nextSection, jsonObj[currentSection], value);
     }
@@ -57,5 +62,14 @@ public class ConfigurationHelper
       // we've got to the end of the tree, set the value
       jsonObj[currentSection] = value;
     }
+  }
+
+  /// <summary>
+  ///   Allows for setting the host configuration globally.
+  /// </summary>
+  /// <param name="configuration">The configuration to assign to global variable.</param>
+  public static void SetHostConfiguration(IConfiguration configuration)
+  {
+    HostConfiguration = configuration;
   }
 }

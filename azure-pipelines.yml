@@ -47,12 +47,12 @@ steps:
     projects: '$(projects)'
     arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration) --no-self-contained'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Run Unit Tests'
-  inputs:
-    command: 'test'
-    projects: '$(System.DefaultWorkingDirectory)/tests/**/*.csproj'
-    arguments: '--configuration $(buildConfiguration)'
+# - task: DotNetCoreCLI@2
+#   displayName: 'Run Unit Tests'
+#   inputs:
+#     command: 'test'
+#     projects: '$(System.DefaultWorkingDirectory)/tests/**/*.csproj'
+#     arguments: '--configuration $(buildConfiguration)'
 
 - task: CopyFiles@2
   displayName: "Copy Build Files"

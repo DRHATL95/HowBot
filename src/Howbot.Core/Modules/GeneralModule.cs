@@ -7,6 +7,9 @@ using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Exceptions;
+using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Permissions.Bot;
 using static Howbot.Core.Models.Permissions.User;
@@ -16,10 +19,11 @@ namespace Howbot.Core.Modules;
 public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
 {
   private readonly InteractionService _interactionService;
+  private readonly ILogger<GeneralModule> _logger;
   private readonly IVoiceService _voiceService;
-  private readonly ILoggerAdapter<GeneralModule> _logger;
 
-  public GeneralModule(InteractionService interactionService, IVoiceService voiceService, ILoggerAdapter<GeneralModule> logger)
+  public GeneralModule(InteractionService interactionService, IVoiceService voiceService,
+    ILogger<GeneralModule> logger)
   {
     _interactionService = interactionService;
     _voiceService = voiceService;
@@ -31,23 +35,33 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   [RequireBotPermission(GuildBotVoiceCommandPermission)]
   [RequireUserPermission(GuildUserVoiceCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  public async Task JoinCommandAsync()
+  public async Task JoinVoiceChannelCommandAsync()
   {
     try
     {
-      await DeferAsync();
+      await DeferAsync(true).ConfigureAwait(false);
 
-      CommandResponse commandResponse = await _voiceService.JoinVoiceAsync(Context.User as IGuildUser, Context.Channel as ITextChannel);
-      if (!commandResponse.Success)
+      if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-      }
+        var commandResponse = await _voiceService.JoinVoiceChannelAsync(user, channel);
+        if (!commandResponse.IsSuccessful)
+        {
+          ModuleHelper.HandleCommandFailed(commandResponse);
 
-      await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+          await FollowupAsync(commandResponse.Message).ConfigureAwait(false);
+
+          return;
+        }
+
+        if (!string.IsNullOrEmpty(commandResponse.Message))
+        {
+          await FollowupAsync(commandResponse.Message).ConfigureAwait(false);
+        }
+      }
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(JoinVoiceChannelCommandAsync));
       throw;
     }
   }
@@ -61,16 +75,19 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      await DeferAsync();
+      await DeferAsync(true).ConfigureAwait(false);
 
-      var commandResponse = await _voiceService.LeaveVoiceChannelAsync(Context.User as IGuildUser);
-
-      if (!commandResponse.Success)
+      if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-      }
+        CommandResponse commandResponse =
+          await _voiceService.LeaveVoiceChannelAsync(user, channel).ConfigureAwait(false);
 
-      await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
+        await ModuleHelper.HandleCommandResponseAsync(commandResponse, Context).ConfigureAwait(false);
+      }
+      else
+      {
+        throw new CommandException("Unable to leave channel. Not in a voice channel or guild user null.");
+      }
     }
     catch (Exception exception)
     {
@@ -84,20 +101,24 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      var replyMessage = await Context.Channel.SendMessageAsync("Ping?");
+      _logger.LogDebug("Ping command invoked.");
 
-      var latency = Context.Client.Latency;
+      await Context.Interaction.RespondAsync("Ping?").ConfigureAwait(false);
+
+      var client = Context.Client;
+      var responseTime = await Context.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
+      var latency = client.Latency;
       var message =
-        $"Pong! Bot WebSocket latency {latency}ms. Discord API latency {(DateTimeOffset.UtcNow - replyMessage.CreatedAt).TotalMilliseconds}ms";
+        $"Pong! Bot WebSocket latency {latency}ms. Discord API latency {(DateTimeOffset.UtcNow - responseTime.CreatedAt).TotalMilliseconds}ms";
 
-      var editedMessage = await Context.Channel.SendMessageAsync(message,
-        messageReference: new MessageReference(replyMessage.Id, replyMessage.Channel.Id));
+      await Context.Interaction.ModifyOriginalResponseAsync(properties => properties.Content = message)
+        .ConfigureAwait(false);
 
-      await replyMessage.DeleteAsync();
+      _logger.LogDebug("Ping command completed.");
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception);
+      _logger.LogError(exception, nameof(PingCommandAsync));
       throw;
     }
   }
@@ -105,11 +126,23 @@ public class GeneralModule : InteractionModuleBase<SocketInteractionContext>
   [SlashCommand(HelpCommandName, HelpCommandDescription, true, RunMode.Async)]
   public async Task HelpCommandAsync()
   {
-    var commands = _interactionService.SlashCommands;
-    var commandList = string.Join("\n", commands.Select(c => $"`/{c.Name}`: {c.Description}"));
+    try
+    {
+      _logger.LogDebug("Help command invoked.");
 
-    var embedBuilder = new EmbedBuilder { Title = "Command List", Description = commandList };
+      var commands = _interactionService.SlashCommands;
+      var commandList = string.Join("\n", commands.Select(c => $"`/{c.Name}`: {c.Description}"));
 
-    await RespondAsync(embeds: new[] { embedBuilder.Build() });
+      var embedBuilder = new EmbedBuilder { Title = "Command List", Description = commandList };
+
+      await RespondAsync(embeds: new[] { embedBuilder.Build() }).ConfigureAwait(false);
+
+      _logger.LogDebug("Help command completed.");
+    }
+    catch (Exception exception)
+    {
+      _logger.LogError(exception, nameof(HelpCommandAsync));
+      throw;
+    }
   }
 }

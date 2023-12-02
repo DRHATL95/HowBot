@@ -47,7 +47,7 @@ public class EmbedOptions
 
   public string ThumbnailUrl { get; set; }
 
-  [ItemCanBeNull] public EmbedFieldBuilder[] Fields { get; set; }
+  public EmbedFieldBuilder[] Fields { get; set; }
 
   public EmbedFooterBuilder Footer { get; set; }
 

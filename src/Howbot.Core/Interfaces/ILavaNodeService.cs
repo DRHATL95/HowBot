@@ -1,5 +1,10 @@
 ﻿namespace Howbot.Core.Interfaces;
 
-public interface ILavaNodeService : IServiceBase
+// Purpose: Interface for the LavaNodeService
+public interface ILavaNodeService
 {
+  /// <summary>
+  ///   Initializes the LavaNodeService
+  /// </summary>
+  void Initialize();
 }

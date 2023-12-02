@@ -21,6 +21,8 @@ public interface ILoggerAdapter<T>
 
   void LogWarning(string message, params object[] args);
 
+  void LogCritical(Exception exception, string message, params object[] args);
+
   void LogCritical(string message, params object[] args);
 
   void LogCommandFailed(string commandName);

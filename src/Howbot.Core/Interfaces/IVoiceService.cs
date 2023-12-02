@@ -1,16 +1,28 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Models;
-using Victoria.Player;
+using JetBrains.Annotations;
 
 namespace Howbot.Core.Interfaces;
 
-public interface IVoiceService : IServiceBase
+// Purpose: Interface for the VoiceService
+public interface IVoiceService
 {
-  Task<CommandResponse> JoinVoiceAsync(IGuildUser user, ITextChannel textChannel);
+  /// <summary>
+  ///   Joins the requested voice channel for the guild.
+  /// </summary>
+  /// <param name="guildUser"></param>
+  /// <param name="guildChannel"></param>
+  /// <returns></returns>
+  ValueTask<CommandResponse>
+    JoinVoiceChannelAsync(IGuildUser guildUser, IGuildChannel guildChannel);
 
-  Task<CommandResponse> LeaveVoiceChannelAsync(IGuildUser user);
-
-  Task InitiateDisconnectLogicAsync(Player<LavaTrack> lavaPlayer, TimeSpan timeSpan);
+  /// <summary>
+  ///   Leaves the requested voice channel for the guild.
+  /// </summary>
+  /// <param name="guildUser"></param>
+  /// <param name="guildChannel"></param>
+  /// <returns></returns>
+  ValueTask<CommandResponse> LeaveVoiceChannelAsync(IGuildUser guildUser,
+    IGuildChannel guildChannel);
 }
