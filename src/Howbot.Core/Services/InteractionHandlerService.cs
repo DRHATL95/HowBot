@@ -10,25 +10,20 @@ using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
 
-public class InteractionHandlerService : ServiceBase<InteractionHandlerService>, IInteractionHandlerService, IDisposable
+public class InteractionHandlerService(
+  DiscordSocketClient discordSocketClient,
+  InteractionService interactionService,
+  IServiceProvider serviceProvider,
+  ILoggerAdapter<InteractionHandlerService> logger)
+  : ServiceBase<InteractionHandlerService>(logger), IInteractionHandlerService, IDisposable
 {
-  private readonly DiscordSocketClient _discordSocketClient;
-  private readonly InteractionService _interactionService;
-  private readonly IServiceProvider _serviceProvider;
-
-  public InteractionHandlerService(DiscordSocketClient discordSocketClient,
-    InteractionService interactionService,
-    IServiceProvider serviceProvider, ILoggerAdapter<InteractionHandlerService> logger) : base(logger)
-  {
-    _discordSocketClient = discordSocketClient;
-    _interactionService = interactionService;
-    _serviceProvider = serviceProvider;
-  }
+  private readonly DiscordSocketClient _discordSocketClient = discordSocketClient;
+  private readonly IServiceProvider _serviceProvider = serviceProvider;
 
   public void Dispose()
   {
-    _interactionService.Log -= InteractionServiceOnLog;
-    _interactionService.InteractionExecuted -= InteractionServiceOnInteractionExecuted;
+    interactionService.Log -= InteractionServiceOnLog;
+    interactionService.InteractionExecuted -= InteractionServiceOnInteractionExecuted;
 
     GC.SuppressFinalize(this);
   }
@@ -37,8 +32,8 @@ public class InteractionHandlerService : ServiceBase<InteractionHandlerService>,
   {
     Logger.LogDebug("{ServiceName} is now initializing...", nameof(InteractionHandlerService));
 
-    _interactionService.Log += InteractionServiceOnLog;
-    _interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
+    interactionService.Log += InteractionServiceOnLog;
+    interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
     // _interactionService.SlashCommandExecuted += InteractionServiceOnSlashCommandExecuted;
     // _interactionService.ContextCommandExecuted += InteractionServiceOnContextCommandExecuted;
     // _interactionService.AutocompleteCommandExecuted += InteractionServiceOnAutocompleteCommandExecuted;

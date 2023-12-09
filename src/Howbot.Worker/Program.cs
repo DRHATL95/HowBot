@@ -38,7 +38,7 @@ public static class Program
     {
       if (Log.IsEnabled(LogEventLevel.Fatal))
       {
-        Log.Fatal(exception, "A fatal exception has been thrown while running the application.");
+        Log.Fatal(exception, "A fatal exception has been thrown while running the application");
       }
     }
 

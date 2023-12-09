@@ -4,16 +4,11 @@ using JetBrains.Annotations;
 
 namespace Howbot.Core.Services;
 
-public abstract class ServiceBase<T>
+public abstract class ServiceBase<T>(ILoggerAdapter<T> logger)
 {
   private const string ServiceName = nameof(ServiceBase<T>);
 
-  protected ServiceBase(ILoggerAdapter<T> logger)
-  {
-    Logger = logger;
-  }
-
-  protected ILoggerAdapter<T> Logger { get; }
+  protected ILoggerAdapter<T> Logger { get; } = logger;
 
   /// <summary>
   ///   Every service needs to implement this method. This will hook up events primarily,

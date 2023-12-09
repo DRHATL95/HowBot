@@ -10,12 +10,8 @@ using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Services;
 
-public class EmbedService : ServiceBase<EmbedService>, IEmbedService
+public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<EmbedService>(logger), IEmbedService
 {
-  public EmbedService(ILoggerAdapter<EmbedService> logger) : base(logger)
-  {
-  }
-
   public IEmbed CreateEmbed(EmbedOptions options)
   {
     ArgumentNullException.ThrowIfNull(options);

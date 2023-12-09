@@ -11,15 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace Howbot.Core.Services;
 
-public class VoiceService : ServiceBase<VoiceService>, IVoiceService
+public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceService> logger)
+  : ServiceBase<VoiceService>(logger), IVoiceService
 {
-  private readonly IAudioService _audioService;
-
-  public VoiceService(IAudioService audioService, ILoggerAdapter<VoiceService> logger) : base(logger)
-  {
-    _audioService = audioService;
-  }
-
   public async ValueTask<CommandResponse> JoinVoiceChannelAsync(IGuildUser user, IGuildChannel channel)
   {
     try
@@ -90,7 +84,7 @@ public class VoiceService : ServiceBase<VoiceService>, IVoiceService
     var retrieveOptions = new PlayerRetrieveOptions(
       ChannelBehavior: playerParams.ConnectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None);
 
-    var result = await _audioService.Players
+    var result = await audioService.Players
       .RetrieveAsync(guildId: playerParams.GuildId, memberVoiceChannel: playerParams.VoiceChannelId,
         playerFactory: PlayerFactory.Default,
         options: new OptionsWrapper<LavalinkPlayerOptions>(new LavalinkPlayerOptions()),

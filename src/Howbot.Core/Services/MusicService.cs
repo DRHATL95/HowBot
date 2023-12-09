@@ -26,20 +26,13 @@ using Serilog;
 
 namespace Howbot.Core.Services;
 
-public class MusicService : ServiceBase<MusicService>, IMusicService
+public class MusicService(
+  IEmbedService embedService,
+  IAudioService audioService,
+  IServiceProvider serviceProvider,
+  ILoggerAdapter<MusicService> logger)
+  : ServiceBase<MusicService>(logger), IMusicService
 {
-  private readonly IAudioService _audioService;
-  private readonly IEmbedService _embedService;
-  private readonly IServiceProvider _serviceProvider;
-
-  public MusicService(IEmbedService embedService, IAudioService audioService,
-    IServiceProvider serviceProvider, ILoggerAdapter<MusicService> logger) : base(logger)
-  {
-    _embedService = embedService;
-    _audioService = audioService;
-    _serviceProvider = serviceProvider;
-  }
-
   public async ValueTask<HowbotPlayer> GetPlayerByContextAsync(SocketInteractionContext context,
     bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default,
     bool isDeferred = false, int initialVolume = 100,
@@ -69,7 +62,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
     int persistedVolume;
 
-    using (var scope = _serviceProvider.CreateScope())
+    using (var scope = serviceProvider.CreateScope())
     {
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
@@ -85,7 +78,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       InitialVolume = persistedVolume > 0 ? persistedVolume / 100f : initialVolume / 100f
     };
 
-    var result = await _audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
+    var result = await audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
         CreatePlayerAsync,
         retrieveOptions: retrieveOptions, options: new OptionsWrapper<HowbotPlayerOptions>(playerOptions),
         cancellationToken: cancellationToken)
@@ -153,7 +146,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       // LavaSearch categories to be returned (Tracks, Albums, Artists, etc.)
       var categories = ImmutableArray.Create(SearchCategory.Track);
 
-      var searchResult = await _audioService.Tracks
+      var searchResult = await audioService.Tracks
         .SearchAsync(searchRequest, loadOptions: trackOptions, categories: categories)
         .ConfigureAwait(false);
 
@@ -161,7 +154,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       if (searchResult is null || searchResult.Tracks.IsDefaultOrEmpty)
       {
         // Attempts to use native lavalink native search when lavasearch plugin isn't working or doesn't return results for categories specified
-        track = await _audioService.Tracks
+        track = await audioService.Tracks
           .LoadTrackAsync(searchRequest, trackOptions)
           .ConfigureAwait(false);
       }
@@ -265,7 +258,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       await player.SetVolumeAsync(newVolume / 100f).ConfigureAwait(false);
 
-      using var scope = _serviceProvider.CreateScope();
+      using var scope = serviceProvider.CreateScope();
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
 
       // Entry already exists in db
@@ -298,7 +291,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         return CommandResponse.CommandNotSuccessful("No track is currently playing.");
       }
 
-      var embed = _embedService.GenerateMusicNowPlayingEmbed(player.CurrentTrack, user, textChannel,
+      var embed = embedService.GenerateMusicNowPlayingEmbed(player.CurrentTrack, user, textChannel,
         player.Position?.Position, player.Volume);
 
       return CommandResponse.CommandSuccessful(embed);

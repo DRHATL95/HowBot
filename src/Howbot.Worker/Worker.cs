@@ -11,22 +11,13 @@ using Serilog;
 
 namespace Howbot.Worker;
 
-public class Worker : BackgroundService
+public class Worker(
+  IDiscordClientService discordClientService,
+  IServiceProvider serviceProvider,
+  DiscordSocketClient discordSocketClient,
+  ILoggerAdapter<Worker> logger)
+  : BackgroundService
 {
-  private readonly IDiscordClientService _discordClientService;
-  private readonly DiscordSocketClient _discordSocketClient;
-  private readonly ILoggerAdapter<Worker> _logger;
-  private readonly IServiceProvider _serviceProvider;
-
-  public Worker(IDiscordClientService discordClientService, IServiceProvider serviceProvider,
-    DiscordSocketClient discordSocketClient, ILoggerAdapter<Worker> logger)
-  {
-    _discordClientService = discordClientService;
-    _serviceProvider = serviceProvider;
-    _discordSocketClient = discordSocketClient;
-    _logger = logger;
-  }
-
   protected override async Task ExecuteAsync(CancellationToken cancellationToken)
   {
     try
@@ -35,9 +26,9 @@ public class Worker : BackgroundService
 
       InitializeHowbotServices(cancellationToken);
 
-      if (!await _discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken).ConfigureAwait(false))
+      if (!await discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken).ConfigureAwait(false))
       {
-        _logger.LogCritical("Unable to login to discord API with token.");
+        logger.LogCritical("Unable to login to discord API with token.");
 
         // Stop worker, cannot continue without being authenticated
         await StopAsync(cancellationToken).ConfigureAwait(false);
@@ -45,19 +36,19 @@ public class Worker : BackgroundService
         throw new DiscordLoginException("Unable to login to discord API with token.");
       }
 
-      await _discordClientService.StartDiscordBotAsync().ConfigureAwait(false);
+      await discordClientService.StartDiscordBotAsync().ConfigureAwait(false);
 
       // Run worker service indefinitely until cancellationToken is created or process is manually stopped.
       await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
     }
     catch (DiscordLoginException loginException)
     {
-      _logger.LogError(loginException, "An exception has been thrown logging into Discord.", Array.Empty<object>());
+      logger.LogError(loginException, "An exception has been thrown logging into Discord.", Array.Empty<object>());
       throw;
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "An exception has been thrown in the main worker", Array.Empty<object>());
+      logger.LogError(exception, "An exception has been thrown in the main worker", Array.Empty<object>());
       throw;
     }
   }
@@ -68,9 +59,9 @@ public class Worker : BackgroundService
 
     await base.StopAsync(cancellationToken);
 
-    await _discordSocketClient.StopAsync().ConfigureAwait(false);
+    await discordSocketClient.StopAsync().ConfigureAwait(false);
 
-    Log.Logger.Fatal("Discord client has been stopped.");
+    Log.Logger.Fatal("Discord client has been stopped");
   }
 
   private void InitializeHowbotServices(CancellationToken cancellationToken = default)
@@ -79,20 +70,20 @@ public class Worker : BackgroundService
     {
       cancellationToken.ThrowIfCancellationRequested();
 
-      _logger.LogDebug("Starting initialization of Howbot services..");
+      logger.LogDebug("Starting initialization of Howbot services..");
 
-      _serviceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
-      _serviceProvider.GetRequiredService<ILavaNodeService>()?.Initialize();
-      _serviceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
-      _serviceProvider.GetRequiredService<IEmbedService>()?.Initialize();
-      _serviceProvider.GetRequiredService<IMusicService>()?.Initialize();
+      serviceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
+      serviceProvider.GetRequiredService<ILavaNodeService>()?.Initialize();
+      serviceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
+      serviceProvider.GetRequiredService<IEmbedService>()?.Initialize();
+      serviceProvider.GetRequiredService<IMusicService>()?.Initialize();
 
-      using var scope = _serviceProvider.CreateScope();
+      using var scope = serviceProvider.CreateScope();
       scope.ServiceProvider.GetRequiredService<IDatabaseService>()?.Initialize();
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(InitializeHowbotServices));
+      logger.LogError(exception, nameof(InitializeHowbotServices));
       throw;
     }
   }

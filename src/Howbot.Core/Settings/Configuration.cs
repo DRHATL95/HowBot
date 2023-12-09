@@ -9,25 +9,31 @@ using Lavalink4NET;
 
 namespace Howbot.Core.Settings;
 
+/// <summary>
+/// The Configuration class provides access to various configuration settings used in the application.
+/// </summary>
 public static class Configuration
 {
   private const string DiscordTokenDev = "DiscordTokenDev";
   private const string DiscordTokenProd = "DiscordTokenProd";
   private const string YouTube = "YoutubeToken";
-  private const string Postgres = "PostgresConnectionString";
+  private const string Postgres = "HowbotPostgres";
   private const string Lavalink = "DiscordLavalinkServerPassword";
   private const string LavalinkAddress = "DiscordLavalinkServerAddress";
+  private const string WatchTogetherKey = "Watch2GetherKey";
 
   public static string DiscordToken => GetTokenByName(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
 
   public static string YouTubeToken => GetTokenByName(YouTube);
 
   public static string PostgresConnectionString => GetTokenByName(Postgres);
+  
+  public static string WatchTogetherApiKey => GetTokenByName(WatchTogetherKey);
 
   private static string LavaNodePassword => GetTokenByName(Lavalink);
 
   private static string LavaNodeAddress => GetTokenByName(LavalinkAddress);
-
+  
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
   /// <summary>
