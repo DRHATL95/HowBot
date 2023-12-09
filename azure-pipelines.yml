@@ -19,10 +19,10 @@ variables:
 steps:
 
 - task: UseDotNet@2
-  displayName: 'Install .NET 7'
+  displayName: 'Install .NET 8'
   inputs:
     packageType: sdk
-    version: '7.x'
+    version: '8.x'
 
 - task: NuGetToolInstaller@1
   displayName: 'Install NuGet'
