@@ -6,7 +6,7 @@ trigger:
 - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-22.04'
 
 variables:
   solution: '**/*.sln'
@@ -45,7 +45,7 @@ steps:
     configuration: '$(buildConfiguration)'
     command: 'build'
     projects: '$(projects)'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration) --no-self-contained'
+    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration)'
 
 # - task: DotNetCoreCLI@2
 #   displayName: 'Run Unit Tests'
