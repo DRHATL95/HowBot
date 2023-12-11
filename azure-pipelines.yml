@@ -13,7 +13,7 @@ variables:
   projects: '**/*.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
+  buildOutputDirectory: '$(Build.ArtifactStagingDirectory)'
   buildRuntime: 'linux-x64'
 
 steps:
@@ -42,11 +42,11 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: 'Build Projects'
   inputs:
-    configuration: '$(buildConfiguration)'
+    configuration: $(buildConfiguration)
     publishWebProjects: false
     command: 'build'
     projects: '$(projects)'
-    arguments: '--runtime $(buildRuntime)'
+    arguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration) --self-contained true'
 
 # - task: DotNetCoreCLI@2
 #   displayName: 'Run Unit Tests'
@@ -54,11 +54,6 @@ steps:
 #     command: 'test'
 #     projects: '$(System.DefaultWorkingDirectory)/tests/**/*.csproj'
 #     arguments: '--configuration $(buildConfiguration)'
-
-- task: CopyFiles@2
-  displayName: "Copy Build Files"
-  inputs:
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
   
 - task: DotNetCoreCLI@2
   displayName: 'Publish Build'
@@ -67,7 +62,7 @@ steps:
     configuration: '$(buildConfiguration)'
     publishWebProjects: false
     projects: '$(projects)'
-    arguments: '--runtime $(buildRuntime) --output $(buildOutputDirectory) --self-contained'
+    arguments: '--configuration $(buildConfiguration) --runtime $(buildRuntime) --output $(buildOutputDirectory)/publish --self-contained true'
     zipAfterPublish: false
     modifyOutputPath: false
 
