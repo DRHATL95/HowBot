@@ -14,7 +14,7 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
-  buildRuntime: 'ubuntu-22.04-x64'
+  buildRuntime: 'ubuntu.22.04-x64'
 
 steps:
 
