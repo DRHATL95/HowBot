@@ -40,13 +40,13 @@ steps:
     noCache: true
 
 - task: DotNetCoreCLI@2
-  displayName: 'Build Projects to Output'
+  displayName: 'Build Projects'
   inputs:
     configuration: '$(buildConfiguration)'
     publishWebProjects: false
     command: 'build'
     projects: '$(projects)'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --self-contained'
+    arguments: '--runtime $(buildRuntime)'
 
 # - task: DotNetCoreCLI@2
 #   displayName: 'Run Unit Tests'
