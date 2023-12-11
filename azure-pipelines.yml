@@ -14,7 +14,7 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
-  buildRuntime: 'linux-x64'
+  buildRuntime: 'ubuntu-22.04-x64'
 
 steps:
 
@@ -43,9 +43,10 @@ steps:
   displayName: 'Build Projects to Output'
   inputs:
     configuration: '$(buildConfiguration)'
+    publishWebProjects: false
     command: 'build'
     projects: '$(projects)'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration)'
+    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --self-contained'
 
 # - task: DotNetCoreCLI@2
 #   displayName: 'Run Unit Tests'
@@ -60,11 +61,13 @@ steps:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
   
 - task: DotNetCoreCLI@2
+  displayName: 'Publish Build'
   inputs:
     command: 'publish'
+    configuration: '$(buildConfiguration)'
     publishWebProjects: false
     projects: '$(projects)'
-    arguments: '--configuration $(buildConfiguration) --runtime $(buildRuntime) --output $(buildOutputDirectory)'
+    arguments: '--runtime $(buildRuntime) --output $(buildOutputDirectory) --self-contained'
     zipAfterPublish: false
     modifyOutputPath: false
 
