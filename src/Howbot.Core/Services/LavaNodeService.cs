@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Howbot.Core.Interfaces;
-using JetBrains.Annotations;
 using Lavalink4NET;
 using Lavalink4NET.Clients.Events;
 using Lavalink4NET.Events;
@@ -10,25 +9,19 @@ using Lavalink4NET.Protocol.Payloads.Events;
 
 namespace Howbot.Core.Services;
 
-public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, IAsyncDisposable
+public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger)
+  : ServiceBase<LavaNodeService>(logger), ILavaNodeService, IAsyncDisposable
 {
-  private readonly IAudioService _audioService;
-
-  public LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger) : base(logger)
-  {
-    _audioService = audioService;
-  }
-
   public async ValueTask DisposeAsync()
   {
-    await _audioService.DisposeAsync();
+    await audioService.DisposeAsync().ConfigureAwait(false);
 
-    _audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
-    _audioService.TrackEnded -= AudioServiceOnTrackEnded;
-    _audioService.TrackException -= AudioServiceOnTrackException;
-    _audioService.TrackStarted -= AudioServiceOnTrackStarted;
-    _audioService.TrackStuck -= AudioServiceOnTrackStuck;
-    _audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
+    audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
+    audioService.TrackEnded -= AudioServiceOnTrackEnded;
+    audioService.TrackException -= AudioServiceOnTrackException;
+    audioService.TrackStarted -= AudioServiceOnTrackStarted;
+    audioService.TrackStuck -= AudioServiceOnTrackStuck;
+    audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
 
     GC.SuppressFinalize(this);
   }
@@ -37,16 +30,16 @@ public class LavaNodeService : ServiceBase<LavaNodeService>, ILavaNodeService, I
   {
     Logger.LogDebug("{ServiceName} is initializing..", nameof(LavaNodeService));
 
-    _audioService.StatisticsUpdated += AudioServiceOnStatisticsUpdated;
-    _audioService.TrackEnded += AudioServiceOnTrackEnded;
-    _audioService.TrackException += AudioServiceOnTrackException;
-    _audioService.TrackStarted += AudioServiceOnTrackStarted;
-    _audioService.TrackStuck += AudioServiceOnTrackStuck;
-    _audioService.WebSocketClosed += AudioServiceOnWebSocketClosed;
+    audioService.StatisticsUpdated += AudioServiceOnStatisticsUpdated;
+    audioService.TrackEnded += AudioServiceOnTrackEnded;
+    audioService.TrackException += AudioServiceOnTrackException;
+    audioService.TrackStarted += AudioServiceOnTrackStarted;
+    audioService.TrackStuck += AudioServiceOnTrackStuck;
+    audioService.WebSocketClosed += AudioServiceOnWebSocketClosed;
 
     // Discord Client Wrapper (Lavalink4Net) Events
-    _audioService.DiscordClient.VoiceServerUpdated += DiscordClientOnVoiceServerUpdated;
-    _audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
+    audioService.DiscordClient.VoiceServerUpdated += DiscordClientOnVoiceServerUpdated;
+    audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
   }
 
   private Task DiscordClientOnVoiceStateUpdated(object sender, VoiceStateUpdatedEventArgs eventargs)

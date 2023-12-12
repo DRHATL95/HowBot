@@ -9,15 +9,9 @@ namespace Howbot.Core.Services;
 ///   singletons
 /// </summary>
 /// <see cref="https://stackoverflow.com/a/53509491/54288" />
-public sealed class ServiceScopeFactoryLocator : IServiceLocator
+public sealed class ServiceScopeFactoryLocator(IServiceScopeFactory factory) : IServiceLocator
 {
-  private readonly IServiceScopeFactory _factory;
   private IServiceScope _scope;
-
-  public ServiceScopeFactoryLocator(IServiceScopeFactory factory)
-  {
-    _factory = factory;
-  }
 
   public T Get<T>()
   {
@@ -28,7 +22,7 @@ public sealed class ServiceScopeFactoryLocator : IServiceLocator
 
   public IServiceScope CreateScope()
   {
-    return _scope ??= _factory.CreateScope();
+    return _scope ??= factory.CreateScope();
   }
 
   public void Dispose()

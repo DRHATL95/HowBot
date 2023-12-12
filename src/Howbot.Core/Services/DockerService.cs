@@ -2,13 +2,9 @@
 
 namespace Howbot.Core.Services;
 
-public class DockerService : ServiceBase<DockerService>, IDockerService
+public class DockerService(ILoggerAdapter<DockerService> logger) : ServiceBase<DockerService>(logger), IDockerService
 {
-  public DockerService(ILoggerAdapter<DockerService> logger) : base(logger)
-  {
-  }
-
-//  private readonly IServiceLocator _serviceLocator;
+  //  private readonly IServiceLocator _serviceLocator;
 
 //  public DockerService(IServiceLocator serviceLocator)
 //  {

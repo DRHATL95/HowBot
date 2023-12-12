@@ -6,23 +6,23 @@ trigger:
 - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-22.04'
 
 variables:
   solution: '**/*.sln'
   projects: '**/*.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
-  buildOutputDirectory: '$(Build.ArtifactStagingDirectory)/publish'
+  buildOutputDirectory: '$(Build.ArtifactStagingDirectory)'
   buildRuntime: 'linux-x64'
 
 steps:
 
 - task: UseDotNet@2
-  displayName: 'Install .NET 7'
+  displayName: 'Install .NET 8'
   inputs:
     packageType: sdk
-    version: '7.x'
+    version: '8.x'
 
 - task: NuGetToolInstaller@1
   displayName: 'Install NuGet'
@@ -40,12 +40,13 @@ steps:
     noCache: true
 
 - task: DotNetCoreCLI@2
-  displayName: 'Build Projects to Output'
+  displayName: 'Build Projects'
   inputs:
-    configuration: '$(buildConfiguration)'
+    configuration: $(buildConfiguration)
+    publishWebProjects: false
     command: 'build'
     projects: '$(projects)'
-    arguments: '--output $(buildOutputDirectory) --runtime $(buildRuntime) --configuration $(buildConfiguration) --no-self-contained'
+    arguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration) --self-contained true'
 
 # - task: DotNetCoreCLI@2
 #   displayName: 'Run Unit Tests'
@@ -53,11 +54,18 @@ steps:
 #     command: 'test'
 #     projects: '$(System.DefaultWorkingDirectory)/tests/**/*.csproj'
 #     arguments: '--configuration $(buildConfiguration)'
-
-- task: CopyFiles@2
-  displayName: "Copy Build Files"
+  
+- task: DotNetCoreCLI@2
+  displayName: 'Publish Build'
   inputs:
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    command: 'publish'
+    configuration: '$(buildConfiguration)'
+    publishWebProjects: false
+    projects: '$(projects)'
+    arguments: '--configuration $(buildConfiguration) --runtime $(buildRuntime) --output $(buildOutputDirectory)/publish --self-contained true'
+    zipAfterPublish: false
+    modifyOutputPath: false
+
   
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts'

@@ -11,8 +11,6 @@ using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Modules;
 using Howbot.Core.Settings;
-using JetBrains.Annotations;
-using Lavalink4NET;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
@@ -21,27 +19,14 @@ using static Howbot.Core.Models.Messages.Errors;
 
 namespace Howbot.Core.Services;
 
-public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordClientService, IDisposable
+public class DiscordClientService(
+  DiscordSocketClient discordSocketClient,
+  IServiceProvider serviceProvider,
+  InteractionService interactionService,
+  ILoggerAdapter<DiscordClientService> logger)
+  : ServiceBase<DiscordClientService>(logger), IDiscordClientService, IDisposable
 {
-  private readonly IAudioService _audioService;
-  private readonly DiscordSocketClient _discordSocketClient;
-  private readonly InteractionService _interactionService;
-  private readonly IServiceProvider _serviceProvider;
-  private readonly IVoiceService _voiceService;
-
   private string _loggedInUsername = string.Empty;
-
-  public DiscordClientService(DiscordSocketClient discordSocketClient,
-    IServiceProvider serviceProvider, InteractionService interactionService,
-    IVoiceService voiceService, IAudioService audioService,
-    ILoggerAdapter<DiscordClientService> logger) : base(logger)
-  {
-    _discordSocketClient = discordSocketClient;
-    _serviceProvider = serviceProvider;
-    _interactionService = interactionService;
-    _voiceService = voiceService;
-    _audioService = audioService;
-  }
 
   private string LoggedInUsername
   {
@@ -62,18 +47,18 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       Logger.LogDebug("{ServiceName} is initializing...", nameof(DiscordClientService));
     }
 
-    _discordSocketClient.Log += DiscordSocketClientOnLog;
-    _discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
-    _discordSocketClient.JoinedGuild += DiscordSocketClientOnJoinedGuild;
-    _discordSocketClient.LoggedIn += DiscordSocketClientOnLoggedIn;
-    _discordSocketClient.LoggedOut += DiscordSocketClientOnLoggedOut;
-    _discordSocketClient.Ready += DiscordSocketClientOnReady;
-    _discordSocketClient.Connected += DiscordSocketClientOnConnected;
-    _discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
-    _discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
-    _discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
-    _discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
-    _discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
+    discordSocketClient.Log += DiscordSocketClientOnLog;
+    discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
+    discordSocketClient.JoinedGuild += DiscordSocketClientOnJoinedGuild;
+    discordSocketClient.LoggedIn += DiscordSocketClientOnLoggedIn;
+    discordSocketClient.LoggedOut += DiscordSocketClientOnLoggedOut;
+    discordSocketClient.Ready += DiscordSocketClientOnReady;
+    discordSocketClient.Connected += DiscordSocketClientOnConnected;
+    discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
+    discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
+    discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
+    discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
+    discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
   }
 
   public async ValueTask<bool> LoginDiscordBotAsync(string discordToken)
@@ -82,7 +67,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
     try
     {
-      await _discordSocketClient.LoginAsync(TokenType.Bot, discordToken).ConfigureAwait(false);
+      await discordSocketClient.LoginAsync(TokenType.Bot, discordToken).ConfigureAwait(false);
 
       return true;
     }
@@ -99,12 +84,12 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     try
     {
       // Will signal ready state. Must be called only when bot has finished logging in.
-      await _discordSocketClient.StartAsync().ConfigureAwait(false);
+      await discordSocketClient.StartAsync().ConfigureAwait(false);
 
       // Only in debug, set bots online presence to offline
       if (Configuration.IsDebug())
       {
-        await _discordSocketClient.SetStatusAsync(UserStatus.Invisible).ConfigureAwait(false);
+        await discordSocketClient.SetStatusAsync(UserStatus.Invisible).ConfigureAwait(false);
       }
 
       // Add modules dynamically to discord bot
@@ -122,27 +107,31 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   public void Dispose()
   {
-    _discordSocketClient.Log -= DiscordSocketClientOnLog;
-    _discordSocketClient.UserJoined -= DiscordSocketClientOnUserJoined;
-    _discordSocketClient.JoinedGuild -= DiscordSocketClientOnJoinedGuild;
-    _discordSocketClient.LoggedIn -= DiscordSocketClientOnLoggedIn;
-    _discordSocketClient.LoggedOut -= DiscordSocketClientOnLoggedOut;
-    _discordSocketClient.Ready -= DiscordSocketClientOnReady;
-    _discordSocketClient.Connected -= DiscordSocketClientOnConnected;
-    _discordSocketClient.Disconnected -= DiscordSocketClientOnDisconnected;
-    _discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted;
-    _discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
-    _discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
-    _discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
+    discordSocketClient.Log -= DiscordSocketClientOnLog;
+    discordSocketClient.UserJoined -= DiscordSocketClientOnUserJoined;
+    discordSocketClient.JoinedGuild -= DiscordSocketClientOnJoinedGuild;
+    discordSocketClient.LoggedIn -= DiscordSocketClientOnLoggedIn;
+    discordSocketClient.LoggedOut -= DiscordSocketClientOnLoggedOut;
+    discordSocketClient.Ready -= DiscordSocketClientOnReady;
+    discordSocketClient.Connected -= DiscordSocketClientOnConnected;
+    discordSocketClient.Disconnected -= DiscordSocketClientOnDisconnected;
+    discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted;
+    discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
+    discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
+    discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
+
+    GC.SuppressFinalize(this);
   }
 
   private async Task AddModulesToDiscordBotAsync()
   {
     try
     {
-      await _interactionService.AddModuleAsync(typeof(MusicModule), _serviceProvider).ConfigureAwait(false);
-      await _interactionService.AddModuleAsync(typeof(AdminModule), _serviceProvider).ConfigureAwait(false);
-      await _interactionService.AddModuleAsync(typeof(GeneralModule), _serviceProvider).ConfigureAwait(false);
+      await interactionService.AddModuleAsync(typeof(MusicModule), serviceProvider).ConfigureAwait(false);
+      await interactionService.AddModuleAsync(typeof(AdminModule), serviceProvider).ConfigureAwait(false);
+      await interactionService.AddModuleAsync(typeof(GeneralModule), serviceProvider).ConfigureAwait(false);
+      await interactionService.AddModuleAsync(typeof(GameModule), serviceProvider).ConfigureAwait(false);
+      await interactionService.AddModuleAsync(typeof(VideoModule), serviceProvider).ConfigureAwait(false);
     }
     catch (FileNotFoundException exception)
     {
@@ -188,7 +177,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   private Task DiscordSocketClientOnSlashCommandExecuted(SocketSlashCommand arg)
   {
-    var guild = _discordSocketClient.Guilds.FirstOrDefault(x => x.Id == arg.GuildId);
+    var guild = discordSocketClient.Guilds.FirstOrDefault(x => x.Id == arg.GuildId);
     if (guild == null)
     {
       Logger.LogError(new Exception(), "Unable to look-up guild for event [{EventName}]",
@@ -210,7 +199,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
   private Task DiscordSocketClientOnConnected()
   {
-    LoggedInUsername = _discordSocketClient.CurrentUser.Username;
+    LoggedInUsername = discordSocketClient.CurrentUser.Username;
 
     Logger.LogDebug(DiscordSocketClientConnected, LoggedInUsername);
 
@@ -223,7 +212,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
 
     await Task.Run(async () =>
     {
-      await _discordSocketClient.Rest.DeleteAllGlobalCommandsAsync().ConfigureAwait(false);
+      await discordSocketClient.Rest.DeleteAllGlobalCommandsAsync().ConfigureAwait(false);
     });
 
     try
@@ -231,12 +220,12 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
       if (Configuration.IsDebug())
       {
         Logger.LogDebug("Registering commands to DEV Guild.");
-        await _interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
+        await interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
       }
       else
       {
         Logger.LogDebug("Registering commands globally.");
-        await _interactionService.RegisterCommandsGloballyAsync();
+        await interactionService.RegisterCommandsGloballyAsync();
       }
 
       Logger.LogDebug("Successfully registered commands to discord bot.");
@@ -274,7 +263,7 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
-    if (user.IsBot && user.Id == _discordSocketClient.CurrentUser.Id)
+    if (user.IsBot && user.Id == discordSocketClient.CurrentUser.Id)
     {
       return Task.CompletedTask;
     }
@@ -295,8 +284,8 @@ public class DiscordClientService : ServiceBase<DiscordClientService>, IDiscordC
   {
     try
     {
-      var context = new SocketInteractionContext(_discordSocketClient, socketInteraction);
-      var result = await _interactionService.ExecuteCommandAsync(context, _serviceProvider);
+      var context = new SocketInteractionContext(discordSocketClient, socketInteraction);
+      var result = await interactionService.ExecuteCommandAsync(context, serviceProvider);
 
       if (!result.IsSuccess)
       {

@@ -2,24 +2,17 @@
 using Ardalis.GuardClauses;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 
 namespace Howbot.Core.Services;
 
-public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
+public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseService> logger)
+  : ServiceBase<DatabaseService>(logger), IDatabaseService
 {
-  private readonly IRepository _repository;
-
-  public DatabaseService(IRepository repository, ILoggerAdapter<DatabaseService> logger) : base(logger)
-  {
-    _repository = repository;
-  }
-
   public override void Initialize()
   {
     // TODO: Check EF Core if database has been created
-    Logger.LogDebug("Initializing {ServiceName}...", nameof(DatabaseService));
+    Logger.LogDebug("{ServiceName} is initializing...", nameof(DatabaseService));
   }
 
   public ulong AddNewGuild(ulong guildId, string prefix, float musicPlayerVolume = 100.0f)
@@ -33,7 +26,7 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 
     try
     {
-      var entity = _repository.Add(guildEntity);
+      var entity = repository.Add(guildEntity);
 
       return entity.Id;
     }
@@ -55,7 +48,7 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 
     try
     {
-      return _repository.GetById<Guild>(guildId);
+      return repository.GetById<Guild>(guildId);
     }
     catch (Exception e)
     {
@@ -70,7 +63,7 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 
     try
     {
-      var guildEntity = _repository.GetById<Guild>(guildId);
+      var guildEntity = repository.GetById<Guild>(guildId);
       if (guildEntity is not null)
       {
         return guildEntity.MusicVolumeLevel;
@@ -93,7 +86,7 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 
     try
     {
-      var guildEntity = _repository.GetById<Guild>(playerGuildId);
+      var guildEntity = repository.GetById<Guild>(playerGuildId);
 
       if (guildEntity == null)
       {
@@ -103,7 +96,7 @@ public class DatabaseService : ServiceBase<DatabaseService>, IDatabaseService
 
       guildEntity.MusicVolumeLevel = (int)Math.Round(newVolume);
 
-      _repository.Update(guildEntity);
+      repository.Update(guildEntity);
 
       return newVolume;
     }

@@ -1,24 +1,28 @@
 ﻿using System;
 using System.Linq;
+using Ardalis.GuardClauses;
 using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using JetBrains.Annotations;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Services;
 
-public class EmbedService : ServiceBase<EmbedService>, IEmbedService
+/// <summary>
+///   Service class for creating and generating embeds.
+/// </summary>
+public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<EmbedService>(logger), IEmbedService
 {
-  public EmbedService(ILoggerAdapter<EmbedService> logger) : base(logger)
-  {
-  }
-
+  /// <summary>
+  ///   Creates an embed using the provided embed options.
+  /// </summary>
+  /// <param name="options">The options used to configure the embed.</param>
+  /// <returns>The created embed.</returns>
   public IEmbed CreateEmbed(EmbedOptions options)
   {
-    ArgumentNullException.ThrowIfNull(options);
+    Guard.Against.Null(options, nameof(options));
 
     var embedBuilder = new EmbedBuilder { Color = options.Color };
 
@@ -57,6 +61,15 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     return embedBuilder.Build();
   }
 
+  /// <summary>
+  ///   Generates an embed for the currently playing music.
+  /// </summary>
+  /// <param name="track">The currently playing track.</param>
+  /// <param name="user">The user playing the track.</param>
+  /// <param name="textChannel">The text channel where the track is being played.</param>
+  /// <param name="position">The current position of the track.</param>
+  /// <param name="volume">The volume of the track.</param>
+  /// <returns>The generated embed for displaying the now playing music.</returns>
   public IEmbed GenerateMusicNowPlayingEmbed(LavalinkTrack track, IGuildUser user,
     ITextChannel textChannel, TimeSpan? position, float volume)
   {
@@ -66,6 +79,7 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
 
     EmbedOptions defaultEmbedOptions = new EmbedOptions { Title = "Your song is now playing." };
 
+    // TODO: Replace with image downloaded within project.
     Uri trackArtworkUri = track.ArtworkUri ?? new Uri("https://i.imgur.com/Lf76JRO.png");
 
     try
@@ -110,6 +124,11 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     }
   }
 
+  /// <summary>
+  ///   Generates an embed for the next track in the given track queue.
+  /// </summary>
+  /// <param name="queue">The track queue to generate the embed for.</param>
+  /// <returns>An embed representing the next track in the queue.</returns>
   public IEmbed GenerateMusicNextTrackEmbed(ITrackQueue queue)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
@@ -141,6 +160,11 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     return embed;
   }
 
+  /// <summary>
+  ///   Generates an embed to display the current music queue.
+  /// </summary>
+  /// <param name="queue">The music queue to generate the embed for.</param>
+  /// <returns>An embed containing the current music queue information.</returns>
   public IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
@@ -163,6 +187,11 @@ public class EmbedService : ServiceBase<EmbedService>, IEmbedService
     return embed;
   }
 
+  /// <summary>
+  ///   Generates an EmbedFooterBuilder object from a Discord user.
+  /// </summary>
+  /// <param name="user">The Discord user.</param>
+  /// <returns>An EmbedFooterBuilder object.</returns>
   private EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser(IUser user)
   {
     try

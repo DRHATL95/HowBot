@@ -10,7 +10,6 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Players;
-using JetBrains.Annotations;
 using Lavalink4NET;
 using Lavalink4NET.Clients;
 using Lavalink4NET.Integrations.Lavasearch;
@@ -26,20 +25,24 @@ using Serilog;
 
 namespace Howbot.Core.Services;
 
-public class MusicService : ServiceBase<MusicService>, IMusicService
+public class MusicService(
+  IEmbedService embedService,
+  IAudioService audioService,
+  IServiceProvider serviceProvider,
+  ILoggerAdapter<MusicService> logger)
+  : ServiceBase<MusicService>(logger), IMusicService
 {
-  private readonly IAudioService _audioService;
-  private readonly IEmbedService _embedService;
-  private readonly IServiceProvider _serviceProvider;
-
-  public MusicService(IEmbedService embedService, IAudioService audioService,
-    IServiceProvider serviceProvider, ILoggerAdapter<MusicService> logger) : base(logger)
-  {
-    _embedService = embedService;
-    _audioService = audioService;
-    _serviceProvider = serviceProvider;
-  }
-
+  /// <summary>
+  ///   Retrieves or creates a player for the given socket interaction context.
+  /// </summary>
+  /// <param name="context">The socket interaction context.</param>
+  /// <param name="allowConnect">Indicates whether the player can join the voice channel if necessary. Default is false.</param>
+  /// <param name="requireChannel">Indicates whether the player requires a voice channel. Default is true.</param>
+  /// <param name="preconditions">The preconditions for the player. Default is empty.</param>
+  /// <param name="isDeferred">Indicates whether the player is deferred. Default is false.</param>
+  /// <param name="initialVolume">The initial volume of the player. Default is 100.</param>
+  /// <param name="cancellationToken">The cancellation token. Default is empty.</param>
+  /// <returns>The retrieved or created HowbotPlayer instance, or null if an error occurs.</returns>
   public async ValueTask<HowbotPlayer> GetPlayerByContextAsync(SocketInteractionContext context,
     bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default,
     bool isDeferred = false, int initialVolume = 100,
@@ -69,7 +72,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
     int persistedVolume;
 
-    using (var scope = _serviceProvider.CreateScope())
+    using (var scope = serviceProvider.CreateScope())
     {
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
@@ -85,7 +88,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       InitialVolume = persistedVolume > 0 ? persistedVolume / 100f : initialVolume / 100f
     };
 
-    var result = await _audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
+    var result = await audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
         CreatePlayerAsync,
         retrieveOptions: retrieveOptions, options: new OptionsWrapper<HowbotPlayerOptions>(playerOptions),
         cancellationToken: cancellationToken)
@@ -118,11 +121,27 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     return result.Player;
   }
 
+  /// <summary>
+  ///   TODO:
+  /// </summary>
+  /// <param name="videoId"></param>
+  /// <param name="count"></param>
+  /// <returns></returns>
+  /// <exception cref="NotImplementedException"></exception>
   public ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
   {
     throw new NotImplementedException();
   }
 
+  /// <summary>
+  ///   Creates a new player asynchronously.
+  /// </summary>
+  /// <param name="properties">The properties of the player to be created.</param>
+  /// <param name="cancellationToken">The cancellation token.</param>
+  /// <returns>
+  ///   A <see cref="ValueTask{TResult}" /> representing the asynchronous operation. The result of the task will be
+  ///   the created <see cref="HowbotPlayer" /> instance.
+  /// </returns>
   private static ValueTask<HowbotPlayer> CreatePlayerAsync(
     IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties,
     CancellationToken cancellationToken = default)
@@ -136,9 +155,18 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     return ValueTask.FromResult(new HowbotPlayer(properties));
   }
 
-
   #region Music Module Commands
 
+  /// <summary>
+  ///   Plays a track by search type asynchronously.
+  /// </summary>
+  /// <param name="player">The HowbotPlayer instance.</param>
+  /// <param name="searchProviderType">The search provider type.</param>
+  /// <param name="searchRequest">The search request.</param>
+  /// <param name="user">The IGuildUser to play the track for.</param>
+  /// <param name="voiceState">The IVoiceState of the user.</param>
+  /// <param name="textChannel">The ITextChannel where the command is executed.</param>
+  /// <returns>A ValueTask of type CommandResponse.</returns>
   public async ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player,
     SearchProviderTypes searchProviderType, string searchRequest, IGuildUser user,
     IVoiceState voiceState, ITextChannel textChannel)
@@ -153,15 +181,15 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
       // LavaSearch categories to be returned (Tracks, Albums, Artists, etc.)
       var categories = ImmutableArray.Create(SearchCategory.Track);
 
-      var searchResult = await _audioService.Tracks
+      var searchResult = await audioService.Tracks
         .SearchAsync(searchRequest, loadOptions: trackOptions, categories: categories)
         .ConfigureAwait(false);
 
       LavalinkTrack track;
       if (searchResult is null || searchResult.Tracks.IsDefaultOrEmpty)
       {
-        // Attempts to use native lavalink native search when lavasearch plugin isn't working or doesn't return results for categories specified
-        track = await _audioService.Tracks
+        // Attempts to use native lavalink native search when lava search plugin isn't working or doesn't return results for categories specified
+        track = await audioService.Tracks
           .LoadTrackAsync(searchRequest, trackOptions)
           .ConfigureAwait(false);
       }
@@ -184,6 +212,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
 
     return CommandResponse.CommandNotSuccessful(Messages.Responses.CommandPlayNotSuccessfulResponse);
   }
+
 
   public async ValueTask<CommandResponse> PauseTrackAsync(HowbotPlayer player)
   {
@@ -265,7 +294,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
     {
       await player.SetVolumeAsync(newVolume / 100f).ConfigureAwait(false);
 
-      using var scope = _serviceProvider.CreateScope();
+      using var scope = serviceProvider.CreateScope();
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
 
       // Entry already exists in db
@@ -298,7 +327,7 @@ public class MusicService : ServiceBase<MusicService>, IMusicService
         return CommandResponse.CommandNotSuccessful("No track is currently playing.");
       }
 
-      var embed = _embedService.GenerateMusicNowPlayingEmbed(player.CurrentTrack, user, textChannel,
+      var embed = embedService.GenerateMusicNowPlayingEmbed(player.CurrentTrack, user, textChannel,
         player.Position?.Position, player.Volume);
 
       return CommandResponse.CommandSuccessful(embed);

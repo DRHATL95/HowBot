@@ -16,19 +16,9 @@ using static Howbot.Core.Models.Permissions.User;
 
 namespace Howbot.Core.Modules;
 
-public class MusicModule : InteractionModuleBase<SocketInteractionContext>
+public class MusicModule(IMusicService musicService, ILyricsService lyricsService, ILoggerAdapter<MusicModule> logger)
+  : InteractionModuleBase<SocketInteractionContext>
 {
-  private readonly ILoggerAdapter<MusicModule> _logger;
-  private readonly ILyricsService _lyricsService;
-  private readonly IMusicService _musicService;
-
-  public MusicModule(IMusicService musicService, ILyricsService lyricsService, ILoggerAdapter<MusicModule> logger)
-  {
-    _musicService = musicService;
-    _lyricsService = lyricsService;
-    _logger = logger;
-  }
-
   [SlashCommand(PlayCommandName, PlayCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
@@ -52,7 +42,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       }
 
       var player =
-        await _musicService.GetPlayerByContextAsync(Context, true).ConfigureAwait(false);
+        await musicService.GetPlayerByContextAsync(Context, true).ConfigureAwait(false);
 
       if (player is not null)
       {
@@ -61,7 +51,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
         var channel = (Context.Channel as ITextChannel) ?? throw new ArgumentNullException(nameof(Context.Channel));
 
         var response =
-          await _musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
+          await musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
             channel).ConfigureAwait(false);
 
         if (!response.IsSuccessful)
@@ -84,7 +74,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(PlayCommandAsync));
+      logger.LogError(exception, nameof(PlayCommandAsync));
       throw;
     }
   }
@@ -101,12 +91,12 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       await DeferAsync();
 
       var player =
-        await _musicService.GetPlayerByContextAsync(Context,
+        await musicService.GetPlayerByContextAsync(Context,
           preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused)).ConfigureAwait(false);
 
       if (player is not null)
       {
-        var response = await _musicService.PauseTrackAsync(player);
+        var response = await musicService.PauseTrackAsync(player);
 
         if (!response.IsSuccessful)
         {
@@ -124,7 +114,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(PauseCommandAsync));
+      logger.LogError(exception, nameof(PauseCommandAsync));
       throw;
     }
   }
@@ -140,13 +130,13 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await _musicService
+      var player = await musicService
         .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Paused))
         .ConfigureAwait(false);
 
       if (player is not null)
       {
-        var commandResponse = await _musicService.ResumeTrackAsync(player);
+        var commandResponse = await musicService.ResumeTrackAsync(player);
 
         if (!commandResponse.IsSuccessful)
         {
@@ -164,7 +154,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(ResumeCommandAsync));
+      logger.LogError(exception, nameof(ResumeCommandAsync));
       throw;
     }
   }
@@ -186,12 +176,12 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
         throw new ArgumentNullException(nameof(timeToSeek));
       }
 
-      var player = await _musicService.GetPlayerByContextAsync(Context).ConfigureAwait(false);
+      var player = await musicService.GetPlayerByContextAsync(Context).ConfigureAwait(false);
 
       TimeSpan timeSpan =
         (timeToSeek == default) ? ModuleHelper.ConvertToTimeSpan(hours, minutes, seconds) : timeToSeek;
 
-      var commandResponse = await _musicService.SeekTrackAsync(player, timeSpan);
+      var commandResponse = await musicService.SeekTrackAsync(player, timeSpan);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -209,7 +199,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(SeekCommandAsync));
+      logger.LogError(exception, nameof(SeekCommandAsync));
       throw;
     }
   }
@@ -225,9 +215,9 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await _musicService.GetPlayerByContextAsync(Context);
+      var player = await musicService.GetPlayerByContextAsync(Context);
 
-      var commandResponse = await _musicService.SkipTrackAsync(player, tracksToSkip);
+      var commandResponse = await musicService.SkipTrackAsync(player, tracksToSkip);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -244,7 +234,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(SkipCommandAsync));
+      logger.LogError(exception, nameof(SkipCommandAsync));
       throw;
     }
   }
@@ -260,9 +250,9 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await _musicService.GetPlayerByContextAsync(Context).ConfigureAwait(false);
+      var player = await musicService.GetPlayerByContextAsync(Context).ConfigureAwait(false);
 
-      var commandResponse = await _musicService.ChangeVolumeAsync(player, newVolume);
+      var commandResponse = await musicService.ChangeVolumeAsync(player, newVolume);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -279,7 +269,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(VolumeCommandAsync));
+      logger.LogError(exception, nameof(VolumeCommandAsync));
       throw;
     }
   }
@@ -296,14 +286,14 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await _musicService
+      var player = await musicService
         .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Playing))
         .ConfigureAwait(false);
 
       if (Context.User is not IGuildUser guildUser || Context.Channel is not ITextChannel textChannel) return;
 
       var commandResponse =
-        _musicService.NowPlaying(player, guildUser, textChannel);
+        musicService.NowPlaying(player, guildUser, textChannel);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -329,7 +319,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(NowPlayingCommandAsync));
+      logger.LogError(exception, nameof(NowPlayingCommandAsync));
       throw;
     }
   }
@@ -344,14 +334,14 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   {
     try
     {
-      _logger.LogDebug(Messages.Debug.PlayingRadio);
+      logger.LogDebug(Messages.Debug.PlayingRadio);
       await RespondAsync("This command is not quite ready yet. Check back later.");
 
       // await RespondAsync(Messages.Responses.PlayingRadio);
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(RadioCommandAsync));
+      logger.LogError(exception, nameof(RadioCommandAsync));
       throw;
     }
   }
@@ -367,11 +357,11 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     {
       await DeferAsync();
 
-      var player = await _musicService
+      var player = await musicService
         .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.QueueNotEmpty))
         .ConfigureAwait(false);
 
-      CommandResponse commandResponse = _musicService.ToggleShuffle(player);
+      CommandResponse commandResponse = musicService.ToggleShuffle(player);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -388,7 +378,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(ShuffleCommandAsync));
+      logger.LogError(exception, nameof(ShuffleCommandAsync));
       throw;
     }
   }
@@ -400,7 +390,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
   {
     await DeferAsync().ConfigureAwait(false);
 
-    var player = await _musicService.GetPlayerByContextAsync(Context,
+    var player = await musicService.GetPlayerByContextAsync(Context,
       preconditions: ImmutableArray.Create(PlayerPrecondition.Playing)).ConfigureAwait(false);
 
     if (player is null)
@@ -416,7 +406,7 @@ public class MusicModule : InteractionModuleBase<SocketInteractionContext>
       return;
     }
 
-    var lyrics = await _lyricsService.GetLyricsAsync(track.Title, track.Author).ConfigureAwait(false);
+    var lyrics = await lyricsService.GetLyricsAsync(track.Title, track.Author).ConfigureAwait(false);
 
     if (lyrics is null)
     {

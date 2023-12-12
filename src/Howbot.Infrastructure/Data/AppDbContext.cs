@@ -4,13 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Howbot.Infrastructure.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-  public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-  {
-  }
-
-  public virtual DbSet<Guild> Guilds { get; set; }
+  public virtual DbSet<Guild> Guilds { get; init; }
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

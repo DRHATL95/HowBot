@@ -9,15 +9,8 @@ using Howbot.Core.Models;
 
 namespace Howbot.Core.Modules;
 
-public class AdminModule : InteractionModuleBase<SocketInteractionContext>
+public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModuleBase<SocketInteractionContext>
 {
-  private readonly ILoggerAdapter<AdminModule> _logger;
-
-  public AdminModule(ILoggerAdapter<AdminModule> logger)
-  {
-    _logger = logger;
-  }
-
   [SlashCommand(Constants.Commands.PurgeCommandName, Constants.Commands.PurgeCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildPermission.Administrator | GuildPermission.ManageMessages | GuildPermission.ViewChannel)]
@@ -70,7 +63,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception thrown in Module [{ModuleName}] Command [{CommandName}]",
+      logger.LogError(exception, "Exception thrown in Module [{ModuleName}] Command [{CommandName}]",
         nameof(AdminModule), nameof(PurgeCommandAsync));
       throw;
     }
@@ -100,7 +93,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception thrown in Module [{ModuleName}] Command [{CommandName}]",
+      logger.LogError(exception, "Exception thrown in Module [{ModuleName}] Command [{CommandName}]",
         nameof(AdminModule), nameof(BanUserCommandAsync));
       await FollowupAsync("Failed to permanently ban user.").ConfigureAwait(false);
       throw;
@@ -127,7 +120,7 @@ public class AdminModule : InteractionModuleBase<SocketInteractionContext>
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "Exception thrown in Module [{ModuleName}] Command [{CommandName}]",
+      logger.LogError(exception, "Exception thrown in Module [{ModuleName}] Command [{CommandName}]",
         nameof(AdminModule), nameof(UnBanUserCommandAsync));
       await FollowupAsync("Failed to unban user.").ConfigureAwait(false);
       throw;

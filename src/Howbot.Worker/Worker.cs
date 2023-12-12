@@ -7,26 +7,21 @@ using Howbot.Core.Models.Exceptions;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Serilog;
 
 namespace Howbot.Worker;
 
-public class Worker : BackgroundService
+public class Worker(
+  IDiscordClientService discordClientService,
+  IServiceProvider serviceProvider,
+  DiscordSocketClient discordSocketClient,
+  ILoggerAdapter<Worker> logger)
+  : BackgroundService
 {
-  private readonly IDiscordClientService _discordClientService;
-  private readonly DiscordSocketClient _discordSocketClient;
-  private readonly ILoggerAdapter<Worker> _logger;
-  private readonly IServiceProvider _serviceProvider;
-
-  public Worker(IDiscordClientService discordClientService, IServiceProvider serviceProvider,
-    DiscordSocketClient discordSocketClient, ILoggerAdapter<Worker> logger)
-  {
-    _discordClientService = discordClientService;
-    _serviceProvider = serviceProvider;
-    _discordSocketClient = discordSocketClient;
-    _logger = logger;
-  }
-
+  /// <summary>
+  ///   Executes the worker service asynchronously.
+  /// </summary>
+  /// <param name="cancellationToken">The cancellation token to stop the execution of the worker service.</param>
+  /// <exception cref="DiscordLoginException">Thrown if there is an error while logging into Discord.</exception>
   protected override async Task ExecuteAsync(CancellationToken cancellationToken)
   {
     try
@@ -35,9 +30,9 @@ public class Worker : BackgroundService
 
       InitializeHowbotServices(cancellationToken);
 
-      if (!await _discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken).ConfigureAwait(false))
+      if (!await discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken).ConfigureAwait(false))
       {
-        _logger.LogCritical("Unable to login to discord API with token.");
+        logger.LogError("Unable to login to discord API with token.");
 
         // Stop worker, cannot continue without being authenticated
         await StopAsync(cancellationToken).ConfigureAwait(false);
@@ -45,54 +40,61 @@ public class Worker : BackgroundService
         throw new DiscordLoginException("Unable to login to discord API with token.");
       }
 
-      await _discordClientService.StartDiscordBotAsync().ConfigureAwait(false);
+      await discordClientService.StartDiscordBotAsync().ConfigureAwait(false);
 
       // Run worker service indefinitely until cancellationToken is created or process is manually stopped.
       await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
     }
     catch (DiscordLoginException loginException)
     {
-      _logger.LogError(loginException, "An exception has been thrown logging into Discord.", Array.Empty<object>());
+      logger.LogError(loginException, "An exception has been thrown logging into Discord.");
       throw;
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, "An exception has been thrown in the main worker", Array.Empty<object>());
+      logger.LogError(exception, "An exception has been thrown in the main worker");
       throw;
     }
   }
 
+  /// <summary>
+  ///   Stops the asynchronous operation by stopping the Discord client and logs the event.
+  /// </summary>
+  /// <param name="cancellationToken">The cancellation token.</param>
+  /// <returns>A task representing the asynchronous operation.</returns>
   public override async Task StopAsync(CancellationToken cancellationToken)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
     await base.StopAsync(cancellationToken);
 
-    await _discordSocketClient.StopAsync().ConfigureAwait(false);
+    await discordSocketClient.StopAsync().ConfigureAwait(false);
 
-    Log.Logger.Fatal("Discord client has been stopped.");
+    logger.LogCritical("Discord client has been stopped");
   }
 
+  /// <summary>
+  ///   Initializes the Howbot services.
+  /// </summary>
+  /// <param name="cancellationToken">The cancellation token.</param>
   private void InitializeHowbotServices(CancellationToken cancellationToken = default)
   {
     try
     {
       cancellationToken.ThrowIfCancellationRequested();
 
-      _logger.LogDebug("Starting initialization of Howbot services..");
+      serviceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
+      serviceProvider.GetRequiredService<ILavaNodeService>()?.Initialize();
+      serviceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
+      serviceProvider.GetRequiredService<IEmbedService>()?.Initialize();
+      serviceProvider.GetRequiredService<IMusicService>()?.Initialize();
 
-      _serviceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
-      _serviceProvider.GetRequiredService<ILavaNodeService>()?.Initialize();
-      _serviceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
-      _serviceProvider.GetRequiredService<IEmbedService>()?.Initialize();
-      _serviceProvider.GetRequiredService<IMusicService>()?.Initialize();
-
-      using var scope = _serviceProvider.CreateScope();
+      using var scope = serviceProvider.CreateScope();
       scope.ServiceProvider.GetRequiredService<IDatabaseService>()?.Initialize();
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(InitializeHowbotServices));
+      logger.LogError(exception, nameof(InitializeHowbotServices));
       throw;
     }
   }

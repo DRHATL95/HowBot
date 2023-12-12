@@ -3,7 +3,6 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Services;
-using Lavalink4NET;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
@@ -11,7 +10,7 @@ namespace Howbot.UnitTests.Core.Services;
 
 public class DiscordClientServiceTest
 {
-  private static (IDiscordClientService, Mock<DiscordSocketClient>, Mock<IAudioService>,
+  private static (IDiscordClientService, Mock<DiscordSocketClient>,
     Mock<ILoggerAdapter<DiscordClientService>>,
     Mock<IServiceProvider>, Mock<InteractionService>) Factory()
   {
@@ -19,17 +18,15 @@ public class DiscordClientServiceTest
     var discordSocketClient = new Mock<DiscordSocketClient>();
     var serviceProvider = new Mock<IServiceProvider>();
     var logger = new Mock<ILoggerAdapter<DiscordClientService>>();
-    var audioService = new Mock<IAudioService>();
     // Services
     var interactionService = new Mock<InteractionService>();
-    var voiceService = new Mock<VoiceService>();
 
     _ = SetupCreateScope(serviceLocator);
 
     var discordClientService = new DiscordClientService(discordSocketClient.Object, serviceProvider.Object,
-      interactionService.Object, voiceService.Object, audioService.Object, logger.Object);
+      interactionService.Object, logger.Object);
 
-    return (discordClientService, discordSocketClient, audioService, logger, serviceProvider, interactionService);
+    return (discordClientService, discordSocketClient, logger, serviceProvider, interactionService);
   }
 
   private static Mock<DiscordSocketClient> SetupCreateScope(Mock<IServiceLocator> serviceLocator)
