@@ -4,7 +4,6 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Models;
-using JetBrains.Annotations;
 using Lavalink4NET;
 
 namespace Howbot.Core.Settings;
@@ -14,6 +13,7 @@ namespace Howbot.Core.Settings;
 /// </summary>
 public static class Configuration
 {
+  // The names of the environment variable
   private const string DiscordTokenDev = "DiscordTokenDev";
   private const string DiscordTokenProd = "DiscordTokenProd";
   private const string YouTube = "YoutubeToken";
@@ -22,18 +22,24 @@ public static class Configuration
   private const string LavalinkAddress = "DiscordLavalinkServerAddress";
   private const string WatchTogetherKey = "Watch2GetherKey";
 
+  /// <summary>
+  ///   The Discord token. Depending on the environment, this will be either the production or development token.
+  /// </summary>
   public static string DiscordToken => GetTokenByName(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
 
   public static string YouTubeToken => GetTokenByName(YouTube);
 
   public static string PostgresConnectionString => GetTokenByName(Postgres);
-  
+
   public static string WatchTogetherApiKey => GetTokenByName(WatchTogetherKey);
 
   private static string LavaNodePassword => GetTokenByName(Lavalink);
 
   private static string LavaNodeAddress => GetTokenByName(LavalinkAddress);
-  
+
+  /// <summary>
+  ///   Represents the gateway intents to subscribe to.
+  /// </summary>
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
 
   /// <summary>

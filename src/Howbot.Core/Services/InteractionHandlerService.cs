@@ -5,7 +5,6 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Services;
@@ -30,7 +29,7 @@ public class InteractionHandlerService(
 
   public override void Initialize()
   {
-    Logger.LogDebug("{ServiceName} is now initializing...", nameof(InteractionHandlerService));
+    Logger.LogDebug("{ServiceName} is initializing...", nameof(InteractionHandlerService));
 
     interactionService.Log += InteractionServiceOnLog;
     interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;

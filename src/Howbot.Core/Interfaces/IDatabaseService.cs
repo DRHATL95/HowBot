@@ -2,7 +2,9 @@
 
 namespace Howbot.Core.Interfaces;
 
-// Purpose: To provide a database service for the bot.
+/// <summary>
+///   Represents a database service for interacting with a database.
+/// </summary>
 public interface IDatabaseService
 {
   /// <summary>

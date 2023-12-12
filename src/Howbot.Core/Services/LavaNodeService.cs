@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Howbot.Core.Interfaces;
-using JetBrains.Annotations;
 using Lavalink4NET;
 using Lavalink4NET.Clients.Events;
 using Lavalink4NET.Events;
@@ -15,7 +14,7 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
 {
   public async ValueTask DisposeAsync()
   {
-    await audioService.DisposeAsync();
+    await audioService.DisposeAsync().ConfigureAwait(false);
 
     audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
     audioService.TrackEnded -= AudioServiceOnTrackEnded;

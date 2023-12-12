@@ -11,7 +11,6 @@ using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Modules;
 using Howbot.Core.Settings;
-using Lavalink4NET;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
@@ -24,14 +23,9 @@ public class DiscordClientService(
   DiscordSocketClient discordSocketClient,
   IServiceProvider serviceProvider,
   InteractionService interactionService,
-  IVoiceService voiceService,
-  IAudioService audioService,
   ILoggerAdapter<DiscordClientService> logger)
   : ServiceBase<DiscordClientService>(logger), IDiscordClientService, IDisposable
 {
-  private readonly IAudioService _audioService = audioService;
-  private readonly IVoiceService _voiceService = voiceService;
-
   private string _loggedInUsername = string.Empty;
 
   private string LoggedInUsername
@@ -125,6 +119,8 @@ public class DiscordClientService(
     discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
     discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
     discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
+
+    GC.SuppressFinalize(this);
   }
 
   private async Task AddModulesToDiscordBotAsync()

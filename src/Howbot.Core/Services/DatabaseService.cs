@@ -2,7 +2,6 @@
 using Ardalis.GuardClauses;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 
 namespace Howbot.Core.Services;
@@ -13,7 +12,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
   public override void Initialize()
   {
     // TODO: Check EF Core if database has been created
-    Logger.LogDebug("Initializing {ServiceName}...", nameof(DatabaseService));
+    Logger.LogDebug("{ServiceName} is initializing...", nameof(DatabaseService));
   }
 
   public ulong AddNewGuild(ulong guildId, string prefix, float musicPlayerVolume = 100.0f)
