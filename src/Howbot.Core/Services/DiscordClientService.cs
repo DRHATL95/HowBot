@@ -3,12 +3,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Exceptions;
 using Howbot.Core.Modules;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.Logging;
@@ -28,6 +30,7 @@ public class DiscordClientService(
 {
   private string _loggedInUsername = string.Empty;
 
+
   private string LoggedInUsername
   {
     get => string.IsNullOrEmpty(_loggedInUsername) ? Constants.BotName : _loggedInUsername;
@@ -42,44 +45,27 @@ public class DiscordClientService(
 
   public override void Initialize()
   {
-    if (Log.Logger.IsEnabled(LogEventLevel.Debug))
-    {
-      Logger.LogDebug("{ServiceName} is initializing...", nameof(DiscordClientService));
-    }
-
-    discordSocketClient.Log += DiscordSocketClientOnLog;
-    discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
-    discordSocketClient.JoinedGuild += DiscordSocketClientOnJoinedGuild;
-    discordSocketClient.LoggedIn += DiscordSocketClientOnLoggedIn;
-    discordSocketClient.LoggedOut += DiscordSocketClientOnLoggedOut;
-    discordSocketClient.Ready += DiscordSocketClientOnReady;
-    discordSocketClient.Connected += DiscordSocketClientOnConnected;
-    discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
-    discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
-    discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
-    discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
-    discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
+    InitializeLogger();
+    AssignEventHandlerForDiscordSocketClient();
   }
 
-  public async ValueTask<bool> LoginDiscordBotAsync(string discordToken)
+  public async Task LoginDiscordBotAsync(string discordToken)
   {
-    ArgumentException.ThrowIfNullOrEmpty(nameof(discordToken));
-
     try
     {
-      await discordSocketClient.LoginAsync(TokenType.Bot, discordToken).ConfigureAwait(false);
+      Guard.Against.NullOrWhiteSpace(discordToken, nameof(discordToken));
 
-      return true;
+      await discordSocketClient.LoginAsync(TokenType.Bot, discordToken)
+        .ConfigureAwait(false);
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, DiscordClientLogin);
+      throw new DiscordLoginException(exception.Message);
     }
-
-    return false;
   }
 
-  public async ValueTask<bool> StartDiscordBotAsync()
+  public async Task StartDiscordBotAsync()
   {
     try
     {
@@ -94,15 +80,12 @@ public class DiscordClientService(
 
       // Add modules dynamically to discord bot
       await AddModulesToDiscordBotAsync().ConfigureAwait(false);
-
-      return true;
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, DiscordStart);
+      throw;
     }
-
-    return false;
   }
 
   public void Dispose()
@@ -121,6 +104,31 @@ public class DiscordClientService(
     discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
 
     GC.SuppressFinalize(this);
+  }
+
+  // TODO: Remove this method
+  private void InitializeLogger()
+  {
+    if (Log.Logger.IsEnabled(LogEventLevel.Debug))
+    {
+      Logger.LogDebug("{ServiceName} is initializing...", nameof(DiscordClientService));
+    }
+  }
+
+  private void AssignEventHandlerForDiscordSocketClient()
+  {
+    discordSocketClient.Log += DiscordSocketClientOnLog;
+    discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
+    discordSocketClient.JoinedGuild += DiscordSocketClientOnJoinedGuild;
+    discordSocketClient.LoggedIn += DiscordSocketClientOnLoggedIn;
+    discordSocketClient.LoggedOut += DiscordSocketClientOnLoggedOut;
+    discordSocketClient.Ready += DiscordSocketClientOnReady;
+    discordSocketClient.Connected += DiscordSocketClientOnConnected;
+    discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
+    discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
+    discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
+    discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
+    discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
   }
 
   private async Task AddModulesToDiscordBotAsync()

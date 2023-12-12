@@ -30,25 +30,16 @@ public class Worker(
 
       InitializeHowbotServices(cancellationToken);
 
-      if (!await discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken).ConfigureAwait(false))
-      {
-        logger.LogError("Unable to login to discord API with token.");
-
-        // Stop worker, cannot continue without being authenticated
-        await StopAsync(cancellationToken).ConfigureAwait(false);
-
-        throw new DiscordLoginException("Unable to login to discord API with token.");
-      }
+      await discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken).ConfigureAwait(false);
 
       await discordClientService.StartDiscordBotAsync().ConfigureAwait(false);
 
-      // Run worker service indefinitely until cancellationToken is created or process is manually stopped.
       await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
     }
     catch (DiscordLoginException loginException)
     {
       logger.LogError(loginException, "An exception has been thrown logging into Discord.");
-      throw;
+      throw; // TODO: May not be needed. Won't bubble up further?
     }
     catch (Exception exception)
     {
