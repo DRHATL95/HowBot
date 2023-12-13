@@ -28,7 +28,7 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
 
   public override void Initialize()
   {
-    Logger.LogDebug("{ServiceName} is initializing..", nameof(LavaNodeService));
+    base.Initialize();
 
     audioService.StatisticsUpdated += AudioServiceOnStatisticsUpdated;
     audioService.TrackEnded += AudioServiceOnTrackEnded;
@@ -41,6 +41,8 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
     audioService.DiscordClient.VoiceServerUpdated += DiscordClientOnVoiceServerUpdated;
     audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
   }
+
+  #region Events
 
   private Task DiscordClientOnVoiceStateUpdated(object sender, VoiceStateUpdatedEventArgs eventargs)
   {
@@ -107,6 +109,8 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
 
     return Task.CompletedTask;
   }
+
+  #endregion Events
 
   /*private async Task<LavalinkTrack> GetUniqueRadioTrack(ILavalinkPlayer player, int attempt = 0)
   {

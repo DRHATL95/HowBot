@@ -1,8 +1,16 @@
-﻿using Howbot.Core.Interfaces;
+﻿using System;
+using Discord.WebSocket;
+using Google.Apis.Services;
+using Google.Apis.YouTube.v3;
+using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Howbot.Core.Services;
+using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data;
 using Howbot.Infrastructure.Http;
-using JetBrains.Annotations;
+using Lavalink4NET.Extensions;
+using Lavalink4NET.InactivityTracking.Extensions;
+using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,8 +30,8 @@ public static class ServiceCollectionSetupExtensions
   public static void AddDbContext(this IServiceCollection services, IConfiguration configuration)
   {
     services.AddDbContext<AppDbContext>((options) =>
-    options.UseNpgsql(
-      configuration.GetConnectionString(DatabaseConnectionStringName)));
+      options.UseNpgsql(
+        configuration.GetConnectionString(DatabaseConnectionStringName)));
   }
 
   /// <summary>
@@ -42,16 +50,39 @@ public static class ServiceCollectionSetupExtensions
   /// <param name="services">The service collection where the services are added.</param>
   public static void AddHowbotServices(this IServiceCollection services)
   {
-    // Singleton Services
+    // Discord related services
+    services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
+    services.AddSingleton(x =>
+      new InteractionService(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<IServiceProvider>(),
+        x.GetRequiredService<ILoggerAdapter<InteractionService>>(), Configuration.InteractionServiceConfig));
+
+    // Howbot related services
     services.AddSingleton<IVoiceService, VoiceService>();
     services.AddSingleton<IMusicService, MusicService>();
     services.AddSingleton<IEmbedService, EmbedService>();
     services.AddSingleton<IDiscordClientService, DiscordClientService>();
-    services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
+    services.AddSingleton<IInteractionService, InteractionService>();
     // services.AddSingleton<IDockerService, DockerService>();
     // services.AddSingleton<IDeploymentService, DeploymentService>();
     services.AddSingleton<ILavaNodeService, LavaNodeService>();
     services.AddScoped<IDatabaseService, DatabaseService>();
+    services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
+
+    // YouTube related service
+    services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
+    {
+      ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
+    }));
+
+    // Lavalink4NET related services
+    services.AddLavalink();
+    services.ConfigureLavalink(x =>
+    {
+      x.BaseAddress = Configuration.LavalinkUrl;
+      x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
+    });
+    services.AddLyrics();
+    services.AddInactivityTracking();
 
     // Transient Services
     services.AddTransient<IHttpService, HttpService>();

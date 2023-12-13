@@ -15,10 +15,7 @@ namespace Howbot.Core.Interfaces;
 // Purpose: Interface for the MusicService
 public interface IMusicService
 {
-  /// <summary>
-  ///   Initializes the MusicService
-  /// </summary>
-  void Initialize();
+  public void Initialize();
 
   /// <summary>
   ///   Searches for a track by the given search provider type and search request and plays in requested voice channel for
@@ -136,4 +133,6 @@ public interface IMusicService
   /// <param name="count"></param>
   /// <returns></returns>
   ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1);
+
+  CommandResponse GetGuildMusicQueueEmbed(HowbotPlayer player);
 }

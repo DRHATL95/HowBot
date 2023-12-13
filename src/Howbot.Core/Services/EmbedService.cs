@@ -175,8 +175,9 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
     }
 
     var queueList = queue.Count > 10
-      ? string.Join("\n", queue.Take(10).Select(((item, i) => $"`{i + 1}.` {item.Identifier}")))
-      : string.Join(Environment.NewLine, queue.Select(((item, i) => $"`{i + 1}.` {item.Identifier}")));
+      ? string.Join("\n", queue.Take(10).Select((item, i) => $"`{i + 1}.` {item.Track?.Title ?? "No Track Title"}"))
+      : string.Join(Environment.NewLine,
+        queue.Select((item, i) => $"`{i + 1}.` {item.Track?.Title ?? "No Track Title"}"));
 
     var embed = CreateEmbed(new EmbedOptions()
     {

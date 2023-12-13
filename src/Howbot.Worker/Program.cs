@@ -1,18 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Discord.Interactions;
-using Discord.WebSocket;
-using Google.Apis.Services;
-using Google.Apis.YouTube.v3;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
 using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
-using Lavalink4NET.Extensions;
-using Lavalink4NET.InactivityTracking.Extensions;
-using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -64,32 +56,11 @@ public static class Program
         // Add in-memory cache
         services.AddMemoryCache();
 
-        services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
-        services.AddSingleton(x =>
-          new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
-        services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
-        {
-          ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
-        }));
-
-        // Lavalink4Net Configuration
-        services.AddLavalink();
-        services.ConfigureLavalink(x =>
-        {
-          x.BaseAddress = Configuration.LavalinkUrl;
-          x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
-        });
-
-        services.AddLyrics();
-
-        // Lavalink4Net Inactivity Tracking
-        services.AddInactivityTracking();
-
-        // Add configuration for access globally
+        // Add static host configuration for access globally
         ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);
 
         // Infrastructure.ContainerSetup
-        services.AddDbContext(hostContext.Configuration);
+        services.AddDbContext(ConfigurationHelper.HostConfiguration);
         services.AddRepositories();
 
         var workerSettings = new WorkerSettings();

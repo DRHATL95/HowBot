@@ -4,8 +4,5 @@
 // TODO: Implement
 public interface IInteractionHandlerService
 {
-  /// <summary>
-  ///   Initializes the InteractionHandlerService
-  /// </summary>
-  void Initialize();
+  public void Initialize();
 }

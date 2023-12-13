@@ -79,6 +79,7 @@ public class Worker(
       serviceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
       serviceProvider.GetRequiredService<IEmbedService>()?.Initialize();
       serviceProvider.GetRequiredService<IMusicService>()?.Initialize();
+      serviceProvider.GetRequiredService<IInteractionService>()?.Initialize();
 
       using var scope = serviceProvider.CreateScope();
       scope.ServiceProvider.GetRequiredService<IDatabaseService>()?.Initialize();

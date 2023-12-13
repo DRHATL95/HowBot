@@ -51,6 +51,8 @@ public abstract record Messages
 
     public const string ClientQueueOutOfBounds = "Requested number of tracks to skip exceeds queue count.";
     public const string DiscordSocketClientConnected = "{Username} has connected to the web socket.";
+
+    public static string RegisteredCommandsMessage = "Successfully registered commands to discord bot.";
   }
 
   public readonly struct Errors

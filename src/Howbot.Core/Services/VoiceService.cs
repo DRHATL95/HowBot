@@ -4,7 +4,6 @@ using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using JetBrains.Annotations;
 using Lavalink4NET;
 using Lavalink4NET.Players;
 using Microsoft.Extensions.Options;

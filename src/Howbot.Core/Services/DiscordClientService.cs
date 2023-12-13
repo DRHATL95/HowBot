@@ -1,7 +1,5 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using Discord;
@@ -10,8 +8,6 @@ using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Models.Exceptions;
-using Howbot.Core.Modules;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -23,13 +19,11 @@ namespace Howbot.Core.Services;
 
 public class DiscordClientService(
   DiscordSocketClient discordSocketClient,
-  IServiceProvider serviceProvider,
-  InteractionService interactionService,
+  IInteractionService interactionService,
   ILoggerAdapter<DiscordClientService> logger)
   : ServiceBase<DiscordClientService>(logger), IDiscordClientService, IDisposable
 {
   private string _loggedInUsername = string.Empty;
-
 
   private string LoggedInUsername
   {
@@ -45,6 +39,8 @@ public class DiscordClientService(
 
   public override void Initialize()
   {
+    base.Initialize();
+
     InitializeLogger();
     AssignEventHandlerForDiscordSocketClient();
   }
@@ -58,10 +54,15 @@ public class DiscordClientService(
       await discordSocketClient.LoginAsync(TokenType.Bot, discordToken)
         .ConfigureAwait(false);
     }
+    catch (ArgumentException argumentException)
+    {
+      Logger.LogError(argumentException, "The provided token is invalid.");
+      throw;
+    }
     catch (Exception exception)
     {
-      Logger.LogError(exception, DiscordClientLogin);
-      throw new DiscordLoginException(exception.Message);
+      Logger.LogError(exception, "An exception has been thrown logging into Discord.");
+      throw;
     }
   }
 
@@ -77,9 +78,6 @@ public class DiscordClientService(
       {
         await discordSocketClient.SetStatusAsync(UserStatus.Invisible).ConfigureAwait(false);
       }
-
-      // Add modules dynamically to discord bot
-      await AddModulesToDiscordBotAsync().ConfigureAwait(false);
     }
     catch (Exception exception)
     {
@@ -89,6 +87,20 @@ public class DiscordClientService(
   }
 
   public void Dispose()
+  {
+    UnsubscribeFromDiscordEvents();
+    GC.SuppressFinalize(this);
+  }
+
+  private void InitializeLogger()
+  {
+    if (Log.Logger.IsEnabled(LogEventLevel.Debug))
+    {
+      Logger.LogDebug("{ServiceName} is initializing...", nameof(DiscordClientService));
+    }
+  }
+
+  private void UnsubscribeFromDiscordEvents()
   {
     discordSocketClient.Log -= DiscordSocketClientOnLog;
     discordSocketClient.UserJoined -= DiscordSocketClientOnUserJoined;
@@ -102,17 +114,6 @@ public class DiscordClientService(
     discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
     discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
     discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
-
-    GC.SuppressFinalize(this);
-  }
-
-  // TODO: Remove this method
-  private void InitializeLogger()
-  {
-    if (Log.Logger.IsEnabled(LogEventLevel.Debug))
-    {
-      Logger.LogDebug("{ServiceName} is initializing...", nameof(DiscordClientService));
-    }
   }
 
   private void AssignEventHandlerForDiscordSocketClient()
@@ -131,34 +132,9 @@ public class DiscordClientService(
     discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
   }
 
-  private async Task AddModulesToDiscordBotAsync()
+  private LogLevel MapLogSeverity(LogSeverity severity)
   {
-    try
-    {
-      await interactionService.AddModuleAsync(typeof(MusicModule), serviceProvider).ConfigureAwait(false);
-      await interactionService.AddModuleAsync(typeof(AdminModule), serviceProvider).ConfigureAwait(false);
-      await interactionService.AddModuleAsync(typeof(GeneralModule), serviceProvider).ConfigureAwait(false);
-      await interactionService.AddModuleAsync(typeof(GameModule), serviceProvider).ConfigureAwait(false);
-      await interactionService.AddModuleAsync(typeof(VideoModule), serviceProvider).ConfigureAwait(false);
-    }
-    catch (FileNotFoundException exception)
-    {
-      Logger.LogError(exception, "Unable to find the assembly. Value: {AssemblyName}",
-        Assembly.GetEntryAssembly()?.ToString());
-      throw;
-    }
-    catch (Exception e)
-    {
-      Logger.LogError(e, nameof(AddModulesToDiscordBotAsync));
-      throw;
-    }
-  }
-
-  #region Discord Client Events
-
-  private Task DiscordSocketClientOnLog(LogMessage arg)
-  {
-    var severity = arg.Severity switch
+    return severity switch
     {
       LogSeverity.Critical => LogLevel.Critical,
       LogSeverity.Error => LogLevel.Error,
@@ -168,11 +144,45 @@ public class DiscordClientService(
       LogSeverity.Debug => LogLevel.Debug,
       _ => LogLevel.Information
     };
+  }
 
-    var message = arg.Message ?? arg.Exception?.Message ?? "No message provided";
+  private string CreateLogMessage(LogMessage log)
+  {
+    return log.Message ?? log.Exception?.Message ?? "No message provided";
+  }
+
+  private SocketGuild GetGuildById(ulong? guildId)
+  {
+    return guildId != null ? discordSocketClient.Guilds.FirstOrDefault(x => x.Id == guildId) : null;
+  }
+
+  private void LogErrorGuildLookup(string eventName)
+  {
+    var exception = new Exception();
+    var message = $"Unable to look-up guild for event [{eventName}]";
+    Logger.LogError(exception, message);
+  }
+
+  private Func<Task> GetRegisterCommandAction()
+  {
+    if (Configuration.IsDebug())
+    {
+      Logger.LogDebug("Registering commands to DEV Guild.");
+      return () => interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
+    }
+
+    Logger.LogDebug("Registering commands globally.");
+    return interactionService.RegisterCommandsGloballyAsync;
+  }
+
+  #region Discord Client Events
+
+  private Task DiscordSocketClientOnLog(LogMessage arg)
+  {
+    var severity = MapLogSeverity(arg.Severity);
+    var message = CreateLogMessage(arg);
 
     Logger.Log(severity, message);
-
     return Task.CompletedTask;
   }
 
@@ -185,15 +195,14 @@ public class DiscordClientService(
 
   private Task DiscordSocketClientOnSlashCommandExecuted(SocketSlashCommand arg)
   {
-    var guild = discordSocketClient.Guilds.FirstOrDefault(x => x.Id == arg.GuildId);
+    var guild = GetGuildById(arg.GuildId);
     if (guild == null)
     {
-      Logger.LogError(new Exception(), "Unable to look-up guild for event [{EventName}]",
-        nameof(DiscordSocketClientOnSlashCommandExecuted));
+      LogErrorGuildLookup(nameof(DiscordSocketClientOnSlashCommandExecuted));
     }
 
-    Logger.LogDebug("Command [{CommandName}] has been executed in Guild {GuildTag}", arg.CommandName,
-      DiscordHelper.GetGuildTag(guild));
+    var logMessage = $"Command [{arg.CommandName}] has been executed in Guild {DiscordHelper.GetGuildTag(guild)}";
+    Logger.LogDebug(logMessage);
 
     return Task.CompletedTask;
   }
@@ -218,25 +227,14 @@ public class DiscordClientService(
   {
     Logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
 
-    await Task.Run(async () =>
-    {
-      await discordSocketClient.Rest.DeleteAllGlobalCommandsAsync().ConfigureAwait(false);
-    });
+    await discordSocketClient.Rest.DeleteAllGlobalCommandsAsync().ConfigureAwait(false);
 
     try
     {
-      if (Configuration.IsDebug())
-      {
-        Logger.LogDebug("Registering commands to DEV Guild.");
-        await interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
-      }
-      else
-      {
-        Logger.LogDebug("Registering commands globally.");
-        await interactionService.RegisterCommandsGloballyAsync();
-      }
+      var registerCommandAction = GetRegisterCommandAction();
+      await registerCommandAction();
 
-      Logger.LogDebug("Successfully registered commands to discord bot.");
+      Logger.LogDebug(RegisteredCommandsMessage);
     }
     catch (Exception exception)
     {
@@ -266,13 +264,13 @@ public class DiscordClientService(
     return Task.CompletedTask;
   }
 
-  private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user,
-    SocketVoiceState oldVoiceState,
+  private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
     if (user.IsBot && user.Id == discordSocketClient.CurrentUser.Id)
     {
+      Logger.LogDebug("Voice state update ignored for bot user {Username}.", user.Username);
       return Task.CompletedTask;
     }
 
@@ -293,7 +291,7 @@ public class DiscordClientService(
     try
     {
       var context = new SocketInteractionContext(discordSocketClient, socketInteraction);
-      var result = await interactionService.ExecuteCommandAsync(context, serviceProvider);
+      var result = await interactionService.ExecuteCommandAsync(context);
 
       if (!result.IsSuccess)
       {
@@ -355,7 +353,7 @@ public class DiscordClientService(
     }
     catch (Exception exception)
     {
-      HandleException(exception, nameof(DiscordSocketClientOnInteractionCreated));
+      Logger.LogError(exception, "An exception has been thrown while running interaction command");
 
       if (socketInteraction.Type is InteractionType.ApplicationCommand)
       {

@@ -5,7 +5,7 @@ namespace Howbot.Core.Interfaces;
 // Purpose: Interface for discord client service
 public interface IDiscordClientService
 {
-  void Initialize();
+  public void Initialize();
 
   /// <summary>
   /// Logs in the Discord bot using the provided Discord token.

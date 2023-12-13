@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -16,6 +18,7 @@ using static Howbot.Core.Models.Permissions.User;
 
 namespace Howbot.Core.Modules;
 
+[SuppressMessage("ReSharper", "UnusedType.Global")]
 public class MusicModule(IMusicService musicService, ILyricsService lyricsService, ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
@@ -24,11 +27,12 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
+  [SuppressMessage("ReSharper", "UnusedMember.Global")]
   public async Task PlayCommandAsync(
     [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
     string searchRequest,
     [Summary(PlaySearchTypeArgumentName, PlaySearchTypeArgumentDescription)]
-    SearchProviderTypes searchProviderType)
+    SearchProviderTypes searchProviderType = SearchProviderTypes.YouTube)
   {
     try
     {
@@ -415,6 +419,52 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
     }
 
     await FollowupAsync($"📃 Lyrics for {track.Title} by {track.Author}:\n{lyrics}").ConfigureAwait(false);
+  }
+
+  [SlashCommand("queue", "Displays the current queue.", true, RunMode.Async)]
+  [RequireGuildUserInVoiceChannel]
+  public async Task GetQueueCommandAsync()
+  {
+    try
+    {
+      await DeferAsync();
+
+      var player = await musicService.GetPlayerByContextAsync(Context,
+        preconditions: ImmutableArray.Create(PlayerPrecondition.Playing)).ConfigureAwait(false);
+
+      if (player is null)
+      {
+        return;
+      }
+
+      var commandResponse = musicService.GetGuildMusicQueueEmbed(player);
+
+      if (!commandResponse.IsSuccessful)
+      {
+        ModuleHelper.HandleCommandFailed(commandResponse);
+
+        if (string.IsNullOrEmpty(commandResponse.Message))
+        {
+          await GetOriginalResponseAsync().ContinueWith(task => task.Result.DeleteAsync().ConfigureAwait(false));
+          return;
+        }
+      }
+
+      if (commandResponse.Embed != null)
+      {
+        await ModifyOriginalResponseAsync(properties => properties.Embed = commandResponse.Embed as Embed);
+      }
+      else
+      {
+        await ModifyOriginalResponseAsync(properties =>
+          properties.Content = player.Queue.Select(x => x.Track?.Title).Aggregate((x, y) => $"{x}\n{y}"));
+      }
+    }
+    catch (Exception exception)
+    {
+      Console.WriteLine(exception);
+      throw;
+    }
   }
 
   /*[SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
