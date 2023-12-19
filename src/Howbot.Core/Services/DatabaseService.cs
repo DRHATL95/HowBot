@@ -9,12 +9,6 @@ namespace Howbot.Core.Services;
 public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseService> logger)
   : ServiceBase<DatabaseService>(logger), IDatabaseService
 {
-  public override void Initialize()
-  {
-    // TODO: Check EF Core if database has been created
-    Logger.LogDebug("{ServiceName} is initializing...", nameof(DatabaseService));
-  }
-
   public ulong AddNewGuild(ulong guildId, string prefix, float musicPlayerVolume = 100.0f)
   {
     Guard.Against.NullOrEmpty(prefix, nameof(prefix));

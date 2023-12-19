@@ -133,6 +133,26 @@ public class MusicService(
     throw new NotImplementedException();
   }
 
+  public CommandResponse GetGuildMusicQueueEmbed(HowbotPlayer player)
+  {
+    try
+    {
+      if (player.Queue.Count == 0)
+      {
+        return CommandResponse.CommandNotSuccessful("No tracks in queue.");
+      }
+
+      var embed = embedService.GenerateMusicCurrentQueueEmbed(player.Queue);
+
+      return CommandResponse.CommandSuccessful(embed);
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, nameof(GetGuildMusicQueueEmbed));
+      return CommandResponse.CommandNotSuccessful(exception);
+    }
+  }
+
   /// <summary>
   ///   Creates a new player asynchronously.
   /// </summary>

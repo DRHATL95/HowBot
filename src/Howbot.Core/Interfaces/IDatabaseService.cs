@@ -7,11 +7,7 @@ namespace Howbot.Core.Interfaces;
 /// </summary>
 public interface IDatabaseService
 {
-  /// <summary>
-  ///   Database initialization.
-  ///   TODO: Will create the database if it doesn't exist.
-  /// </summary>
-  void Initialize();
+  public void Initialize();
 
   /// <summary>
   ///   Persisting a new guild to the database.

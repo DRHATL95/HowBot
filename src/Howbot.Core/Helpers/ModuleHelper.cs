@@ -88,13 +88,13 @@ public static class ModuleHelper
     {
       if (response.Embed != null)
       {
-        await context.Interaction.RespondAsync(embed: response.Embed as Embed).ConfigureAwait(false);
+        await context.Interaction.FollowupAsync(embed: response.Embed as Embed).ConfigureAwait(false);
         return;
       }
 
       if (!string.IsNullOrEmpty(response.Message))
       {
-        await context.Interaction.RespondAsync(response.Message).ConfigureAwait(false);
+        await context.Interaction.FollowupAsync(response.Message).ConfigureAwait(false);
       }
     }
     else

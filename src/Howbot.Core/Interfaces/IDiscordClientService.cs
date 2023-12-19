@@ -5,21 +5,18 @@ namespace Howbot.Core.Interfaces;
 // Purpose: Interface for discord client service
 public interface IDiscordClientService
 {
-  /// <summary>
-  ///   Initialize the discord client service
-  /// </summary>
-  void Initialize();
+  public void Initialize();
 
   /// <summary>
-  ///   Login the discord bot
+  /// Logs in the Discord bot using the provided Discord token.
   /// </summary>
-  /// <param name="discordToken">The discord API token</param>
-  /// <returns>True, if login was a success</returns>
-  ValueTask<bool> LoginDiscordBotAsync(string discordToken);
+  /// <param name="discordToken">The token used to authenticate the bot with the Discord platform.</param>
+  /// <returns>Returns a Task representing the asynchronous operation.</returns>
+  Task LoginDiscordBotAsync(string discordToken);
 
   /// <summary>
-  ///   Calls to start the discord bot
+  ///  Starts the Discord bot, sends READY event to Discord and starts the heartbeat.
   /// </summary>
-  /// <returns>True, if bot was started successfully</returns>
-  ValueTask<bool> StartDiscordBotAsync();
+  /// <returns>Returns a Task representing the asynchronous operation.</returns>
+  Task StartDiscordBotAsync();
 }

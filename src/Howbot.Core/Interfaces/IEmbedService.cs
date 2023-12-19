@@ -1,7 +1,6 @@
 ﻿using System;
 using Discord;
 using Howbot.Core.Models;
-using JetBrains.Annotations;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Tracks;
 
@@ -10,10 +9,7 @@ namespace Howbot.Core.Interfaces;
 // Purpose: Interface for EmbedService for creating embed replies and messages
 public interface IEmbedService
 {
-  /// <summary>
-  ///   Initializes the embed service.
-  /// </summary>
-  void Initialize();
+  public void Initialize();
 
   /// <summary>
   ///   Helper method to create an embed.

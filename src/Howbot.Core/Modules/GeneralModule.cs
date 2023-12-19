@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -15,6 +16,7 @@ using static Howbot.Core.Models.Permissions.User;
 
 namespace Howbot.Core.Modules;
 
+[SuppressMessage("ReSharper", "UnusedType.Global")]
 public class GeneralModule(
   InteractionService interactionService,
   IVoiceService voiceService,
@@ -26,6 +28,7 @@ public class GeneralModule(
   [RequireBotPermission(GuildBotVoiceCommandPermission)]
   [RequireUserPermission(GuildUserVoiceCommandPermission)]
   [RequireGuildUserInVoiceChannel]
+  [SuppressMessage("ReSharper", "UnusedMember.Global")]
   public async Task JoinVoiceChannelCommandAsync()
   {
     try
@@ -62,6 +65,7 @@ public class GeneralModule(
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
+  [SuppressMessage("ReSharper", "UnusedMember.Global")]
   public async Task LeaveVoiceChannelCommandAsync()
   {
     try
@@ -88,6 +92,11 @@ public class GeneralModule(
   }
 
   [SlashCommand(PingCommandName, PingCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.DM | ContextType.Guild)]
+  [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
+  [RequireUserPermission(GuildPermission.SendMessages | GuildPermission.UseApplicationCommands |
+                         GuildPermission.ViewChannel)]
+  [SuppressMessage("ReSharper", "UnusedMember.Global")]
   public async Task PingCommandAsync()
   {
     try
@@ -115,6 +124,11 @@ public class GeneralModule(
   }
 
   [SlashCommand(HelpCommandName, HelpCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.DM | ContextType.Guild)]
+  [RequireBotPermission(GuildPermission.ViewChannel | GuildPermission.SendMessages)]
+  [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
+                         GuildPermission.ViewChannel)]
+  [SuppressMessage("ReSharper", "UnusedMember.Global")]
   public async Task HelpCommandAsync()
   {
     try

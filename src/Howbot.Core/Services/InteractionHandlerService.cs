@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -10,15 +9,10 @@ using Microsoft.Extensions.Logging;
 namespace Howbot.Core.Services;
 
 public class InteractionHandlerService(
-  DiscordSocketClient discordSocketClient,
   InteractionService interactionService,
-  IServiceProvider serviceProvider,
   ILoggerAdapter<InteractionHandlerService> logger)
   : ServiceBase<InteractionHandlerService>(logger), IInteractionHandlerService, IDisposable
 {
-  private readonly DiscordSocketClient _discordSocketClient = discordSocketClient;
-  private readonly IServiceProvider _serviceProvider = serviceProvider;
-
   public void Dispose()
   {
     interactionService.Log -= InteractionServiceOnLog;
@@ -29,7 +23,7 @@ public class InteractionHandlerService(
 
   public override void Initialize()
   {
-    Logger.LogDebug("{ServiceName} is initializing...", nameof(InteractionHandlerService));
+    base.Initialize();
 
     interactionService.Log += InteractionServiceOnLog;
     interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
@@ -78,13 +72,13 @@ public class InteractionHandlerService(
     }
     catch (ArgumentOutOfRangeException exception)
     {
-      HandleException(exception, nameof(InteractionServiceOnLog));
+      Logger.LogError("LogMessage.Severity is not a valid LogSeverity value");
 
       return Task.FromException(exception);
     }
     catch (Exception exception)
     {
-      HandleException(exception, nameof(InteractionServiceOnLog));
+      Logger.LogError("An exception occurred while logging interaction service log message");
 
       return Task.FromException(exception);
     }
@@ -114,8 +108,7 @@ public class InteractionHandlerService(
     }
     catch (Exception exception)
     {
-      HandleException(exception, nameof(InteractionServiceOnInteractionExecuted));
-      throw;
+      Logger.LogError(exception, "An exception occurred while handling interaction command execution");
     }
   }
 }

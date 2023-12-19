@@ -15,9 +15,7 @@ public class DockerServiceTests
 
     _ = SetupCreateScope(serviceLocator);
 
-    var logger = new Mock<ILoggerAdapter<DockerService>>();
-
-    var dockerService = new DockerService(logger.Object);
+    var dockerService = new DockerService();
 
     return dockerService;
   }

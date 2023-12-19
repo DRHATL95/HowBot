@@ -1,64 +1,83 @@
 ﻿using System;
-using Discord.Interactions;
+using System.Threading.Tasks;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Xunit;
 
 namespace Howbot.UnitTests.Core.Services;
 
-public class DiscordClientServiceTest
+public class DiscordClientServiceTests
 {
-  private static (IDiscordClientService, Mock<DiscordSocketClient>,
-    Mock<ILoggerAdapter<DiscordClientService>>,
-    Mock<IServiceProvider>, Mock<InteractionService>) Factory()
+  private static (DiscordClientService, Mock<DiscordSocketClient>, Mock<IInteractionService>, Mock<IServiceProvider>,
+    Mock<ILoggerAdapter<DiscordClientService>>) Factory()
   {
-    var serviceLocator = new Mock<IServiceLocator>();
     var discordSocketClient = new Mock<DiscordSocketClient>();
     var serviceProvider = new Mock<IServiceProvider>();
+    var interactionService = new Mock<IInteractionService>();
     var logger = new Mock<ILoggerAdapter<DiscordClientService>>();
-    // Services
-    var interactionService = new Mock<InteractionService>();
 
-    _ = SetupCreateScope(serviceLocator);
-
-    var discordClientService = new DiscordClientService(discordSocketClient.Object, serviceProvider.Object,
+    var discordClientService = new DiscordClientService(discordSocketClient.Object,
       interactionService.Object, logger.Object);
 
-    return (discordClientService, discordSocketClient, logger, serviceProvider, interactionService);
+    return (discordClientService, discordSocketClient, interactionService, serviceProvider, logger);
   }
 
-  private static Mock<DiscordSocketClient> SetupCreateScope(Mock<IServiceLocator> serviceLocator)
+  [Fact]
+  public async void LoginDiscordBotAsync_WithValidToken()
   {
-    var fakeScope = new Mock<IServiceScope>();
-    serviceLocator
-      .Setup(locator => locator.CreateScope())
-      .Returns(fakeScope.Object);
+    // Arrange
+    const string discordToken = "TestToken";
+    var (discordClientService, _, _, _, _) = Factory();
 
-    var serviceProvider = new Mock<IServiceProvider>();
-    fakeScope
-      .Setup(scope => scope.ServiceProvider)
-      .Returns(serviceProvider.Object);
+    // TODO: Not sure if this is correct, because DiscordSocketClient is not able to Moq the LoginAsync method
+    var mockedDiscordClientService = new Mock<IDiscordClientService>();
+    mockedDiscordClientService
+      .Setup(d => d.LoginDiscordBotAsync(discordToken))
+      .Returns(Task.CompletedTask);
 
-    return SetupCustomInjection(serviceProvider);
+    // Act
+    await discordClientService.LoginDiscordBotAsync(discordToken);
+
+    // Assert
   }
 
-  private static Mock<DiscordSocketClient> SetupCustomInjection(Mock<IServiceProvider> serviceProvider)
+  [Fact]
+  public async void LoginDiscordBotAsync_ThrowsArgumentException()
   {
-    // GetRequiredService is an extension method, but GetService is not
-    var discordSocketClient = new Mock<DiscordSocketClient>();
-    serviceProvider
-      .Setup(x => x.GetService(typeof(DiscordSocketClient)))
-      .Returns(discordSocketClient);
+    // Arrange
+    var token = string.Empty;
+    var (discordClientService, _, _, _, _) = Factory();
 
-    return new Mock<DiscordSocketClient>(discordSocketClient);
+    var mockedDiscordClientService = new Mock<IDiscordClientService>();
+    mockedDiscordClientService
+      .Setup(d => d.LoginDiscordBotAsync(token))
+      .ThrowsAsync(new ArgumentException());
+
+    // Act
+    var caughtException =
+      await Assert.ThrowsAsync<ArgumentException>(() =>
+        discordClientService.LoginDiscordBotAsync(token));
+
+    // Assert
+    Assert.NotNull(caughtException);
   }
 
-  /*[Fact]
-  public void Initialize_WhenDiscordSocketClientIsNull_ShouldNotThrowException()
+  [Fact]
+  public async void StartDiscordBotAsync_ShouldStart()
   {
-    var (discordClientService, _, _, _, _, _, _) = Factory();
-    discordClientService.Initialize();
-  }*/
+    // Arrange
+    var (discordClientService, _, _, _, _) = Factory();
+    var mockDiscordClientService = new Mock<IDiscordClientService>();
+
+    // Act
+    mockDiscordClientService
+      .Setup(d => d.StartDiscordBotAsync())
+      .Returns(Task.CompletedTask);
+
+    await discordClientService.StartDiscordBotAsync();
+
+    // Assert
+  }
 }
