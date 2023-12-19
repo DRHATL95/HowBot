@@ -24,12 +24,6 @@ steps:
     packageType: sdk
     version: '8.x'
 
-- task: NuGetToolInstaller@1
-  displayName: 'Install NuGet'
-  inputs:
-    versionSpec: 
-    checkLatest: true
-
 - task: DotNetCoreCLI@2
   displayName: 'Restore Project Deps.'
   inputs:
@@ -37,7 +31,6 @@ steps:
     projects: '$(projects)'
     feedsToUse: 'config'
     nugetConfigPath: '$(System.DefaultWorkingDirectory)/nuget.config'
-    noCache: true
 
 - task: DotNetCoreCLI@2
   displayName: 'Build Projects'
@@ -66,7 +59,6 @@ steps:
     zipAfterPublish: false
     modifyOutputPath: false
 
-  
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts'
   inputs:
