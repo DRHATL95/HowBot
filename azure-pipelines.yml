@@ -21,25 +21,26 @@ steps:
 - task: UseDotNet@2
   displayName: 'Install .NET 8'
   inputs:
-    packageType: sdk
-    version: '8.x'
+    packageType: 'sdk'
+    useGlobalJson: true
+    workingDirectory: '$(System.DefaultWorkingDirectory)/global.json'
 
 - task: DotNetCoreCLI@2
   displayName: 'Restore Project Deps.'
   inputs:
     command: 'restore'
     projects: '$(projects)'
+    restoreArguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration)'
     feedsToUse: 'config'
     nugetConfigPath: '$(System.DefaultWorkingDirectory)/nuget.config'
 
 - task: DotNetCoreCLI@2
   displayName: 'Build Projects'
   inputs:
-    configuration: $(buildConfiguration)
-    publishWebProjects: false
     command: 'build'
+    configuration: $(buildConfiguration)
     projects: '$(projects)'
-    arguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration) --self-contained true'
+    arguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration)'
 
 # - task: DotNetCoreCLI@2
 #   displayName: 'Run Unit Tests'
