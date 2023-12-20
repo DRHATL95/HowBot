@@ -29,7 +29,7 @@ steps:
   inputs:
     command: 'restore'
     projects: '$(projects)'
-    restoreArguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration)'
+    restoreArguments: '--runtime $(buildRuntime)'
     feedsToUse: 'config'
     nugetConfigPath: '$(System.DefaultWorkingDirectory)/nuget.config'
 
