@@ -4,11 +4,11 @@ namespace Howbot.Core.Services;
 
 public abstract class ServiceBase<T>(ILoggerAdapter<T> logger)
 {
-  private const string ServiceName = nameof(T);
+  private static readonly string _serviceName = typeof(T).Name;
   protected ILoggerAdapter<T> Logger => logger;
 
   public virtual void Initialize()
   {
-    Logger.LogDebug($"{ServiceName} is initializing...");
+    Logger.LogDebug($"{_serviceName} is initializing...");
   }
 }

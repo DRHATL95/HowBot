@@ -22,6 +22,15 @@ public static class Program
       // Create host builder that will be used to handle application (console) life-cycle.
       var hostBuilder = CreateHostBuilder(args);
 
+      if (Log.Logger.IsEnabled(LogEventLevel.Information))
+      {
+        Log.Logger.Information("Starting application..");
+      }
+      else
+      {
+        Console.WriteLine("Starting application..");
+      }
+
       // Will run indefinitely until canceled w/ cancellation token or process is stopped.
       await hostBuilder.RunConsoleAsync().ConfigureAwait(false);
     }
@@ -30,6 +39,10 @@ public static class Program
       if (Log.IsEnabled(LogEventLevel.Fatal))
       {
         Log.Fatal(exception, "A fatal exception has been thrown while running the application");
+      }
+      else
+      {
+        Console.WriteLine(exception);
       }
     }
 
