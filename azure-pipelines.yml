@@ -18,12 +18,12 @@ variables:
 
 steps:
 
+# TODO: Needs to use global.json
 - task: UseDotNet@2
   displayName: 'Install .NET 8'
   inputs:
     packageType: 'sdk'
-    useGlobalJson: true
-    workingDirectory: '$(System.DefaultWorkingDirectory)/global.json'
+    version: '8.0.0'
 
 - task: DotNetCoreCLI@2
   displayName: 'Restore Project Deps.'
