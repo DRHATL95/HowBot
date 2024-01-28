@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -89,7 +89,7 @@ public class GeneralModule(
   }
 
   [SlashCommand(PingCommandName, PingCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.DM | ContextType.Guild)]
+  [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
   [RequireUserPermission(GuildPermission.SendMessages | GuildPermission.UseApplicationCommands |
                          GuildPermission.ViewChannel)]
@@ -120,25 +120,88 @@ public class GeneralModule(
   }
 
   [SlashCommand(HelpCommandName, HelpCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.DM | ContextType.Guild)]
+  [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildPermission.ViewChannel | GuildPermission.SendMessages)]
   [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
                          GuildPermission.ViewChannel)]
-  public async Task HelpCommandAsync()
+  public async Task HelpCommandAsync([Summary("command", "The name of the command to get help for.")] string commandName = null)
   {
-    try
+  try
+  {
+    var commands = interactionService.SlashCommands
+      .Where(c => !c.Preconditions.OfType<RequireOwnerAttribute>().Any()); // Ignore owner-only commands
+    if (!string.IsNullOrEmpty(commandName))
     {
-      var commands = interactionService.SlashCommands;
-      var commandList = string.Join("\n", commands.Select(c => $"`/{c.Name}`: {c.Description}"));
+      // If a command name is provided, find the command and return its description and example
+      var command = commands.FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
 
-      var embedBuilder = new EmbedBuilder { Title = "Command List", Description = commandList };
+      if (command != null)
+      {
+        var example = ModuleHelper.CommandExampleDictionary.GetValueOrDefault(command.Name, "No example available");
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = $"/{command.Name}",
+          Description = $"{command.Description}\nExample: {example}",
+          Color = Constants.ThemeColor
+        };
 
-      await RespondAsync(embeds: new[] { embedBuilder.Build() }).ConfigureAwait(false);
+        await RespondAsync(embeds: [embedBuilder.Build()])
+          .ConfigureAwait(false);
+      }
+      else
+      {
+        await RespondAsync($"No command found with the name `{commandName}`.")
+          .ConfigureAwait(false);
+      }
     }
-    catch (Exception exception)
+    else
     {
-      logger.LogError(exception, nameof(HelpCommandAsync));
-      throw;
+      // If no command name is provided, return the list of all commands as before
+      var groupedCommands = commands.GroupBy(c => c.Module.Name);
+
+      var embedBuilder = new EmbedBuilder { Title = "Command List", Color = Constants.ThemeColor };
+
+      foreach (var group in groupedCommands)
+      {
+        var moduleName = group.Key.Replace("Module", ""); // Remove the word "Module" from the group key
+        var commandList = new List<string>();
+        var continuationFields = new List<EmbedFieldBuilder>();
+
+        foreach (var command in group)
+        {
+          var commandInfo = $"`/{command.Name}`: {command.Description}\n"; // Removed example
+
+          // If adding the next command would exceed the limit and there are already commands in the list, add the current list as a field and start a new list
+          if (commandList.Any() && commandList.Sum(c => c.Length) + commandInfo.Length > 1024)
+          {
+            continuationFields.Add(new EmbedFieldBuilder { Name = $"{moduleName} (cont.)", Value = string.Join("\n", commandList) });
+            commandList.Clear();
+          }
+
+          commandList.Add(commandInfo);
+        }
+
+        // Add main section as a field
+        if (commandList.Any())
+        {
+          embedBuilder.AddField(moduleName, string.Join("\n", commandList));
+        }
+
+        // Add continuation sections as fields
+        foreach (var field in continuationFields)
+        {
+          embedBuilder.AddField(field);
+        }
+      }
+
+      await RespondAsync(embeds: [embedBuilder.Build()])
+        .ConfigureAwait(false);
     }
   }
+  catch (Exception exception)
+  {
+    logger.LogError(exception, nameof(HelpCommandAsync));
+    throw;
+  }
+}
 }

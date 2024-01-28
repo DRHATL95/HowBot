@@ -39,7 +39,7 @@ public class HttpService : IHttpService
 
     Watch2GetherParameters parameters = new Watch2GetherParameters()
     {
-      W2GApiKey = Howbot.Core.Settings.Configuration.WatchTogetherApiKey,
+      W2GApiKey = Core.Settings.Configuration.WatchTogetherApiKey,
       Share = url,
       BackgroundColor = "#00ff00",
       BackgroundOpacity = "50"

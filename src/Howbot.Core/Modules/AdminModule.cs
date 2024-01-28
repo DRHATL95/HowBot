@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Howbot.Core.Attributes;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 
@@ -16,7 +15,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
   [RequireBotPermission(GuildPermission.Administrator | GuildPermission.ManageMessages | GuildPermission.ViewChannel)]
   [RequireUserPermission(GuildPermission.Administrator | GuildPermission.ManageMessages |
                          GuildPermission.UseApplicationCommands)]
-  [RequireGuildTextChat] // TODO: May not be needed because of RequireContext
+  [RequireOwner]
   public async Task PurgeCommandAsync()
   {
     await DeferAsync().ConfigureAwait(false);

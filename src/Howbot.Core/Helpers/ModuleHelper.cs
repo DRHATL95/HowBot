@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Discord.Interactions;
 using Howbot.Core.Models;
-using Howbot.Core.Models.Exceptions;
 using Serilog;
+using CommandException = Howbot.Core.Models.Exceptions.CommandException;
 
 namespace Howbot.Core.Helpers;
 
@@ -18,7 +20,7 @@ public static class ModuleHelper
   /// Should handle exceptions or responses returned from Services.
   /// </summary>
   /// <param name="commandResponse"></param>
-  /// <exception cref="CommandException"></exception>
+  /// <exception cref="Models.Exceptions.CommandException"></exception>
   public static void HandleCommandFailed(CommandResponse commandResponse)
   {
     ArgumentNullException.ThrowIfNull(commandResponse, nameof(commandResponse));
@@ -110,4 +112,23 @@ public static class ModuleHelper
       }
     }
   }
+  
+  public static readonly Dictionary<string, string> CommandExampleDictionary = new Dictionary<string, string>()
+  {
+    { Constants.Commands.PingCommandName, "/ping" },
+    { Constants.Commands.HelpCommandName, "/help" },
+    { Constants.Commands.JoinCommandName, "/join" },
+    { Constants.Commands.LeaveCommandName, "/leave" },
+    { Constants.Commands.PlayCommandName, "/play https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+    // { Constants.Commands.StopCommandName, "/stop" },
+    { Constants.Commands.PauseCommandName, "/pause" },
+    { Constants.Commands.ResumeCommandName, "/resume" },
+    { Constants.Commands.SkipCommandName, "/skip" },
+    // { Constants.Commands.QueueCommandName, "/queue" },
+    // { Constants.Commands.ClearCommandName, "/clear" },
+    { Constants.Commands.SeekCommandName, "/seek 1:30" },
+    { Constants.Commands.VolumeCommandName, "/volume 50" },
+    { Constants.Commands.ShuffleCommandName, "/shuffle" },
+    { Constants.Commands.NowPlayingCommandName, "/nowplaying" },
+  };
 }
