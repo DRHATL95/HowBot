@@ -97,7 +97,7 @@ public static class DiscordHelper
     }
     
     // Will respond with error reason ephemeral by default. TODO: Maybe create config variable to change this?
-    await socketInteraction.RespondAsync(result.ErrorReason, ephemeral: true).ConfigureAwait(false);
+    await socketInteraction.RespondAsync(result.ErrorReason, ephemeral: true);
   }
     
 }

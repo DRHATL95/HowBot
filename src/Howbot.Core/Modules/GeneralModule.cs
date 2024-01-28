@@ -31,7 +31,7 @@ public class GeneralModule(
   {
     try
     {
-      await DeferAsync(true).ConfigureAwait(false);
+      await DeferAsync(true);
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
@@ -40,14 +40,14 @@ public class GeneralModule(
         {
           ModuleHelper.HandleCommandFailed(commandResponse);
 
-          await FollowupAsync(commandResponse.Message).ConfigureAwait(false);
+          await FollowupAsync(commandResponse.Message);
 
           return;
         }
 
         if (!string.IsNullOrEmpty(commandResponse.Message))
         {
-          await FollowupAsync(commandResponse.Message).ConfigureAwait(false);
+          await FollowupAsync(commandResponse.Message);
         }
       }
     }
@@ -67,14 +67,14 @@ public class GeneralModule(
   {
     try
     {
-      await DeferAsync(true).ConfigureAwait(false);
+      await DeferAsync(true);
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
         CommandResponse commandResponse =
-          await voiceService.LeaveVoiceChannelAsync(user, channel).ConfigureAwait(false);
+          await voiceService.LeaveVoiceChannelAsync(user, channel);
 
-        await ModuleHelper.HandleCommandResponseAsync(commandResponse, Context).ConfigureAwait(false);
+        await ModuleHelper.HandleCommandResponseAsync(commandResponse, Context);
       }
       else
       {
@@ -99,16 +99,15 @@ public class GeneralModule(
     {
       logger.LogDebug("Ping command invoked");
 
-      await Context.Interaction.RespondAsync("Ping?").ConfigureAwait(false);
+      await Context.Interaction.RespondAsync("Ping?");
 
       var client = Context.Client;
-      var responseTime = await Context.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
+      var responseTime = await Context.Interaction.GetOriginalResponseAsync();
       var latency = client.Latency;
       var message = $"Pong! Response time: {responseTime.CreatedAt - Context.Interaction.CreatedAt}, " +
                     $"Latency: {latency}ms";
 
-      await Context.Interaction.ModifyOriginalResponseAsync(properties => properties.Content = message)
-        .ConfigureAwait(false);
+      await Context.Interaction.ModifyOriginalResponseAsync(properties => properties.Content = message);
 
       logger.LogDebug("Ping command completed");
     }
@@ -145,13 +144,11 @@ public class GeneralModule(
           Color = Constants.ThemeColor
         };
 
-        await RespondAsync(embeds: [embedBuilder.Build()])
-          .ConfigureAwait(false);
+        await RespondAsync(embeds: [embedBuilder.Build()]);
       }
       else
       {
-        await RespondAsync($"No command found with the name `{commandName}`.")
-          .ConfigureAwait(false);
+        await RespondAsync($"No command found with the name `{commandName}`.");
       }
     }
     else
@@ -194,8 +191,7 @@ public class GeneralModule(
         }
       }
 
-      await RespondAsync(embeds: [embedBuilder.Build()])
-        .ConfigureAwait(false);
+      await RespondAsync(embeds: [embedBuilder.Build()]);
     }
   }
   catch (Exception exception)

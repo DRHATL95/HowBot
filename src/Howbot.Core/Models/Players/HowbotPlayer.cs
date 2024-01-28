@@ -27,7 +27,7 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
     
     if (TextChannel is not null && Configuration.IsDebug())
     {
-      await TextChannel.SendMessageAsync("Player is being tracked as active").ConfigureAwait(false);
+      await TextChannel.SendMessageAsync("Player is being tracked as active");
     }
   }
 
@@ -50,7 +50,7 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
 
     if (TextChannel is not null && Configuration.IsDebug())
     {
-      await TextChannel.SendMessageAsync("Player is being tracked as inactive").ConfigureAwait(false);
+      await TextChannel.SendMessageAsync("Player is being tracked as inactive");
     }
   }
 }

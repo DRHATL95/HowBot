@@ -120,6 +120,10 @@ public abstract record Constants
     // Lyrics Command
     public const string LyricsCommandName = "lyrics";
     public const string LyricsCommandDescription = "Gets lyrics from lyrics.ovh for the current playing track.";
+    
+    // Queue Command
+    public const string QueueCommandName = "queue";
+    public const string QueueCommandDescription = "Gets the current music queue for the server.";
 
     #region Admin Commands
 

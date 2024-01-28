@@ -57,8 +57,7 @@ public class MusicService(
 
     if (context.User is not SocketGuildUser guildUser)
     {
-      await context.Interaction.FollowupAsync("Unable to create player, command requested by non-guild member.")
-        .ConfigureAwait(false);
+      await context.Interaction.FollowupAsync("Unable to create player, command requested by non-guild member.");
 
       return null;
     }
@@ -80,7 +79,7 @@ public class MusicService(
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
     }
 
-    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions(context.Channel as ITextChannel, context.User as IGuildUser)
+    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions(context.Channel as ITextChannel, guildUser)
     {
       DisconnectOnDestroy = true,
       DisconnectOnStop = true,
@@ -91,10 +90,9 @@ public class MusicService(
     };
 
     var result = await audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
-        CreatePlayerAsync,
-        retrieveOptions: retrieveOptions, options: new OptionsWrapper<HowbotPlayerOptions>(playerOptions),
-        cancellationToken: cancellationToken)
-      .ConfigureAwait(false);
+      CreatePlayerAsync,
+      retrieveOptions: retrieveOptions, options: new OptionsWrapper<HowbotPlayerOptions>(playerOptions),
+      cancellationToken: cancellationToken);
 
     if (result.IsSuccess)
     {
@@ -118,8 +116,7 @@ public class MusicService(
       _ => "An unknown error occurred while creating the player."
     };
 
-    await context.Interaction.FollowupAsync(errorMessage)
-      .ConfigureAwait(false);
+    await context.Interaction.FollowupAsync(errorMessage);
 
     return null;
   }
@@ -198,16 +195,14 @@ public class MusicService(
       var categories = ImmutableArray.Create(SearchCategory.Track);
 
       var searchResult = await audioService.Tracks
-        .SearchAsync(searchRequest, loadOptions: trackOptions, categories: categories)
-        .ConfigureAwait(false);
+        .SearchAsync(searchRequest, loadOptions: trackOptions, categories: categories);
 
       LavalinkTrack track;
       if (searchResult is null || searchResult.Tracks.IsDefaultOrEmpty)
       {
         // Attempts to use native lavalink native search when lava search plugin isn't working or doesn't return results for categories specified
         track = await audioService.Tracks
-          .LoadTrackAsync(searchRequest, trackOptions)
-          .ConfigureAwait(false);
+          .LoadTrackAsync(searchRequest, trackOptions);
       }
       else
       {
@@ -216,7 +211,7 @@ public class MusicService(
 
       if (track != null)
       {
-        await player.PlayAsync(track).ConfigureAwait(false);
+        await player.PlayAsync(track);
 
         return CommandResponse.CommandSuccessful(track);
       }
@@ -234,7 +229,7 @@ public class MusicService(
   {
     try
     {
-      await player.PauseAsync().ConfigureAwait(false);
+      await player.PauseAsync();
 
       return CommandResponse.CommandSuccessful(Messages.Responses.CommandPausedSuccessfulResponse);
     }
@@ -249,7 +244,7 @@ public class MusicService(
   {
     try
     {
-      await player.ResumeAsync().ConfigureAwait(false);
+      await player.ResumeAsync();
 
       return CommandResponse.CommandSuccessful("Successfully resumed track.");
     }
@@ -264,7 +259,7 @@ public class MusicService(
   {
     try
     {
-      await player.SkipAsync(numberOfTracks ?? 1).ConfigureAwait(false);
+      await player.SkipAsync(numberOfTracks ?? 1);
 
       return CommandResponse.CommandSuccessful($"Skipped {numberOfTracks} tracks in queue.");
     }
@@ -281,7 +276,7 @@ public class MusicService(
     {
       Logger.LogDebug($"Seeking to {seekPosition:g}.");
 
-      await player.SeekAsync(seekPosition).ConfigureAwait(false);
+      await player.SeekAsync(seekPosition);
 
       return CommandResponse.CommandSuccessful($"Seeking to {seekPosition:g}.");
     }
@@ -301,7 +296,7 @@ public class MusicService(
 
     try
     {
-      await player.SetVolumeAsync(newVolume / 100f).ConfigureAwait(false);
+      await player.SetVolumeAsync(newVolume / 100f);
 
       using var scope = serviceProvider.CreateScope();
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
@@ -309,8 +304,7 @@ public class MusicService(
       // Entry already exists in db
       if (db.DoesGuildExist(player.GuildId))
       {
-        await db.UpdatePlayerVolumeLevel(player.GuildId, newVolume)
-          .ConfigureAwait(false);
+        await db.UpdatePlayerVolumeLevel(player.GuildId, newVolume);
       }
       else
       {

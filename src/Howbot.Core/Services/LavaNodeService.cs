@@ -110,7 +110,7 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
 
   public async ValueTask DisposeAsync()
   {
-    await audioService.DisposeAsync().ConfigureAwait(false);
+    await audioService.DisposeAsync();
 
     audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
     audioService.TrackEnded -= AudioServiceOnTrackEnded;

@@ -27,9 +27,8 @@ public class EfRepository(AppDbContext dbContext) : IRepository
   public async Task<T> AddAsync<T>(T entity) where T : BaseEntity
   {
     dbContext.Set<T>().Add(entity);
-    
-    await dbContext.SaveChangesAsync()
-      .ConfigureAwait(false);
+
+    await dbContext.SaveChangesAsync();
 
     return entity;
   }
@@ -62,8 +61,7 @@ public class EfRepository(AppDbContext dbContext) : IRepository
     dbContext.Set<T>().Attach(entity);
     
     dbContext.Entry(entity).State = EntityState.Modified;
-    
-    await dbContext.SaveChangesAsync()
-      .ConfigureAwait(false);
+
+    await dbContext.SaveChangesAsync();
   }
 }

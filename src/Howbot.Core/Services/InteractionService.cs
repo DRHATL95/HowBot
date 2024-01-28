@@ -51,7 +51,7 @@ public class InteractionService : Discord.Interactions.InteractionService, IInte
 
   public async Task Initialize()
   {
-    await AddModulesToDiscordBotAsync().ConfigureAwait(false);
+    await AddModulesToDiscordBotAsync();
     
     this.InteractionExecuted += OnInteractionExecuted;
   }
@@ -60,30 +60,31 @@ public class InteractionService : Discord.Interactions.InteractionService, IInte
   {
     if (!result.IsSuccess)
     {
-      await DiscordHelper.HandleSocketInteractionErrorAsync(interactionContext.Interaction as SocketInteraction, result, Logger).ConfigureAwait(false);
+      await DiscordHelper.HandleSocketInteractionErrorAsync(interactionContext.Interaction as SocketInteraction, result,
+        Logger);
     }
   }
 
   public async Task RegisterCommandsToGuildAsync(ulong discordDevelopmentGuildId)
   {
-    await base.RegisterCommandsToGuildAsync(discordDevelopmentGuildId).ConfigureAwait(false);
+    await base.RegisterCommandsToGuildAsync(discordDevelopmentGuildId);
   }
 
   public async Task RegisterCommandsGloballyAsync()
   {
-    await base.RegisterCommandsGloballyAsync().ConfigureAwait(false);
+    await base.RegisterCommandsGloballyAsync();
   }
 
   public async Task<IResult> ExecuteCommandAsync(SocketInteractionContext context)
   {
-    return await base.ExecuteCommandAsync(context, _services).ConfigureAwait(false);
+    return await base.ExecuteCommandAsync(context, _services);
   }
 
   private async Task AddModulesToDiscordBotAsync()
   {
     try
     {
-      var modules = await AddModulesAsync(Assembly.GetExecutingAssembly(), _services).ConfigureAwait(false);
+      var modules = await AddModulesAsync(Assembly.GetExecutingAssembly(), _services);
       if (!modules.Any())
       {
         throw new Exception("No modules were added to the Discord bot.");

@@ -93,7 +93,7 @@ public class DiscordClientService(
   {
     Logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
 
-    await discordSocketClient.Rest.DeleteAllGlobalCommandsAsync().ConfigureAwait(false);
+    await discordSocketClient.Rest.DeleteAllGlobalCommandsAsync();
 
     try
     {
@@ -157,13 +157,13 @@ public class DiscordClientService(
     try
     {
       var context = new SocketInteractionContext(discordSocketClient, socketInteraction);
-      var result = await interactionService.ExecuteCommandAsync(context).ConfigureAwait(false);
+      var result = await interactionService.ExecuteCommandAsync(context);
 
       // Due to async nature of InteractionFramework, the result here may always be success.
       // That's why we also need to handle the InteractionExecuted event.
       if (!result.IsSuccess)
       {
-        await DiscordHelper.HandleSocketInteractionErrorAsync(socketInteraction, result, Logger).ConfigureAwait(false);
+        await DiscordHelper.HandleSocketInteractionErrorAsync(socketInteraction, result, Logger);
       }
     }
     catch (Exception exception)
@@ -175,9 +175,7 @@ public class DiscordClientService(
         Logger.LogInformation("Attempting to delete the failed command..");
 
         // If exception is thrown, acknowledgement will still be there. This will clean-up.
-        await socketInteraction.GetOriginalResponseAsync().ContinueWith(async task =>
-          await task.Result.DeleteAsync().ConfigureAwait(false)
-        );
+        await socketInteraction.DeleteOriginalResponseAsync();
 
         Logger.LogInformation("Successfully deleted the failed command.");
       }
@@ -192,8 +190,7 @@ public class DiscordClientService(
     {
       Guard.Against.NullOrWhiteSpace(discordToken, nameof(discordToken));
 
-      await discordSocketClient.LoginAsync(TokenType.Bot, discordToken)
-        .ConfigureAwait(false);
+      await discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
     }
     catch (ArgumentException argumentException)
     {
@@ -212,12 +209,12 @@ public class DiscordClientService(
     try
     {
       // Will signal ready state. Must be called only when bot has finished logging in.
-      await discordSocketClient.StartAsync().ConfigureAwait(false);
+      await discordSocketClient.StartAsync();
 
       // Only in debug, set bots online presence to offline
       if (Configuration.IsDebug())
       {
-        await discordSocketClient.SetStatusAsync(UserStatus.Invisible).ConfigureAwait(false);
+        await discordSocketClient.SetStatusAsync(UserStatus.Invisible);
       }
     }
     catch (Exception exception)

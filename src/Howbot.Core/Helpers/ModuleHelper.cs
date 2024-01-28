@@ -82,21 +82,22 @@ public static class ModuleHelper
   {
     if (shouldDelete)
     {
-      var originalResponse = await context.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
-      await originalResponse.DeleteAsync().ConfigureAwait(false);
+      var originalResponse = await context.Interaction.GetOriginalResponseAsync();
+
+      await originalResponse.DeleteAsync();
     }
 
     if (response.IsSuccessful)
     {
       if (response.Embed != null)
       {
-        await context.Interaction.FollowupAsync(embed: response.Embed as Embed).ConfigureAwait(false);
+        await context.Interaction.FollowupAsync(embed: response.Embed as Embed);
         return;
       }
 
       if (!string.IsNullOrEmpty(response.Message))
       {
-        await context.Interaction.FollowupAsync(response.Message).ConfigureAwait(false);
+        await context.Interaction.FollowupAsync(response.Message);
       }
     }
     else
@@ -108,7 +109,7 @@ public static class ModuleHelper
 
       if (!string.IsNullOrEmpty(response.Message))
       {
-        await context.Interaction.FollowupAsync(response.Message).ConfigureAwait(false);
+        await context.Interaction.FollowupAsync(response.Message);
       }
     }
   }

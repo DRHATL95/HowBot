@@ -32,7 +32,7 @@ public static class Program
       }
 
       // Will run indefinitely until canceled w/ cancellation token or process is stopped.
-      await hostBuilder.RunConsoleAsync().ConfigureAwait(false);
+      await hostBuilder.RunConsoleAsync();
     }
     catch (Exception exception)
     {

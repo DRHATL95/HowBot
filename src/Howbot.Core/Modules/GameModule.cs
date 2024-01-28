@@ -13,21 +13,19 @@ public class GameModule(ILoggerAdapter<GameModule> logger) : InteractionModuleBa
   [RequireContext(ContextType.Guild)]
   public async Task RollCommandAsync()
   {
-    await DeferAsync().ConfigureAwait(false);
+    await DeferAsync();
     
     try
     {
       var responseMessage =
-        await ModifyOriginalResponseAsync(properties => properties.Content = $"Rolling dice..")
-          .ConfigureAwait(false);
+        await ModifyOriginalResponseAsync(properties => properties.Content = "Rolling dice..");
 
       if (responseMessage is null) return;
 
       var random = new Random();
       var roll = random.Next(1, 7);
-      
-      await ModifyOriginalResponseAsync(properties => properties.Content = $"You rolled a {roll}!")
-        .ConfigureAwait(false);
+
+      await ModifyOriginalResponseAsync(properties => properties.Content = $"You rolled a {roll}!");
     }
     catch (Exception ex)
     {
