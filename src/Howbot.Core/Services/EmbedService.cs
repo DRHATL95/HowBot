@@ -76,7 +76,7 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
       {
         IsInline = true,
         Name = "Position",
-        Value = $@"{trackPosition.Value.Position:hh\:mm\:ss} / {trackPosition.Value.UnsyncedDuration:hh\:mm\:ss}"
+        Value = $@"{trackPosition.Value.Position:hh\:mm\:ss} / {lavalinkTrack.Duration:hh\:mm\:ss}"
       });
     }
     
@@ -188,7 +188,7 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
   private EmbedBuilder GenerateEmbedBuilderForNowPlaying(ExtendedLavalinkTrack lavalinkTrack, IUser user)
   {
     var embedBuilder = new EmbedBuilder()
-      .WithTitle("🎵 Now Playing: " + lavalinkTrack.Title + " 🎵")
+      .WithTitle(lavalinkTrack.Title)
       .WithUrl(lavalinkTrack.Track.Uri?.AbsoluteUri ?? string.Empty)
       .WithThumbnailUrl(lavalinkTrack.ArtworkUri?.AbsoluteUri ?? string.Empty)
       .WithColor(Constants.ThemeColor)
