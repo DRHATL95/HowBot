@@ -1,7 +1,11 @@
-﻿namespace Howbot.Core.Models;
+﻿using Discord;
+
+namespace Howbot.Core.Models;
 
 public abstract record Constants
 {
+  public static readonly Color ThemeColor = Color.DarkPurple;
+
   // Discord Development Server (DevTest2)
   public const ulong DiscordDevelopmentGuildId = 656305202185633810;
   public const string BotName = "Howbot";

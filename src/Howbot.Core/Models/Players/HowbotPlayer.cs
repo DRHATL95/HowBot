@@ -14,8 +14,9 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
   : QueuedLavalinkPlayer(properties), IInactivityPlayerListener
 {
   // public bool IsTwoFourSevenEnabled { get; set; } = false;
-  private readonly ITextChannel _textChannel = properties.Options.Value.TextChannel;
   private readonly ILogger<HowbotPlayer> _logger = properties.Logger;
+  public ITextChannel TextChannel { get; } = properties.Options.Value.TextChannel;
+  public IUser User { get; } = properties.Options.Value.LastRequestedBy;
 
   public async ValueTask NotifyPlayerActiveAsync(PlayerTrackingState trackingState,
     CancellationToken cancellationToken = default)
@@ -24,9 +25,9 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
     
     _logger.LogDebug("Player is being tracked as active");
     
-    if (_textChannel is not null && Configuration.IsDebug())
+    if (TextChannel is not null && Configuration.IsDebug())
     {
-      await _textChannel.SendMessageAsync("Player is being tracked as active").ConfigureAwait(false);
+      await TextChannel.SendMessageAsync("Player is being tracked as active").ConfigureAwait(false);
     }
   }
 
@@ -47,9 +48,9 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
     
     _logger.LogDebug("Player is being tracked as inactive");
 
-    if (_textChannel is not null && Configuration.IsDebug())
+    if (TextChannel is not null && Configuration.IsDebug())
     {
-      await _textChannel.SendMessageAsync("Player is being tracked as inactive").ConfigureAwait(false);
+      await TextChannel.SendMessageAsync("Player is being tracked as inactive").ConfigureAwait(false);
     }
   }
 }

@@ -2,6 +2,7 @@
 
 public static class Emojis
 {
+  public static string Speaker => ":speaker:";
   public static string PlayPauseButton => ":play_pause:";
   public static string PlayButton => ":arrow_forward:";
   public static string PauseButton => ":pause_button:";

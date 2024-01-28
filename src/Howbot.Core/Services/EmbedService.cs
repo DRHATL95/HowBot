@@ -5,14 +5,12 @@ using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Lavalink4NET.Integrations.Lavasrc;
+using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
-using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Services;
 
-/// <summary>
-///   Service class for creating and generating embeds.
-/// </summary>
 public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<EmbedService>(logger), IEmbedService
 {
   /// <summary>
@@ -60,70 +58,47 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
 
     return embedBuilder.Build();
   }
-
-  /// <summary>
-  ///   Generates an embed for the currently playing music.
-  /// </summary>
-  /// <param name="track">The currently playing track.</param>
-  /// <param name="user">The user playing the track.</param>
-  /// <param name="textChannel">The text channel where the track is being played.</param>
-  /// <param name="position">The current position of the track.</param>
-  /// <param name="volume">The volume of the track.</param>
-  /// <returns>The generated embed for displaying the now playing music.</returns>
-  public IEmbed GenerateMusicNowPlayingEmbed(LavalinkTrack track, IGuildUser user,
-    ITextChannel textChannel, TimeSpan? position, float volume)
+  
+  public IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user, TrackPosition? trackPosition, float volume)
   {
-    ArgumentException.ThrowIfNullOrEmpty(nameof(track));
-    ArgumentException.ThrowIfNullOrEmpty(nameof(user));
-    ArgumentException.ThrowIfNullOrEmpty(nameof(textChannel));
-
-    EmbedOptions defaultEmbedOptions = new EmbedOptions { Title = "Your song is now playing." };
-
-    // TODO: Replace with image downloaded within project.
-    Uri trackArtworkUri = track.ArtworkUri ?? new Uri("https://i.imgur.com/Lf76JRO.png");
-
-    try
+    var embedBuilder = GenerateEmbedBuilderForNowPlaying(lavalinkTrack, user);
+    
+    embedBuilder.Fields.Add(new EmbedFieldBuilder()
     {
-      var embedBuilder = new EmbedBuilder()
-        .WithColor(Color.Default)
-        .WithTitle($"{track.Title} - {track.Author}")
-        .WithUrl(track.Uri?.AbsoluteUri ?? string.Empty)
-        .WithThumbnailUrl(trackArtworkUri?.AbsoluteUri)
-        .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
-        .WithCurrentTimestamp();
+      IsInline = true,
+      Name = "Source",
+      Value = LavalinkHelper.GetSourceAsString(lavalinkTrack.SourceName)
+    });
 
-      if (!string.IsNullOrEmpty(track.SourceName))
-      {
-        embedBuilder.Fields.Add(new EmbedFieldBuilder()
-        {
-          IsInline = true, Name = "Source", Value = LavalinkHelper.GetSourceAsString(track.SourceName)
-        });
-      }
-
-      if (position.HasValue)
-      {
-        embedBuilder.Fields.Add(new EmbedFieldBuilder()
-        {
-          IsInline = true,
-          Name = "Position",
-          Value =
-            $@"{position.Value:hh\:mm\:ss}/{track.Duration:hh\:mm\:ss}"
-        });
-      }
-
-      embedBuilder.Fields.Add(new EmbedFieldBuilder { IsInline = true, Name = "Volume", Value = $"{volume * 100}%" });
-
-      var embed = embedBuilder.Build();
-
-      return embed;
-    }
-    catch (Exception exception)
+    if (trackPosition.HasValue)
     {
-      Logger.LogError(exception, nameof(GenerateMusicNowPlayingEmbed));
-      return CreateEmbed(defaultEmbedOptions);
+      embedBuilder.Fields.Add(new EmbedFieldBuilder()
+      {
+        IsInline = true,
+        Name = "Position",
+        Value = $@"{trackPosition.Value.Position:hh\:mm\:ss} / {trackPosition.Value.UnsyncedDuration:hh\:mm\:ss}"
+      });
     }
+    
+    embedBuilder.Fields.Add(new EmbedFieldBuilder()
+    {
+      IsInline = true,
+      Name = "Volume",
+      Value = $"{volume * 100}%"
+    });
+    
+    return embedBuilder.Build();
   }
+  
+  public IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack)
+  {
+    var embedBuilder = new EmbedBuilder()
+      .WithDescription($"{Emojis.Speaker} Now Playing: **{lavalinkTrack.Title}**")
+      .WithColor(Constants.ThemeColor);
 
+    return embedBuilder.Build();
+  }
+  
   /// <summary>
   ///   Generates an embed for the next track in the given track queue.
   /// </summary>
@@ -209,4 +184,18 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
       return new EmbedFooterBuilder();
     }
   }
+
+  private EmbedBuilder GenerateEmbedBuilderForNowPlaying(ExtendedLavalinkTrack lavalinkTrack, IUser user)
+  {
+    var embedBuilder = new EmbedBuilder()
+      .WithTitle("🎵 Now Playing: " + lavalinkTrack.Title + " 🎵")
+      .WithUrl(lavalinkTrack.Track.Uri?.AbsoluteUri ?? string.Empty)
+      .WithThumbnailUrl(lavalinkTrack.ArtworkUri?.AbsoluteUri ?? string.Empty)
+      .WithColor(Constants.ThemeColor)
+      .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
+      .WithCurrentTimestamp();
+    
+    return embedBuilder;
+  }
+  
 }

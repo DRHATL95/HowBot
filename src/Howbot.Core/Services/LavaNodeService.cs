@@ -1,15 +1,20 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
+using Discord;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
+using Howbot.Core.Models.Players;
 using Lavalink4NET;
 using Lavalink4NET.Clients.Events;
 using Lavalink4NET.Events;
 using Lavalink4NET.Events.Players;
+using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Protocol.Payloads.Events;
 
 namespace Howbot.Core.Services;
 
-public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger)
+public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger, IEmbedService embedService)
   : ServiceBase<LavaNodeService>(logger), ILavaNodeService, IAsyncDisposable
 {
   public override void Initialize()
@@ -58,13 +63,16 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
     return Task.CompletedTask;
   }
 
-  private Task AudioServiceOnTrackStarted(object sender, TrackStartedEventArgs eventArgs)
+  private async Task AudioServiceOnTrackStarted(object sender, TrackStartedEventArgs eventArgs)
   {
-    // await FollowupAsync($"🔈 Playing: <{response.LavalinkTrack?.Uri}>").ConfigureAwait(false);
-    
+    // Get text channel and send message to it
+    var player = (HowbotPlayer)eventArgs.Player;
+    var track = eventArgs.Track;
+    var channel = player.TextChannel;
+
     Logger.LogDebug("Starting track [{TrackTitle}]", eventArgs.Track.Title);
 
-    return Task.CompletedTask;
+    await channel.SendMessageAsync(embed: embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(track)) as Embed);
   }
 
   private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventArgs)
@@ -85,7 +93,7 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
         eventArgs.Reason);
       return Task.CompletedTask;
     }
-
+    
     Logger.LogDebug("Current song [{SongName}] has ended.", eventArgs.Track.Title);
 
     return Task.CompletedTask;

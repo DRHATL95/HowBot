@@ -16,6 +16,7 @@ using Lavalink4NET;
 using Lavalink4NET.Clients;
 using Lavalink4NET.Integrations.Lavasearch;
 using Lavalink4NET.Integrations.Lavasearch.Extensions;
+using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
 using Lavalink4NET.Rest.Entities.Tracks;
@@ -79,7 +80,7 @@ public class MusicService(
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
     }
 
-    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions(context.Channel as ITextChannel)
+    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions(context.Channel as ITextChannel, context.User as IGuildUser)
     {
       DisconnectOnDestroy = true,
       DisconnectOnStop = true,
@@ -157,7 +158,7 @@ public class MusicService(
   ///   A <see cref="ValueTask{TResult}" /> representing the asynchronous operation. The result of the task will be
   ///   the created <see cref="HowbotPlayer" /> instance.
   /// </returns>
-  private static ValueTask<HowbotPlayer> CreatePlayerAsync(
+  private ValueTask<HowbotPlayer> CreatePlayerAsync(
     IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties,
     CancellationToken cancellationToken = default)
   {
@@ -190,8 +191,8 @@ public class MusicService(
     {
       // Convert from enum to Lavalink struct for searching providers (default is YouTube)
       var type = LavalinkHelper.ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
-
-      var trackOptions = new TrackLoadOptions(type);
+      
+      var trackOptions = new TrackLoadOptions(type, StrictSearchBehavior.Resolve);
 
       // LavaSearch categories to be returned (Tracks, Albums, Artists, etc.)
       var categories = ImmutableArray.Create(SearchCategory.Track);
@@ -334,9 +335,9 @@ public class MusicService(
       {
         return CommandResponse.CommandNotSuccessful("No track is currently playing.");
       }
-      
-      var embed = embedService.GenerateMusicNowPlayingEmbed(player.CurrentTrack, user, textChannel,
-        player.Position?.Position, player.Volume);
+
+      var embed = embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(player.CurrentTrack), user,
+        player.Position, player.Volume);
 
       return CommandResponse.CommandSuccessful(embed);
     }

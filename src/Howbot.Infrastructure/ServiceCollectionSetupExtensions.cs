@@ -9,7 +9,9 @@ using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data;
 using Howbot.Infrastructure.Http;
 using Lavalink4NET.Extensions;
+using Lavalink4NET.InactivityTracking;
 using Lavalink4NET.InactivityTracking.Extensions;
+using Lavalink4NET.InactivityTracking.Trackers.Idle;
 using Lavalink4NET.InactivityTracking.Trackers.Users;
 using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -85,12 +87,24 @@ public static class ServiceCollectionSetupExtensions
     services.AddLyrics();
     services.AddInactivityTracking();
 
-    services.ConfigureInactivityTracking(x => { });
+    services.ConfigureInactivityTracking(x =>
+    {
+      x.DefaultTimeout = TimeSpan.FromSeconds(30); // default
+      x.DefaultPollInterval = TimeSpan.FromSeconds(10); // default is 5 seconds
+      x.TrackingMode = InactivityTrackingMode.Any; // default
+      x.InactivityBehavior = PlayerInactivityBehavior.None; // default
+      x.UseDefaultTrackers = true; // default
+      x.TimeoutBehavior = InactivityTrackingTimeoutBehavior.Lowest; // default
+    });
+    services.Configure<IdleInactivityTrackerOptions>(x =>
+    {
+      x.Timeout = TimeSpan.FromSeconds(10); // default
+    });
     services.Configure<UsersInactivityTrackerOptions>(x =>
     {
-      x.Threshold = 1;
-      x.Timeout = TimeSpan.FromSeconds(30);
-      x.ExcludeBots = true;
+      x.Threshold = 1; // default
+      x.Timeout = TimeSpan.FromSeconds(30); // default is 10 seconds
+      x.ExcludeBots = true; // default
     });
 
     // Transient Services
