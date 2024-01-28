@@ -33,29 +33,6 @@ public class InteractionHandlerService(
     // _interactionService.AutocompleteHandlerExecuted += InteractionServiceOnAutocompleteHandlerExecuted;
   }
 
-  private Task InteractionServiceOnAutocompleteHandlerExecuted(IAutocompleteHandler arg1, IInteractionContext arg2,
-    IResult arg3)
-  {
-    throw new NotImplementedException();
-  }
-
-  private Task InteractionServiceOnAutocompleteCommandExecuted(AutocompleteCommandInfo arg1, IInteractionContext arg2,
-    IResult arg3)
-  {
-    throw new NotImplementedException();
-  }
-
-  private Task InteractionServiceOnContextCommandExecuted(ContextCommandInfo arg1, IInteractionContext arg2,
-    IResult arg3)
-  {
-    throw new NotImplementedException();
-  }
-
-  private Task InteractionServiceOnSlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
-  {
-    throw new NotImplementedException();
-  }
-
   private Task InteractionServiceOnLog(LogMessage logMessage)
   {
     try
@@ -111,4 +88,27 @@ public class InteractionHandlerService(
       Logger.LogError(exception, "An exception occurred while handling interaction command execution");
     }
   }
+  
+  /*private Task InteractionServiceOnAutocompleteHandlerExecuted(IAutocompleteHandler arg1, IInteractionContext arg2,
+    IResult arg3)
+  {
+    throw new NotImplementedException();
+  }
+
+  private Task InteractionServiceOnAutocompleteCommandExecuted(AutocompleteCommandInfo arg1, IInteractionContext arg2,
+    IResult arg3)
+  {
+    throw new NotImplementedException();
+  }
+
+  private Task InteractionServiceOnContextCommandExecuted(ContextCommandInfo arg1, IInteractionContext arg2,
+    IResult arg3)
+  {
+    throw new NotImplementedException();
+  }
+
+  private Task InteractionServiceOnSlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
+  {
+    throw new NotImplementedException();
+  }*/
 }

@@ -6,7 +6,7 @@ namespace Howbot.Infrastructure.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-  public virtual DbSet<Guild> Guilds { get; init; }
+  public DbSet<Guild> Guilds { get; set; }
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

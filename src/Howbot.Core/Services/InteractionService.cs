@@ -1,11 +1,12 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Interactions;
 using Discord.Rest;
 using Discord.WebSocket;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 
 namespace Howbot.Core.Services;
@@ -13,6 +14,8 @@ namespace Howbot.Core.Services;
 public class InteractionService : Discord.Interactions.InteractionService, IInteractionService
 {
   private readonly IServiceProvider _services;
+  
+  #region Constructors
 
   public InteractionService(DiscordSocketClient discord, IServiceProvider services,
     ILoggerAdapter<InteractionService> logger, InteractionServiceConfig config = null) : base(discord, config)
@@ -42,26 +45,38 @@ public class InteractionService : Discord.Interactions.InteractionService, IInte
     _services = services;
   }
 
-  public ILoggerAdapter<InteractionService> Logger { get; }
+  #endregion
 
-  public async void Initialize()
+  private ILoggerAdapter<InteractionService> Logger { get; }
+
+  public async Task Initialize()
   {
-    await AddModulesToDiscordBotAsync();
+    await AddModulesToDiscordBotAsync().ConfigureAwait(false);
+    
+    this.InteractionExecuted += OnInteractionExecuted;
   }
 
-  public Task RegisterCommandsToGuildAsync(ulong discordDevelopmentGuildId)
+  private async Task OnInteractionExecuted(ICommandInfo commandInfo, IInteractionContext interactionContext, IResult result)
   {
-    return base.RegisterCommandsToGuildAsync(discordDevelopmentGuildId);
+    if (!result.IsSuccess)
+    {
+      await DiscordHelper.HandleSocketInteractionErrorAsync(interactionContext.Interaction as SocketInteraction, result, Logger).ConfigureAwait(false);
+    }
   }
 
-  public Task RegisterCommandsGloballyAsync()
+  public async Task RegisterCommandsToGuildAsync(ulong discordDevelopmentGuildId)
   {
-    return base.RegisterCommandsGloballyAsync();
+    await base.RegisterCommandsToGuildAsync(discordDevelopmentGuildId).ConfigureAwait(false);
   }
 
-  public Task<IResult> ExecuteCommandAsync(SocketInteractionContext context)
+  public async Task RegisterCommandsGloballyAsync()
   {
-    return base.ExecuteCommandAsync(context, _services);
+    await base.RegisterCommandsGloballyAsync().ConfigureAwait(false);
+  }
+
+  public async Task<IResult> ExecuteCommandAsync(SocketInteractionContext context)
+  {
+    return await base.ExecuteCommandAsync(context, _services).ConfigureAwait(false);
   }
 
   private async Task AddModulesToDiscordBotAsync()
@@ -73,12 +88,6 @@ public class InteractionService : Discord.Interactions.InteractionService, IInte
       {
         throw new Exception("No modules were added to the Discord bot.");
       }
-    }
-    catch (FileNotFoundException exception)
-    {
-      Logger.LogError(exception, "Unable to find the assembly. Value: {AssemblyName}",
-        Assembly.GetEntryAssembly()?.ToString());
-      throw;
     }
     catch (Exception e)
     {

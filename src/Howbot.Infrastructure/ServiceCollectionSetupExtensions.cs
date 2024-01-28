@@ -10,6 +10,7 @@ using Howbot.Infrastructure.Data;
 using Howbot.Infrastructure.Http;
 using Lavalink4NET.Extensions;
 using Lavalink4NET.InactivityTracking.Extensions;
+using Lavalink4NET.InactivityTracking.Trackers.Users;
 using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -83,6 +84,14 @@ public static class ServiceCollectionSetupExtensions
     });
     services.AddLyrics();
     services.AddInactivityTracking();
+
+    services.ConfigureInactivityTracking(x => { });
+    services.Configure<UsersInactivityTrackerOptions>(x =>
+    {
+      x.Threshold = 1;
+      x.Timeout = TimeSpan.FromSeconds(30);
+      x.ExcludeBots = true;
+    });
 
     // Transient Services
     services.AddTransient<IHttpService, HttpService>();

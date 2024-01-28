@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
+using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Howbot.Core.Entities;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
@@ -16,7 +18,6 @@ using Lavalink4NET.Integrations.Lavasearch;
 using Lavalink4NET.Integrations.Lavasearch.Extensions;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
-using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
 using Lavalink4NET.Tracks;
 using Microsoft.Extensions.DependencyInjection;
@@ -70,7 +71,7 @@ public class MusicService(
       VoiceStateBehavior: requireChannel ? MemberVoiceStateBehavior.RequireSame : MemberVoiceStateBehavior.Ignore,
       Preconditions: preconditions);
 
-    int persistedVolume;
+    float persistedVolume;
 
     using (var scope = serviceProvider.CreateScope())
     {
@@ -78,7 +79,7 @@ public class MusicService(
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
     }
 
-    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions()
+    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions(context.Channel as ITextChannel)
     {
       DisconnectOnDestroy = true,
       DisconnectOnStop = true,
@@ -94,40 +95,34 @@ public class MusicService(
         cancellationToken: cancellationToken)
       .ConfigureAwait(false);
 
-    if (!result.IsSuccess)
+    if (result.IsSuccess)
     {
-      var errorMessage = result.Status switch
-      {
-        // The user is not connected to a voice channel.
-        PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
-
-        // The bot is not in a voice channel
-        PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected to a voice channel.",
-
-        // The bot is not in the same voice channel as the user.
-        PlayerRetrieveStatus.VoiceChannelMismatch => "You are not in the same voice channel as the bot.",
-
-        // The bot failed it's precondition check.
-        PlayerRetrieveStatus.PreconditionFailed => "The bot failed it's precondition check.",
-
-        _ => "An unknown error occurred while creating the player."
-      };
-
-      await context.Interaction.FollowupAsync(errorMessage).ConfigureAwait(false);
-
-      return null;
+      return result.Player;
     }
 
-    return result.Player;
-  }
+    var errorMessage = result.Status switch
+    {
+      // The user is not connected to a voice channel.
+      PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
 
-  /// <summary>
-  ///   TODO:
-  /// </summary>
-  /// <param name="videoId"></param>
-  /// <param name="count"></param>
-  /// <returns></returns>
-  /// <exception cref="NotImplementedException"></exception>
+      // The bot is not in a voice channel
+      PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected to a voice channel.",
+
+      // The bot is not in the same voice channel as the user.
+      PlayerRetrieveStatus.VoiceChannelMismatch => "You are not in the same voice channel as the bot.",
+
+      // The bot failed it's precondition check.
+      PlayerRetrieveStatus.PreconditionFailed => "The bot failed it's precondition check.",
+
+      _ => "An unknown error occurred while creating the player."
+    };
+
+    await context.Interaction.FollowupAsync(errorMessage)
+      .ConfigureAwait(false);
+
+    return null;
+  }
+  
   public ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
   {
     throw new NotImplementedException();
@@ -167,9 +162,9 @@ public class MusicService(
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-
-    ArgumentNullException.ThrowIfNull(properties);
-
+    
+    Guard.Against.Null(properties, nameof(properties));
+    
     Log.Logger.Information("Creating new player..");
 
     return ValueTask.FromResult(new HowbotPlayer(properties));
@@ -238,8 +233,6 @@ public class MusicService(
   {
     try
     {
-      Logger.LogDebug("[{GuildId}] - Pausing current track.", player.GuildId);
-
       await player.PauseAsync().ConfigureAwait(false);
 
       return CommandResponse.CommandSuccessful(Messages.Responses.CommandPausedSuccessfulResponse);
@@ -270,18 +263,13 @@ public class MusicService(
   {
     try
     {
-      if (player is IQueuedLavalinkPlayer { State: PlayerState.Playing } queuedPlayer)
-      {
-        await queuedPlayer.SkipAsync(numberOfTracks ?? 1);
+      await player.SkipAsync(numberOfTracks ?? 1).ConfigureAwait(false);
 
-        return CommandResponse.CommandSuccessful($"Skipped {numberOfTracks} tracks in queue.");
-      }
-
-      return CommandResponse.CommandNotSuccessful("Unable to skip to position in queue.");
+      return CommandResponse.CommandSuccessful($"Skipped {numberOfTracks} tracks in queue.");
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, "Exception thrown in MusicService.SkipTrackAsync");
+      Logger.LogError(exception, nameof(SkipTrackAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -320,25 +308,25 @@ public class MusicService(
       // Entry already exists in db
       if (db.DoesGuildExist(player.GuildId))
       {
-        db.UpdatePlayerVolumeLevel(player.GuildId, newVolume);
+        await db.UpdatePlayerVolumeLevel(player.GuildId, newVolume)
+          .ConfigureAwait(false);
       }
       else
       {
         // Needs to be added to db
-        db.AddNewGuild(player.GuildId, Constants.DefaultPrefix, newVolume);
+        db.AddNewGuild(new Guild {Id = player.GuildId, Volume = newVolume});
       }
 
       return CommandResponse.CommandSuccessful($"Volume set to {newVolume}%");
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(SeekTrackAsync));
+      Logger.LogError(exception, nameof(ChangeVolumeAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
 
-  public CommandResponse NowPlaying(HowbotPlayer player, IGuildUser user,
-    ITextChannel textChannel)
+  public CommandResponse NowPlaying(HowbotPlayer player, IGuildUser user, ITextChannel textChannel)
   {
     try
     {
@@ -346,7 +334,7 @@ public class MusicService(
       {
         return CommandResponse.CommandNotSuccessful("No track is currently playing.");
       }
-
+      
       var embed = embedService.GenerateMusicNowPlayingEmbed(player.CurrentTrack, user, textChannel,
         player.Position?.Position, player.Volume);
 

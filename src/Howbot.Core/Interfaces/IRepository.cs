@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Howbot.Core.Entities;
 
 namespace Howbot.Core.Interfaces;
@@ -28,6 +29,8 @@ public interface IRepository
   /// <typeparam name="T"></typeparam>
   /// <returns></returns>
   T Add<T>(T entity) where T : BaseEntity;
+  
+  Task<T> AddAsync<T>(T entity) where T : BaseEntity;
 
   /// <summary>
   ///   Updates an EF entity
@@ -35,6 +38,8 @@ public interface IRepository
   /// <param name="entity"></param>
   /// <typeparam name="T"></typeparam>
   void Update<T>(T entity) where T : BaseEntity;
+  
+  Task UpdateAsync<T>(T entity) where T : BaseEntity;
 
   /// <summary>
   ///   Deletes an EF entity

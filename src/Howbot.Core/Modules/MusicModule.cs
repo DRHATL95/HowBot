@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -18,7 +17,6 @@ using static Howbot.Core.Models.Permissions.User;
 
 namespace Howbot.Core.Modules;
 
-[SuppressMessage("ReSharper", "UnusedType.Global")]
 public class MusicModule(IMusicService musicService, ILyricsService lyricsService, ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
@@ -27,7 +25,6 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  [SuppressMessage("ReSharper", "UnusedMember.Global")]
   public async Task PlayCommandAsync(
     [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
     string searchRequest,
@@ -66,13 +63,15 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
           return;
         }
 
-        if (player.Queue.Count == 0)
+        if (player.Queue.Any())
         {
-          await FollowupAsync($"🔈 Playing: <{response.LavalinkTrack?.Uri}>").ConfigureAwait(false);
+          await FollowupAsync($"Adding <{response.LavalinkTrack?.Uri}> to the server queue.")
+            .ConfigureAwait(false);
         }
         else
         {
-          await FollowupAsync($"Adding <{response.LavalinkTrack?.Uri}> to the server queue.");
+          await DeleteOriginalResponseAsync()
+            .ConfigureAwait(false);
         }
       }
     }

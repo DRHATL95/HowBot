@@ -12,20 +12,6 @@ namespace Howbot.Core.Services;
 public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger)
   : ServiceBase<LavaNodeService>(logger), ILavaNodeService, IAsyncDisposable
 {
-  public async ValueTask DisposeAsync()
-  {
-    await audioService.DisposeAsync().ConfigureAwait(false);
-
-    audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
-    audioService.TrackEnded -= AudioServiceOnTrackEnded;
-    audioService.TrackException -= AudioServiceOnTrackException;
-    audioService.TrackStarted -= AudioServiceOnTrackStarted;
-    audioService.TrackStuck -= AudioServiceOnTrackStuck;
-    audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
-
-    GC.SuppressFinalize(this);
-  }
-
   public override void Initialize()
   {
     base.Initialize();
@@ -44,74 +30,90 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
 
   #region Events
 
-  private Task DiscordClientOnVoiceStateUpdated(object sender, VoiceStateUpdatedEventArgs eventargs)
+  private Task DiscordClientOnVoiceStateUpdated(object sender, VoiceStateUpdatedEventArgs eventArgs)
   {
     Logger.LogDebug("Voice state updated.");
 
     return Task.CompletedTask;
   }
 
-  private Task DiscordClientOnVoiceServerUpdated(object sender, VoiceServerUpdatedEventArgs eventargs)
+  private Task DiscordClientOnVoiceServerUpdated(object sender, VoiceServerUpdatedEventArgs eventArgs)
   {
     Logger.LogDebug("Voice server updated.");
 
     return Task.CompletedTask;
   }
 
-  private Task AudioServiceOnWebSocketClosed(object sender, WebSocketClosedEventArgs eventargs)
+  private Task AudioServiceOnWebSocketClosed(object sender, WebSocketClosedEventArgs eventArgs)
   {
-    Logger.LogCritical("Discord websocket has closed for the following reason: {Reason}", eventargs.Reason);
+    Logger.LogCritical("Discord websocket has closed for the following reason: {Reason}", eventArgs.Reason);
 
     return Task.CompletedTask;
   }
 
-  private Task AudioServiceOnTrackStuck(object sender, TrackStuckEventArgs eventargs)
+  private Task AudioServiceOnTrackStuck(object sender, TrackStuckEventArgs eventArgs)
   {
-    Logger.LogInformation("Track {TrackName} is stuck while trying to play.", eventargs.Track.Identifier);
+    Logger.LogInformation("Track {TrackName} is stuck while trying to play.", eventArgs.Track.Identifier);
 
     return Task.CompletedTask;
   }
 
-  private Task AudioServiceOnTrackStarted(object sender, TrackStartedEventArgs eventargs)
+  private Task AudioServiceOnTrackStarted(object sender, TrackStartedEventArgs eventArgs)
   {
-    Logger.LogDebug("Starting track [{TrackTitle}]", eventargs.Track.Title);
+    // await FollowupAsync($"🔈 Playing: <{response.LavalinkTrack?.Uri}>").ConfigureAwait(false);
+    
+    Logger.LogDebug("Starting track [{TrackTitle}]", eventArgs.Track.Title);
 
     return Task.CompletedTask;
   }
 
-  private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventargs)
+  private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventArgs)
   {
-    var exception = new Exception(eventargs.Exception.Message);
+    var exception = new Exception(eventArgs.Exception.Message);
 
     Logger.LogError(exception, "[{Severity}] - LavaNode has thrown an exception",
-      eventargs.Exception.Severity);
+      eventArgs.Exception.Severity);
 
     return Task.CompletedTask;
   }
 
-  private Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventargs)
+  private Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventArgs)
   {
-    if (eventargs.Reason is not TrackEndReason.Finished)
+    if (eventArgs.Reason is not TrackEndReason.Finished)
     {
-      Logger.LogInformation("Track [{TrackName}] has ended with reason [{Reason}]", eventargs.Track.Title,
-        eventargs.Reason);
+      Logger.LogInformation("Track [{TrackName}] has ended with reason [{Reason}]", eventArgs.Track.Title,
+        eventArgs.Reason);
       return Task.CompletedTask;
     }
 
-    Logger.LogDebug("Current song [{SongName}] has ended.", eventargs.Track.Title);
+    Logger.LogDebug("Current song [{SongName}] has ended.", eventArgs.Track.Title);
 
     return Task.CompletedTask;
   }
 
-  private Task AudioServiceOnStatisticsUpdated(object sender, StatisticsUpdatedEventArgs eventargs)
+  private Task AudioServiceOnStatisticsUpdated(object sender, StatisticsUpdatedEventArgs eventArgs)
   {
-    Logger.LogDebug(eventargs.Statistics.ToString());
+    Logger.LogDebug(eventArgs.Statistics.ToString());
 
     return Task.CompletedTask;
   }
 
   #endregion Events
 
+  public async ValueTask DisposeAsync()
+  {
+    await audioService.DisposeAsync().ConfigureAwait(false);
+
+    audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
+    audioService.TrackEnded -= AudioServiceOnTrackEnded;
+    audioService.TrackException -= AudioServiceOnTrackException;
+    audioService.TrackStarted -= AudioServiceOnTrackStarted;
+    audioService.TrackStuck -= AudioServiceOnTrackStuck;
+    audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
+
+    GC.SuppressFinalize(this);
+  }
+  
   /*private async Task<LavalinkTrack> GetUniqueRadioTrack(ILavalinkPlayer player, int attempt = 0)
   {
     ArgumentNullException.ThrowIfNull(player);

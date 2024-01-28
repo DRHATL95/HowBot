@@ -1,22 +1,17 @@
-﻿using Howbot.Core.Entities;
+﻿using System.Threading.Tasks;
+using Howbot.Core.Entities;
 
 namespace Howbot.Core.Interfaces;
 
-/// <summary>
-///   Represents a database service for interacting with a database.
-/// </summary>
 public interface IDatabaseService
 {
-  public void Initialize();
+  void Initialize();
 
   /// <summary>
   ///   Persisting a new guild to the database.
   /// </summary>
-  /// <param name="guildId">The Discord Guild Id</param>
-  /// <param name="prefix">The message command prefix</param>
-  /// <param name="musicPlayerVolume">The audio player volume</param>
-  /// <returns>The guildId or 0 for error</returns>
-  ulong AddNewGuild(ulong guildId, string prefix, float musicPlayerVolume = 100f);
+  /// <param name="guild">The guild to be persisted</param>
+  void AddNewGuild(Guild guild);
 
   /// <summary>
   ///   Get a guild by its Discord guildId
@@ -26,24 +21,23 @@ public interface IDatabaseService
   Guild GetGuildById(ulong guildId);
 
   /// <summary>
-  ///   Returns the Guild's player volume level.
+  ///   Returns the Guild music player volume level.
   /// </summary>
-  /// <param name="guildId">The command interaction guild id</param>
-  /// <returns></returns>
-  int GetPlayerVolumeLevel(ulong guildId);
+  /// <param name="guildId">The Discord guildId used to query the Guilds table</param>
+  /// <returns>The volume level</returns>
+  float GetPlayerVolumeLevel(ulong guildId);
 
   /// <summary>
   ///   Persists the most current music player volume. Will be called after the command music service's change volume"/>
   /// </summary>
   /// <param name="playerGuildId">The Discord guildId used to update the Guilds table</param>
   /// <param name="newVolume">The new volume to be persisted</param>
-  /// <returns>The new volume saved to database.</returns>
-  float UpdatePlayerVolumeLevel(ulong playerGuildId, float newVolume);
+  Task UpdatePlayerVolumeLevel(ulong playerGuildId, float newVolume);
 
   /// <summary>
   ///   Checks if a Guild exists in the database.
   /// </summary>
   /// <param name="guildId">The Guild to check.</param>
   /// <returns>True, if Guild exists.</returns>
-  public bool DoesGuildExist(ulong guildId);
+  bool DoesGuildExist(ulong guildId);
 }
