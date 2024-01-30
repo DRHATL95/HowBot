@@ -53,11 +53,10 @@ steps:
   displayName: 'Publish Build'
   inputs:
     command: 'publish'
-    publishWebProjects: false
     projects: '$(projects)'
     arguments: '-c $(buildConfiguration) -f $(buildFramework) --runtime $(buildRuntime) --output $(buildOutputDirectory)/publish -p:PublishReadyToRun=true'
+    publishWebProjects: false
     zipAfterPublish: true
-    modifyOutputPath: false
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts'
