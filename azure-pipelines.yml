@@ -40,7 +40,7 @@ steps:
     command: 'build'
     configuration: $(buildConfiguration)
     projects: '$(projects)'
-    arguments: '--no-restore --runtime $(buildRuntime) --configuration $(buildConfiguration) --framework $(buildFramework) --output $(buildOutputDirectory) --self-contained'
+    arguments: '-c $(buildConfiguration) -f $(buildFramework) --runtime $(buildRuntime) --no-restore'
 
 # - task: DotNetCoreCLI@2
 #   displayName: 'Run Unit Tests'
@@ -55,13 +55,13 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: '$(projects)'
-    arguments: '--no-restore --no-build --framework $(buildFramework) --configuration $(buildConfiguration) --runtime $(buildRuntime) --output $(buildOutputDirectory)/publish --self-contained true'
-    zipAfterPublish: false
+    arguments: '-c $(buildConfiguration) -f $(buildFramework) --runtime $(buildRuntime) --output $(buildOutputDirectory)/publish -p:PublishReadyToRun=true'
+    zipAfterPublish: true
     modifyOutputPath: false
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts'
   inputs:
-    artifactName: 'Howbot'
+    artifactName: 'howbot-drop'
     publishLocation: 'Container'
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/publish'
