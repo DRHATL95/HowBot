@@ -8,6 +8,7 @@ using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
@@ -17,7 +18,7 @@ using static Howbot.Core.Models.Permissions.User;
 
 namespace Howbot.Core.Modules;
 
-public class MusicModule(IMusicService musicService, ILyricsService lyricsService, ILoggerAdapter<MusicModule> logger)
+public class MusicModule(IMusicService musicService, ILyricsService lyricsService, IEmbedService embedService, ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
   [SlashCommand(PlayCommandName, PlayCommandDescription, true, RunMode.Async)]
@@ -62,7 +63,9 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
 
         if (player.Queue.Any())
         {
-          await FollowupAsync($"Adding <{response.LavalinkTrack?.Uri}> to the server queue.");
+          var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack), user);
+          
+          await FollowupAsync(embed: embed as Embed);
         }
         else
         {

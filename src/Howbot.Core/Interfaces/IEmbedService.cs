@@ -38,4 +38,12 @@ public interface IEmbedService
   /// <param name="queue">The current guild music queue</param>
   /// <returns>An embed of the songs in queue up to 10 tracks.</returns>
   IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue);
+
+  /// <summary>
+  /// Create an embed for a track added to the queue.
+  /// </summary>
+  /// <param name="lavalinkTrack"></param>
+  /// <param name="user"></param>
+  /// <returns></returns>
+  IEmbed CreateTrackAddedToQueueEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user);
 }

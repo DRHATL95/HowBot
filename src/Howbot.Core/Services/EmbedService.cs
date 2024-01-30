@@ -13,11 +13,6 @@ namespace Howbot.Core.Services;
 
 public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<EmbedService>(logger), IEmbedService
 {
-  /// <summary>
-  ///   Creates an embed using the provided embed options.
-  /// </summary>
-  /// <param name="options">The options used to configure the embed.</param>
-  /// <returns>The created embed.</returns>
   public IEmbed CreateEmbed(EmbedOptions options)
   {
     Guard.Against.Null(options, nameof(options));
@@ -57,6 +52,60 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
     embedBuilder.WithCurrentTimestamp();
 
     return embedBuilder.Build();
+  }
+  
+  public IEmbed GenerateMusicNextTrackEmbed(ITrackQueue queue)
+  {
+    ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
+
+    if (!queue.TryPeek(out ITrackQueueItem nextTrackItem))
+    {
+      return CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." });
+    }
+
+    if (nextTrackItem?.Track is null)
+    {
+      return CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." });
+    }
+
+    var embed = CreateEmbed(new EmbedOptions()
+    {
+      Title = "Next Track In Queue",
+      Fields = new[]
+      {
+        new EmbedFieldBuilder()
+        {
+          IsInline = false,
+          Name = nextTrackItem.Identifier,
+          Value = $@"By: {nextTrackItem.Track.Author} | {nextTrackItem.Track.Duration:hh\:mm\:ss}"
+        }
+      }
+    });
+
+    return embed;
+  }
+  
+  public IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue)
+  {
+    Guard.Against.Null(queue, nameof(queue));
+    
+    if (queue.IsEmpty)
+    {
+      return CreateEmbed(new EmbedOptions { Title = "There are no songs in the queue." });
+    }
+
+    var queueList = queue.Count > 10
+      ? string.Join("\n", queue.Take(10).Select((item, i) => $"`{i + 1}.` {item.Track?.Title ?? "No Track Title"}"))
+      : string.Join(Environment.NewLine,
+        queue.Select((item, i) => $"`{i + 1}.` {item.Track?.Title ?? "No Track Title"}"));
+
+    var embed = CreateEmbed(new EmbedOptions()
+    {
+      Title = $"Current Queue ({queue.Count})",
+      Fields = new[] { new EmbedFieldBuilder() { IsInline = false, Name = "Songs", Value = queueList } }
+    });
+
+    return embed;
   }
   
   public IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user, TrackPosition? trackPosition, float volume)
@@ -99,75 +148,30 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
     return embedBuilder.Build();
   }
   
-  /// <summary>
-  ///   Generates an embed for the next track in the given track queue.
-  /// </summary>
-  /// <param name="queue">The track queue to generate the embed for.</param>
-  /// <returns>An embed representing the next track in the queue.</returns>
-  public IEmbed GenerateMusicNextTrackEmbed(ITrackQueue queue)
+  public IEmbed CreateTrackAddedToQueueEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user)
   {
-    ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
-
-    if (!queue.TryPeek(out ITrackQueueItem nextTrackItem))
+    var embedBuilder = new EmbedBuilder()
     {
-      return CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." });
-    }
-
-    if (nextTrackItem?.Track is null)
-    {
-      return CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." });
-    }
-
-    var embed = CreateEmbed(new EmbedOptions()
-    {
-      Title = "Next Track In Queue",
-      Fields = new[]
-      {
-        new EmbedFieldBuilder()
-        {
-          IsInline = false,
-          Name = nextTrackItem.Identifier,
-          Value = $@"By: {nextTrackItem.Track.Author} | {nextTrackItem.Track.Duration:hh\:mm\:ss}"
-        }
-      }
-    });
-
-    return embed;
+      Color = Constants.ThemeColor,
+      Description = $"{Emojis.MusicalNote} Added **{lavalinkTrack.Title}** to the queue.",
+    };
+    
+    return embedBuilder.Build();
   }
-
-  /// <summary>
-  ///   Generates an embed to display the current music queue.
-  /// </summary>
-  /// <param name="queue">The music queue to generate the embed for.</param>
-  /// <returns>An embed containing the current music queue information.</returns>
-  public IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue)
+  
+  private EmbedBuilder GenerateEmbedBuilderForNowPlaying(ExtendedLavalinkTrack lavalinkTrack, IUser user)
   {
-    ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
-
-    if (queue.IsEmpty)
-    {
-      return CreateEmbed(new EmbedOptions { Title = "There are no songs in the queue." });
-    }
-
-    var queueList = queue.Count > 10
-      ? string.Join("\n", queue.Take(10).Select((item, i) => $"`{i + 1}.` {item.Track?.Title ?? "No Track Title"}"))
-      : string.Join(Environment.NewLine,
-        queue.Select((item, i) => $"`{i + 1}.` {item.Track?.Title ?? "No Track Title"}"));
-
-    var embed = CreateEmbed(new EmbedOptions()
-    {
-      Title = $"Current Queue ({queue.Count})",
-      Fields = new[] { new EmbedFieldBuilder() { IsInline = false, Name = "Songs", Value = queueList } }
-    });
-
-    return embed;
+    var embedBuilder = new EmbedBuilder()
+      .WithTitle(lavalinkTrack.Title)
+      .WithUrl(lavalinkTrack.Track.Uri?.AbsoluteUri ?? string.Empty)
+      .WithThumbnailUrl(lavalinkTrack.ArtworkUri?.AbsoluteUri ?? string.Empty)
+      .WithColor(Constants.ThemeColor)
+      .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
+      .WithCurrentTimestamp();
+    
+    return embedBuilder;
   }
-
-  /// <summary>
-  ///   Generates an EmbedFooterBuilder object from a Discord user.
-  /// </summary>
-  /// <param name="user">The Discord user.</param>
-  /// <returns>An EmbedFooterBuilder object.</returns>
+  
   private EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser(IUser user)
   {
     try
@@ -184,18 +188,4 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
       return new EmbedFooterBuilder();
     }
   }
-
-  private EmbedBuilder GenerateEmbedBuilderForNowPlaying(ExtendedLavalinkTrack lavalinkTrack, IUser user)
-  {
-    var embedBuilder = new EmbedBuilder()
-      .WithTitle(lavalinkTrack.Title)
-      .WithUrl(lavalinkTrack.Track.Uri?.AbsoluteUri ?? string.Empty)
-      .WithThumbnailUrl(lavalinkTrack.ArtworkUri?.AbsoluteUri ?? string.Empty)
-      .WithColor(Constants.ThemeColor)
-      .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
-      .WithCurrentTimestamp();
-    
-    return embedBuilder;
-  }
-  
 }

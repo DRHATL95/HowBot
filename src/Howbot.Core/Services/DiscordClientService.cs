@@ -92,15 +92,21 @@ public class DiscordClientService(
   private async Task DiscordSocketClientOnReady()
   {
     Logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
-
-    await discordSocketClient.Rest.DeleteAllGlobalCommandsAsync();
-
+    
     try
     {
-      var registerCommandAction = GetRegisterCommandAction();
-      await registerCommandAction();
-
-      Logger.LogDebug(RegisteredCommandsMessage);
+      if (Configuration.IsDebug())
+      {
+        Logger.LogDebug("Registering commands to DEV Guild.");
+        
+        await interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
+      }
+      else
+      {
+        Logger.LogDebug("Registering commands globally.");
+        
+        await interactionService.RegisterCommandsGloballyAsync(); 
+      }
     }
     catch (Exception exception)
     {
@@ -199,7 +205,7 @@ public class DiscordClientService(
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, "An exception has been thrown logging into Discord.");
+      Logger.LogError(exception, nameof(LoginDiscordBotAsync));
       throw;
     }
   }
@@ -293,17 +299,5 @@ public class DiscordClientService(
     var message = $"Unable to look-up guild for event [{eventName}]";
     
     Logger.LogError(exception, message);
-  }
-  
-  private Func<Task> GetRegisterCommandAction()
-  {
-    if (Configuration.IsDebug())
-    {
-      Logger.LogDebug("Registering commands to DEV Guild.");
-      return () => interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
-    }
-
-    Logger.LogDebug("Registering commands globally.");
-    return interactionService.RegisterCommandsGloballyAsync;
   }
 }
