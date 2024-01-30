@@ -23,7 +23,7 @@ steps:
   displayName: 'Install .NET 8'
   inputs:
     packageType: 'sdk'
-    version: '8.0.100' # Must match what is deployed
+    useGlobalJson: true
 
 - task: DotNetCoreCLI@2
   displayName: 'Restore Project Deps.'
@@ -40,7 +40,7 @@ steps:
     command: 'build'
     configuration: $(buildConfiguration)
     projects: '$(projects)'
-    arguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration) --framework $(buildFramework) --output $(buildOutputDirectory)'
+    arguments: '--no-restore --runtime $(buildRuntime) --configuration $(buildConfiguration) --framework $(buildFramework) --output $(buildOutputDirectory) --self-contained'
 
 # - task: DotNetCoreCLI@2
 #   displayName: 'Run Unit Tests'
@@ -55,7 +55,7 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: '$(projects)'
-    arguments: '--framework $(buildFramework) --configuration $(buildConfiguration) --runtime $(buildRuntime) --output $(buildOutputDirectory)/publish --self-contained true'
+    arguments: '--no-restore --no-build --framework $(buildFramework) --configuration $(buildConfiguration) --runtime $(buildRuntime) --output $(buildOutputDirectory)/publish --self-contained true'
     zipAfterPublish: false
     modifyOutputPath: false
 
@@ -64,4 +64,4 @@ steps:
   inputs:
     artifactName: 'Howbot'
     publishLocation: 'Container'
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/publish'
