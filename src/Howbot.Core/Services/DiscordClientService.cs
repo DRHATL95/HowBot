@@ -229,13 +229,6 @@ public class DiscordClientService(
       throw;
     }
   }
-  
-  public void Dispose()
-  {
-    UnsubscribeFromDiscordSocketEvents();
-    
-    GC.SuppressFinalize(this);
-  }
 
   private void SubscribeToDiscordSocketEvents()
   {
@@ -299,5 +292,12 @@ public class DiscordClientService(
     var message = $"Unable to look-up guild for event [{eventName}]";
     
     Logger.LogError(exception, message);
+  }
+  
+  public void Dispose()
+  {
+    UnsubscribeFromDiscordSocketEvents();
+    
+    GC.SuppressFinalize(this);
   }
 }

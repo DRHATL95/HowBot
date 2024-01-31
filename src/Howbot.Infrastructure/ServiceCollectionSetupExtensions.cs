@@ -22,8 +22,6 @@ namespace Howbot.Infrastructure;
 
 public static class ServiceCollectionSetupExtensions
 {
-  private const string DatabaseConnectionStringName = "DefaultConnection";
-
   /// <summary>
   ///   Add the EF DbContext to the service collection.
   ///   Also, configure Npgsql to use the connection string from the appsettings.json file.
@@ -34,7 +32,7 @@ public static class ServiceCollectionSetupExtensions
   {
     services.AddDbContext<AppDbContext>((options) =>
       options.UseNpgsql(
-        configuration.GetConnectionString(DatabaseConnectionStringName)));
+        configuration.GetConnectionString(Constants.DatabaseConnectionStringName)));
   }
 
   /// <summary>

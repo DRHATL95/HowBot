@@ -102,9 +102,10 @@ public class GeneralModule(
       await Context.Interaction.RespondAsync("Ping?");
 
       var client = Context.Client;
-      var responseTime = await Context.Interaction.GetOriginalResponseAsync();
+      var interactionMessage = await Context.Interaction.GetOriginalResponseAsync();
       var latency = client.Latency;
-      var message = $"Pong! Response time: {responseTime.CreatedAt - Context.Interaction.CreatedAt}, " +
+      var responseTime = interactionMessage.CreatedAt - Context.Interaction.CreatedAt;
+      var message = $"Pong! Response time: {Math.Round(responseTime.TotalSeconds, 2)}s, " +
                     $"Latency: {latency}ms";
 
       await Context.Interaction.ModifyOriginalResponseAsync(properties => properties.Content = message);
@@ -139,7 +140,7 @@ public class GeneralModule(
         var example = ModuleHelper.CommandExampleDictionary.GetValueOrDefault(command.Name, "No example available");
         var embedBuilder = new EmbedBuilder
         {
-          Title = $"/{command.Name}",
+          Title = $"{command.Name}",
           Description = $"{command.Description}\nExample: {example}",
           Color = Constants.ThemeColor
         };

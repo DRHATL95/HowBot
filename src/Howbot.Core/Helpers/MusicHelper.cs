@@ -1,5 +1,5 @@
 ﻿using System;
-using Lavalink4NET.Players.Queued;
+using Lavalink4NET.Players;
 
 namespace Howbot.Core.Helpers;
 

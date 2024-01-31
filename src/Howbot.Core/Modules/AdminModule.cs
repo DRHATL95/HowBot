@@ -96,9 +96,12 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
     }
   }
 
-  [SlashCommand("unban", "Unban a user from the server.", true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.UnbanCommandName, Constants.Commands.UnbanCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
-  public async Task UnBanUserCommandAsync(string username, string reason = null)
+  [RequireUserPermission(GuildPermission.Administrator | GuildPermission.BanMembers |
+                         GuildPermission.UseApplicationCommands)]
+  [RequireBotPermission(GuildPermission.Administrator | GuildPermission.BanMembers)]
+  public async Task UnbanUserCommandAsync(string username, string reason = null)
   {
     await DeferAsync();
 
@@ -116,8 +119,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
     }
     catch (Exception exception)
     {
-      logger.LogError(exception, "Exception thrown in Module [{ModuleName}] Command [{CommandName}]",
-        nameof(AdminModule), nameof(UnBanUserCommandAsync));
+      logger.LogError(exception, nameof(UnbanUserCommandAsync));
       await FollowupAsync("Failed to unban user.");
       throw;
     }
