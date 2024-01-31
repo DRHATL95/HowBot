@@ -22,6 +22,11 @@ public abstract record Constants
   public const int ApplicationTimeoutInMs = 3000;
   public const int MaximumMessageCount = 10000;
   public const string DefaultPrefix = "!~";
+  
+  // Regex Patterns
+  public const string UrlRegexPattern = @"^(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?$";
+  public const string PlaylistRegexPattern = @"playlist\s\w+";
+  public const string YoutubePlaylistRegexPattern = @"^(?:http(?:s)?:\/\/)?(?:www\.)?(?:music\.)?youtube\.com\/playlist\?list=(?<id>[a-zA-Z0-9-_]+)$";
 
   public readonly struct Commands
   {
