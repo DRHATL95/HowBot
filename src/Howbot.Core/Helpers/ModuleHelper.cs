@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord;
+using Discord.Commands;
 using Discord.Interactions;
 using Howbot.Core.Models;
-using Howbot.Core.Models.Exceptions;
 using Serilog;
+using CommandException = Howbot.Core.Models.Exceptions.CommandException;
 
 namespace Howbot.Core.Helpers;
 
@@ -18,7 +20,7 @@ public static class ModuleHelper
   /// Should handle exceptions or responses returned from Services.
   /// </summary>
   /// <param name="commandResponse"></param>
-  /// <exception cref="CommandException"></exception>
+  /// <exception cref="Models.Exceptions.CommandException"></exception>
   public static void HandleCommandFailed(CommandResponse commandResponse)
   {
     ArgumentNullException.ThrowIfNull(commandResponse, nameof(commandResponse));
@@ -80,21 +82,22 @@ public static class ModuleHelper
   {
     if (shouldDelete)
     {
-      var originalResponse = await context.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
-      await originalResponse.DeleteAsync().ConfigureAwait(false);
+      var originalResponse = await context.Interaction.GetOriginalResponseAsync();
+
+      await originalResponse.DeleteAsync();
     }
 
     if (response.IsSuccessful)
     {
       if (response.Embed != null)
       {
-        await context.Interaction.FollowupAsync(embed: response.Embed as Embed).ConfigureAwait(false);
+        await context.Interaction.FollowupAsync(embed: response.Embed as Embed);
         return;
       }
 
       if (!string.IsNullOrEmpty(response.Message))
       {
-        await context.Interaction.FollowupAsync(response.Message).ConfigureAwait(false);
+        await context.Interaction.FollowupAsync(response.Message);
       }
     }
     else
@@ -106,8 +109,27 @@ public static class ModuleHelper
 
       if (!string.IsNullOrEmpty(response.Message))
       {
-        await context.Interaction.FollowupAsync(response.Message).ConfigureAwait(false);
+        await context.Interaction.FollowupAsync(response.Message);
       }
     }
   }
+  
+  public static readonly Dictionary<string, string> CommandExampleDictionary = new Dictionary<string, string>()
+  {
+    { Constants.Commands.PingCommandName, "/ping" },
+    { Constants.Commands.HelpCommandName, "/help" },
+    { Constants.Commands.JoinCommandName, "/join" },
+    { Constants.Commands.LeaveCommandName, "/leave" },
+    { Constants.Commands.PlayCommandName, "/play https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+    // { Constants.Commands.StopCommandName, "/stop" },
+    { Constants.Commands.PauseCommandName, "/pause" },
+    { Constants.Commands.ResumeCommandName, "/resume" },
+    { Constants.Commands.SkipCommandName, "/skip" },
+    // { Constants.Commands.QueueCommandName, "/queue" },
+    // { Constants.Commands.ClearCommandName, "/clear" },
+    { Constants.Commands.SeekCommandName, "/seek 1:30" },
+    { Constants.Commands.VolumeCommandName, "/volume 50" },
+    { Constants.Commands.ShuffleCommandName, "/shuffle" },
+    { Constants.Commands.NowPlayingCommandName, "/nowplaying" },
+  };
 }

@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
+using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Howbot.Core.Entities;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
@@ -14,9 +16,9 @@ using Lavalink4NET;
 using Lavalink4NET.Clients;
 using Lavalink4NET.Integrations.Lavasearch;
 using Lavalink4NET.Integrations.Lavasearch.Extensions;
+using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
-using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
 using Lavalink4NET.Tracks;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,8 +57,7 @@ public class MusicService(
 
     if (context.User is not SocketGuildUser guildUser)
     {
-      await context.Interaction.FollowupAsync("Unable to create player, command requested by non-guild member.")
-        .ConfigureAwait(false);
+      await context.Interaction.FollowupAsync("Unable to create player, command requested by non-guild member.");
 
       return null;
     }
@@ -70,7 +71,7 @@ public class MusicService(
       VoiceStateBehavior: requireChannel ? MemberVoiceStateBehavior.RequireSame : MemberVoiceStateBehavior.Ignore,
       Preconditions: preconditions);
 
-    int persistedVolume;
+    float persistedVolume;
 
     using (var scope = serviceProvider.CreateScope())
     {
@@ -78,7 +79,7 @@ public class MusicService(
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
     }
 
-    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions()
+    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions(context.Channel as ITextChannel, guildUser)
     {
       DisconnectOnDestroy = true,
       DisconnectOnStop = true,
@@ -89,45 +90,37 @@ public class MusicService(
     };
 
     var result = await audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
-        CreatePlayerAsync,
-        retrieveOptions: retrieveOptions, options: new OptionsWrapper<HowbotPlayerOptions>(playerOptions),
-        cancellationToken: cancellationToken)
-      .ConfigureAwait(false);
+      CreatePlayerAsync,
+      retrieveOptions: retrieveOptions, options: new OptionsWrapper<HowbotPlayerOptions>(playerOptions),
+      cancellationToken: cancellationToken);
 
-    if (!result.IsSuccess)
+    if (result.IsSuccess)
     {
-      var errorMessage = result.Status switch
-      {
-        // The user is not connected to a voice channel.
-        PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
-
-        // The bot is not in a voice channel
-        PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected to a voice channel.",
-
-        // The bot is not in the same voice channel as the user.
-        PlayerRetrieveStatus.VoiceChannelMismatch => "You are not in the same voice channel as the bot.",
-
-        // The bot failed it's precondition check.
-        PlayerRetrieveStatus.PreconditionFailed => "The bot failed it's precondition check.",
-
-        _ => "An unknown error occurred while creating the player."
-      };
-
-      await context.Interaction.FollowupAsync(errorMessage).ConfigureAwait(false);
-
-      return null;
+      return result.Player;
     }
 
-    return result.Player;
-  }
+    var errorMessage = result.Status switch
+    {
+      // The user is not connected to a voice channel.
+      PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
 
-  /// <summary>
-  ///   TODO:
-  /// </summary>
-  /// <param name="videoId"></param>
-  /// <param name="count"></param>
-  /// <returns></returns>
-  /// <exception cref="NotImplementedException"></exception>
+      // The bot is not in a voice channel
+      PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected to a voice channel.",
+
+      // The bot is not in the same voice channel as the user.
+      PlayerRetrieveStatus.VoiceChannelMismatch => "You are not in the same voice channel as the bot.",
+
+      // The bot failed it's precondition check.
+      PlayerRetrieveStatus.PreconditionFailed => "The bot failed it's precondition check.",
+
+      _ => "An unknown error occurred while creating the player."
+    };
+
+    await context.Interaction.FollowupAsync(errorMessage);
+
+    return null;
+  }
+  
   public ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
   {
     throw new NotImplementedException();
@@ -162,14 +155,14 @@ public class MusicService(
   ///   A <see cref="ValueTask{TResult}" /> representing the asynchronous operation. The result of the task will be
   ///   the created <see cref="HowbotPlayer" /> instance.
   /// </returns>
-  private static ValueTask<HowbotPlayer> CreatePlayerAsync(
+  private ValueTask<HowbotPlayer> CreatePlayerAsync(
     IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-
-    ArgumentNullException.ThrowIfNull(properties);
-
+    
+    Guard.Against.Null(properties, nameof(properties));
+    
     Log.Logger.Information("Creating new player..");
 
     return ValueTask.FromResult(new HowbotPlayer(properties));
@@ -195,23 +188,21 @@ public class MusicService(
     {
       // Convert from enum to Lavalink struct for searching providers (default is YouTube)
       var type = LavalinkHelper.ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
-
-      var trackOptions = new TrackLoadOptions(type);
+      
+      var trackOptions = new TrackLoadOptions(type, StrictSearchBehavior.Resolve);
 
       // LavaSearch categories to be returned (Tracks, Albums, Artists, etc.)
       var categories = ImmutableArray.Create(SearchCategory.Track);
 
       var searchResult = await audioService.Tracks
-        .SearchAsync(searchRequest, loadOptions: trackOptions, categories: categories)
-        .ConfigureAwait(false);
+        .SearchAsync(searchRequest, loadOptions: trackOptions, categories: categories);
 
       LavalinkTrack track;
       if (searchResult is null || searchResult.Tracks.IsDefaultOrEmpty)
       {
         // Attempts to use native lavalink native search when lava search plugin isn't working or doesn't return results for categories specified
         track = await audioService.Tracks
-          .LoadTrackAsync(searchRequest, trackOptions)
-          .ConfigureAwait(false);
+          .LoadTrackAsync(searchRequest, trackOptions);
       }
       else
       {
@@ -220,7 +211,7 @@ public class MusicService(
 
       if (track != null)
       {
-        await player.PlayAsync(track).ConfigureAwait(false);
+        await player.PlayAsync(track);
 
         return CommandResponse.CommandSuccessful(track);
       }
@@ -238,9 +229,7 @@ public class MusicService(
   {
     try
     {
-      Logger.LogDebug("[{GuildId}] - Pausing current track.", player.GuildId);
-
-      await player.PauseAsync().ConfigureAwait(false);
+      await player.PauseAsync();
 
       return CommandResponse.CommandSuccessful(Messages.Responses.CommandPausedSuccessfulResponse);
     }
@@ -255,7 +244,7 @@ public class MusicService(
   {
     try
     {
-      await player.ResumeAsync().ConfigureAwait(false);
+      await player.ResumeAsync();
 
       return CommandResponse.CommandSuccessful("Successfully resumed track.");
     }
@@ -270,18 +259,13 @@ public class MusicService(
   {
     try
     {
-      if (player is IQueuedLavalinkPlayer { State: PlayerState.Playing } queuedPlayer)
-      {
-        await queuedPlayer.SkipAsync(numberOfTracks ?? 1);
+      await player.SkipAsync(numberOfTracks ?? 1);
 
-        return CommandResponse.CommandSuccessful($"Skipped {numberOfTracks} tracks in queue.");
-      }
-
-      return CommandResponse.CommandNotSuccessful("Unable to skip to position in queue.");
+      return CommandResponse.CommandSuccessful($"Skipped {numberOfTracks} tracks in queue.");
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, "Exception thrown in MusicService.SkipTrackAsync");
+      Logger.LogError(exception, nameof(SkipTrackAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
@@ -292,7 +276,7 @@ public class MusicService(
     {
       Logger.LogDebug($"Seeking to {seekPosition:g}.");
 
-      await player.SeekAsync(seekPosition).ConfigureAwait(false);
+      await player.SeekAsync(seekPosition);
 
       return CommandResponse.CommandSuccessful($"Seeking to {seekPosition:g}.");
     }
@@ -312,7 +296,7 @@ public class MusicService(
 
     try
     {
-      await player.SetVolumeAsync(newVolume / 100f).ConfigureAwait(false);
+      await player.SetVolumeAsync(newVolume / 100f);
 
       using var scope = serviceProvider.CreateScope();
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
@@ -320,25 +304,24 @@ public class MusicService(
       // Entry already exists in db
       if (db.DoesGuildExist(player.GuildId))
       {
-        db.UpdatePlayerVolumeLevel(player.GuildId, newVolume);
+        await db.UpdatePlayerVolumeLevel(player.GuildId, newVolume);
       }
       else
       {
         // Needs to be added to db
-        db.AddNewGuild(player.GuildId, Constants.DefaultPrefix, newVolume);
+        db.AddNewGuild(new Guild {Id = player.GuildId, Volume = newVolume});
       }
 
       return CommandResponse.CommandSuccessful($"Volume set to {newVolume}%");
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(SeekTrackAsync));
+      Logger.LogError(exception, nameof(ChangeVolumeAsync));
       return CommandResponse.CommandNotSuccessful(exception);
     }
   }
 
-  public CommandResponse NowPlaying(HowbotPlayer player, IGuildUser user,
-    ITextChannel textChannel)
+  public CommandResponse NowPlaying(HowbotPlayer player, IGuildUser user, ITextChannel textChannel)
   {
     try
     {
@@ -347,8 +330,8 @@ public class MusicService(
         return CommandResponse.CommandNotSuccessful("No track is currently playing.");
       }
 
-      var embed = embedService.GenerateMusicNowPlayingEmbed(player.CurrentTrack, user, textChannel,
-        player.Position?.Position, player.Volume);
+      var embed = embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(player.CurrentTrack), user,
+        player.Position, player.Volume);
 
       return CommandResponse.CommandSuccessful(embed);
     }

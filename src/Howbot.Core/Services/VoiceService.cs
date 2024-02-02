@@ -28,7 +28,7 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
         GuildId = channel.GuildId,
         TextChannel = (ITextChannel)channel,
         VoiceChannelId = voiceChannel?.Id ?? 0
-      }).ConfigureAwait(false);
+      });
 
       Logger.LogDebug("Successfully joined voice channel {0}.", guildTag);
 
@@ -51,7 +51,7 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
         GuildId = guildChannel.GuildId,
         TextChannel = (ITextChannel)guildChannel,
         VoiceChannelId = user.VoiceChannel.Id
-      }).ConfigureAwait(false);
+      });
 
       if (player is null)
       {
@@ -59,7 +59,7 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
       }
 
       // Using lavalink player disconnect from the voice channel.
-      await player.DisconnectAsync().ConfigureAwait(false);
+      await player.DisconnectAsync();
 
       // Return successful response
       return CommandResponse.CommandSuccessful("Successfully disconnected from voice channel.");
@@ -101,7 +101,7 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
       _ => "Unknown error.",
     };
 
-    await playerParams.TextChannel.SendMessageAsync(errorMessage).ConfigureAwait(false);
+    await playerParams.TextChannel.SendMessageAsync(errorMessage);
 
     return null;
   }

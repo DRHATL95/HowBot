@@ -1,6 +1,8 @@
 ﻿using System;
 using Discord;
 using Howbot.Core.Models;
+using Lavalink4NET.Integrations.Lavasrc;
+using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Tracks;
 
@@ -18,17 +20,10 @@ public interface IEmbedService
   /// <returns>The embed created from <see cref="EmbedOptions" /></returns>
   IEmbed CreateEmbed(EmbedOptions embedOptions);
 
-  /// <summary>
-  ///   Generates an embed of the current track playing in the guild.
-  /// </summary>
-  /// <param name="queueItem"></param>
-  /// <param name="user"></param>
-  /// <param name="textChannel"></param>
-  /// <param name="position"></param>
-  /// <param name="volume"></param>
-  /// <returns></returns>
-  IEmbed GenerateMusicNowPlayingEmbed(LavalinkTrack queueItem, IGuildUser user,
-    ITextChannel textChannel, TimeSpan? position, float volume);
+  IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user, TrackPosition? trackPosition,
+    float volume);
+
+  IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack);
 
   /// <summary>
   ///   Peeks at the next track in the queue and generates an embed of the next track.
@@ -43,4 +38,12 @@ public interface IEmbedService
   /// <param name="queue">The current guild music queue</param>
   /// <returns>An embed of the songs in queue up to 10 tracks.</returns>
   IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue);
+
+  /// <summary>
+  /// Create an embed for a track added to the queue.
+  /// </summary>
+  /// <param name="lavalinkTrack"></param>
+  /// <param name="user"></param>
+  /// <returns></returns>
+  IEmbed CreateTrackAddedToQueueEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user);
 }

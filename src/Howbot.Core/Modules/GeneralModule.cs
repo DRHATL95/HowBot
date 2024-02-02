@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -16,7 +16,6 @@ using static Howbot.Core.Models.Permissions.User;
 
 namespace Howbot.Core.Modules;
 
-[SuppressMessage("ReSharper", "UnusedType.Global")]
 public class GeneralModule(
   InteractionService interactionService,
   IVoiceService voiceService,
@@ -28,12 +27,11 @@ public class GeneralModule(
   [RequireBotPermission(GuildBotVoiceCommandPermission)]
   [RequireUserPermission(GuildUserVoiceCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  [SuppressMessage("ReSharper", "UnusedMember.Global")]
   public async Task JoinVoiceChannelCommandAsync()
   {
     try
     {
-      await DeferAsync(true).ConfigureAwait(false);
+      await DeferAsync(true);
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
@@ -42,14 +40,14 @@ public class GeneralModule(
         {
           ModuleHelper.HandleCommandFailed(commandResponse);
 
-          await FollowupAsync(commandResponse.Message).ConfigureAwait(false);
+          await FollowupAsync(commandResponse.Message);
 
           return;
         }
 
         if (!string.IsNullOrEmpty(commandResponse.Message))
         {
-          await FollowupAsync(commandResponse.Message).ConfigureAwait(false);
+          await FollowupAsync(commandResponse.Message);
         }
       }
     }
@@ -65,19 +63,18 @@ public class GeneralModule(
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  [SuppressMessage("ReSharper", "UnusedMember.Global")]
   public async Task LeaveVoiceChannelCommandAsync()
   {
     try
     {
-      await DeferAsync(true).ConfigureAwait(false);
+      await DeferAsync(true);
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
         CommandResponse commandResponse =
-          await voiceService.LeaveVoiceChannelAsync(user, channel).ConfigureAwait(false);
+          await voiceService.LeaveVoiceChannelAsync(user, channel);
 
-        await ModuleHelper.HandleCommandResponseAsync(commandResponse, Context).ConfigureAwait(false);
+        await ModuleHelper.HandleCommandResponseAsync(commandResponse, Context);
       }
       else
       {
@@ -92,27 +89,26 @@ public class GeneralModule(
   }
 
   [SlashCommand(PingCommandName, PingCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.DM | ContextType.Guild)]
+  [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
   [RequireUserPermission(GuildPermission.SendMessages | GuildPermission.UseApplicationCommands |
                          GuildPermission.ViewChannel)]
-  [SuppressMessage("ReSharper", "UnusedMember.Global")]
   public async Task PingCommandAsync()
   {
     try
     {
       logger.LogDebug("Ping command invoked");
 
-      await Context.Interaction.RespondAsync("Ping?").ConfigureAwait(false);
+      await Context.Interaction.RespondAsync("Ping?");
 
       var client = Context.Client;
-      var responseTime = await Context.Interaction.GetOriginalResponseAsync().ConfigureAwait(false);
+      var interactionMessage = await Context.Interaction.GetOriginalResponseAsync();
       var latency = client.Latency;
-      var message = $"Pong! Response time: {responseTime.CreatedAt - Context.Interaction.CreatedAt}, " +
+      var responseTime = interactionMessage.CreatedAt - Context.Interaction.CreatedAt;
+      var message = $"Pong! Response time: {Math.Round(responseTime.TotalSeconds, 2)}s, " +
                     $"Latency: {latency}ms";
 
-      await Context.Interaction.ModifyOriginalResponseAsync(properties => properties.Content = message)
-        .ConfigureAwait(false);
+      await Context.Interaction.ModifyOriginalResponseAsync(properties => properties.Content = message);
 
       logger.LogDebug("Ping command completed");
     }
@@ -124,26 +120,85 @@ public class GeneralModule(
   }
 
   [SlashCommand(HelpCommandName, HelpCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.DM | ContextType.Guild)]
+  [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildPermission.ViewChannel | GuildPermission.SendMessages)]
   [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
                          GuildPermission.ViewChannel)]
-  [SuppressMessage("ReSharper", "UnusedMember.Global")]
-  public async Task HelpCommandAsync()
+  public async Task HelpCommandAsync([Summary("command", "The name of the command to get help for.")] string commandName = null)
   {
-    try
+  try
+  {
+    var commands = interactionService.SlashCommands
+      .Where(c => !c.Preconditions.OfType<RequireOwnerAttribute>().Any()); // Ignore owner-only commands
+    if (!string.IsNullOrEmpty(commandName))
     {
-      var commands = interactionService.SlashCommands;
-      var commandList = string.Join("\n", commands.Select(c => $"`/{c.Name}`: {c.Description}"));
+      // If a command name is provided, find the command and return its description and example
+      var command = commands.FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
 
-      var embedBuilder = new EmbedBuilder { Title = "Command List", Description = commandList };
+      if (command != null)
+      {
+        var example = ModuleHelper.CommandExampleDictionary.GetValueOrDefault(command.Name, "No example available");
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = $"{command.Name}",
+          Description = $"{command.Description}\nExample: {example}",
+          Color = Constants.ThemeColor
+        };
 
-      await RespondAsync(embeds: new[] { embedBuilder.Build() }).ConfigureAwait(false);
+        await RespondAsync(embeds: [embedBuilder.Build()]);
+      }
+      else
+      {
+        await RespondAsync($"No command found with the name `{commandName}`.");
+      }
     }
-    catch (Exception exception)
+    else
     {
-      logger.LogError(exception, nameof(HelpCommandAsync));
-      throw;
+      // If no command name is provided, return the list of all commands as before
+      var groupedCommands = commands.GroupBy(c => c.Module.Name);
+
+      var embedBuilder = new EmbedBuilder { Title = "Command List", Color = Constants.ThemeColor };
+
+      foreach (var group in groupedCommands)
+      {
+        var moduleName = group.Key.Replace("Module", ""); // Remove the word "Module" from the group key
+        var commandList = new List<string>();
+        var continuationFields = new List<EmbedFieldBuilder>();
+
+        foreach (var command in group)
+        {
+          var commandInfo = $"`/{command.Name}`: {command.Description}\n"; // Removed example
+
+          // If adding the next command would exceed the limit and there are already commands in the list, add the current list as a field and start a new list
+          if (commandList.Any() && commandList.Sum(c => c.Length) + commandInfo.Length > 1024)
+          {
+            continuationFields.Add(new EmbedFieldBuilder { Name = $"{moduleName} (cont.)", Value = string.Join("\n", commandList) });
+            commandList.Clear();
+          }
+
+          commandList.Add(commandInfo);
+        }
+
+        // Add main section as a field
+        if (commandList.Any())
+        {
+          embedBuilder.AddField(moduleName, string.Join("\n", commandList));
+        }
+
+        // Add continuation sections as fields
+        foreach (var field in continuationFields)
+        {
+          embedBuilder.AddField(field);
+        }
+      }
+
+      await RespondAsync(embeds: [embedBuilder.Build()]);
     }
   }
+  catch (Exception exception)
+  {
+    logger.LogError(exception, nameof(HelpCommandAsync));
+    throw;
+  }
+}
 }

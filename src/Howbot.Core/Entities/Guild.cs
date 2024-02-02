@@ -1,7 +1,14 @@
-﻿namespace Howbot.Core.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+using Howbot.Core.Models;
+
+namespace Howbot.Core.Entities;
 
 public class Guild : BaseEntity
 {
-  public string Prefix { get; set; }
-  public int MusicVolumeLevel { get; set; }
+  [Required]
+  [StringLength(10)]
+  public string Prefix { get; init; } = Constants.DefaultPrefix;
+
+  [Required]
+  public float Volume { get; set; } = 100.0f;
 }

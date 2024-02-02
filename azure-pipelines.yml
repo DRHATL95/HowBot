@@ -15,38 +15,32 @@ variables:
   buildConfiguration: 'Release'
   buildOutputDirectory: '$(Build.ArtifactStagingDirectory)'
   buildRuntime: 'linux-x64'
+  buildFramework: 'net8.0'
 
 steps:
 
 - task: UseDotNet@2
   displayName: 'Install .NET 8'
   inputs:
-    packageType: sdk
-    version: '8.x'
-
-- task: NuGetToolInstaller@1
-  displayName: 'Install NuGet'
-  inputs:
-    versionSpec: 
-    checkLatest: true
+    packageType: 'sdk'
+    useGlobalJson: true
 
 - task: DotNetCoreCLI@2
   displayName: 'Restore Project Deps.'
   inputs:
     command: 'restore'
     projects: '$(projects)'
+    restoreArguments: '--runtime $(buildRuntime)'
     feedsToUse: 'config'
     nugetConfigPath: '$(System.DefaultWorkingDirectory)/nuget.config'
-    noCache: true
 
 - task: DotNetCoreCLI@2
   displayName: 'Build Projects'
   inputs:
-    configuration: $(buildConfiguration)
-    publishWebProjects: false
     command: 'build'
+    configuration: $(buildConfiguration)
     projects: '$(projects)'
-    arguments: '--runtime $(buildRuntime) --configuration $(buildConfiguration) --self-contained true'
+    arguments: '-c $(buildConfiguration) -f $(buildFramework) --runtime $(buildRuntime) --no-restore'
 
 # - task: DotNetCoreCLI@2
 #   displayName: 'Run Unit Tests'
@@ -59,17 +53,14 @@ steps:
   displayName: 'Publish Build'
   inputs:
     command: 'publish'
-    configuration: '$(buildConfiguration)'
-    publishWebProjects: false
     projects: '$(projects)'
-    arguments: '--configuration $(buildConfiguration) --runtime $(buildRuntime) --output $(buildOutputDirectory)/publish --self-contained true'
-    zipAfterPublish: false
-    modifyOutputPath: false
+    arguments: '-c $(buildConfiguration) -f $(buildFramework) --runtime $(buildRuntime) --output $(buildOutputDirectory)/publish -p:PublishReadyToRun=true'
+    publishWebProjects: false
+    zipAfterPublish: true
 
-  
 - task: PublishBuildArtifacts@1
   displayName: 'Publish artifacts'
   inputs:
-    artifactName: 'Howbot'
+    artifactName: 'howbot-drop'
     publishLocation: 'Container'
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/publish'

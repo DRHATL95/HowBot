@@ -12,8 +12,6 @@ public class RequireGuildUserInVoiceChannelAttribute : PreconditionAttribute
   public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo commandInfo,
     IServiceProvider services)
   {
-    return Task.FromResult(context.User is SocketGuildUser { VoiceChannel: { } }
-      ? PreconditionResult.FromSuccess()
-      : PreconditionResult.FromError(BotUserVoiceConnectionRequired));
+    return context.User is not SocketGuildUser user ? Task.FromResult(PreconditionResult.FromError("User is not a guild user.")) : Task.FromResult(user.VoiceChannel is null ? PreconditionResult.FromError(BotUserVoiceConnectionRequired) : PreconditionResult.FromSuccess());
   }
 }

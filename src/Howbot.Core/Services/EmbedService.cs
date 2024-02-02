@@ -5,21 +5,14 @@ using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Lavalink4NET.Integrations.Lavasrc;
+using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
-using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Services;
 
-/// <summary>
-///   Service class for creating and generating embeds.
-/// </summary>
 public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<EmbedService>(logger), IEmbedService
 {
-  /// <summary>
-  ///   Creates an embed using the provided embed options.
-  /// </summary>
-  /// <param name="options">The options used to configure the embed.</param>
-  /// <returns>The created embed.</returns>
   public IEmbed CreateEmbed(EmbedOptions options)
   {
     Guard.Against.Null(options, nameof(options));
@@ -60,75 +53,7 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
 
     return embedBuilder.Build();
   }
-
-  /// <summary>
-  ///   Generates an embed for the currently playing music.
-  /// </summary>
-  /// <param name="track">The currently playing track.</param>
-  /// <param name="user">The user playing the track.</param>
-  /// <param name="textChannel">The text channel where the track is being played.</param>
-  /// <param name="position">The current position of the track.</param>
-  /// <param name="volume">The volume of the track.</param>
-  /// <returns>The generated embed for displaying the now playing music.</returns>
-  public IEmbed GenerateMusicNowPlayingEmbed(LavalinkTrack track, IGuildUser user,
-    ITextChannel textChannel, TimeSpan? position, float volume)
-  {
-    ArgumentException.ThrowIfNullOrEmpty(nameof(track));
-    ArgumentException.ThrowIfNullOrEmpty(nameof(user));
-    ArgumentException.ThrowIfNullOrEmpty(nameof(textChannel));
-
-    EmbedOptions defaultEmbedOptions = new EmbedOptions { Title = "Your song is now playing." };
-
-    // TODO: Replace with image downloaded within project.
-    Uri trackArtworkUri = track.ArtworkUri ?? new Uri("https://i.imgur.com/Lf76JRO.png");
-
-    try
-    {
-      var embedBuilder = new EmbedBuilder()
-        .WithColor(Color.Default)
-        .WithTitle($"{track.Title} - {track.Author}")
-        .WithUrl(track.Uri?.AbsoluteUri ?? string.Empty)
-        .WithThumbnailUrl(trackArtworkUri?.AbsoluteUri)
-        .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
-        .WithCurrentTimestamp();
-
-      if (!string.IsNullOrEmpty(track.SourceName))
-      {
-        embedBuilder.Fields.Add(new EmbedFieldBuilder()
-        {
-          IsInline = true, Name = "Source", Value = LavalinkHelper.GetSourceAsString(track.SourceName)
-        });
-      }
-
-      if (position.HasValue)
-      {
-        embedBuilder.Fields.Add(new EmbedFieldBuilder()
-        {
-          IsInline = true,
-          Name = "Position",
-          Value =
-            $@"{position.Value:hh\:mm\:ss}/{track.Duration:hh\:mm\:ss}"
-        });
-      }
-
-      embedBuilder.Fields.Add(new EmbedFieldBuilder { IsInline = true, Name = "Volume", Value = $"{volume * 100}%" });
-
-      var embed = embedBuilder.Build();
-
-      return embed;
-    }
-    catch (Exception exception)
-    {
-      Logger.LogError(exception, nameof(GenerateMusicNowPlayingEmbed));
-      return CreateEmbed(defaultEmbedOptions);
-    }
-  }
-
-  /// <summary>
-  ///   Generates an embed for the next track in the given track queue.
-  /// </summary>
-  /// <param name="queue">The track queue to generate the embed for.</param>
-  /// <returns>An embed representing the next track in the queue.</returns>
+  
   public IEmbed GenerateMusicNextTrackEmbed(ITrackQueue queue)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
@@ -159,16 +84,11 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
 
     return embed;
   }
-
-  /// <summary>
-  ///   Generates an embed to display the current music queue.
-  /// </summary>
-  /// <param name="queue">The music queue to generate the embed for.</param>
-  /// <returns>An embed containing the current music queue information.</returns>
+  
   public IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue)
   {
-    ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
-
+    Guard.Against.Null(queue, nameof(queue));
+    
     if (queue.IsEmpty)
     {
       return CreateEmbed(new EmbedOptions { Title = "There are no songs in the queue." });
@@ -187,12 +107,71 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
 
     return embed;
   }
+  
+  public IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user, TrackPosition? trackPosition, float volume)
+  {
+    var embedBuilder = GenerateEmbedBuilderForNowPlaying(lavalinkTrack, user);
+    
+    embedBuilder.Fields.Add(new EmbedFieldBuilder()
+    {
+      IsInline = true,
+      Name = "Source",
+      Value = LavalinkHelper.GetSourceAsString(lavalinkTrack.SourceName)
+    });
 
-  /// <summary>
-  ///   Generates an EmbedFooterBuilder object from a Discord user.
-  /// </summary>
-  /// <param name="user">The Discord user.</param>
-  /// <returns>An EmbedFooterBuilder object.</returns>
+    if (trackPosition.HasValue)
+    {
+      embedBuilder.Fields.Add(new EmbedFieldBuilder()
+      {
+        IsInline = true,
+        Name = "Position",
+        Value = $@"{trackPosition.Value.Position:hh\:mm\:ss} / {lavalinkTrack.Duration:hh\:mm\:ss}"
+      });
+    }
+    
+    embedBuilder.Fields.Add(new EmbedFieldBuilder()
+    {
+      IsInline = true,
+      Name = "Volume",
+      Value = $"{volume * 100}%"
+    });
+    
+    return embedBuilder.Build();
+  }
+  
+  public IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack)
+  {
+    var embedBuilder = new EmbedBuilder()
+      .WithDescription($"{Emojis.Speaker} Now Playing: **{lavalinkTrack.Title}**")
+      .WithColor(Constants.ThemeColor);
+
+    return embedBuilder.Build();
+  }
+  
+  public IEmbed CreateTrackAddedToQueueEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user)
+  {
+    var embedBuilder = new EmbedBuilder()
+    {
+      Color = Constants.ThemeColor,
+      Description = $"{Emojis.MusicalNote} Added **{lavalinkTrack.Title}** to the queue.",
+    };
+    
+    return embedBuilder.Build();
+  }
+  
+  private EmbedBuilder GenerateEmbedBuilderForNowPlaying(ExtendedLavalinkTrack lavalinkTrack, IUser user)
+  {
+    var embedBuilder = new EmbedBuilder()
+      .WithTitle(lavalinkTrack.Title)
+      .WithUrl(lavalinkTrack.Track.Uri?.AbsoluteUri ?? string.Empty)
+      .WithThumbnailUrl(lavalinkTrack.ArtworkUri?.AbsoluteUri ?? string.Empty)
+      .WithColor(Constants.ThemeColor)
+      .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
+      .WithCurrentTimestamp();
+    
+    return embedBuilder;
+  }
+  
   private EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser(IUser user)
   {
     try

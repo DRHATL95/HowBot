@@ -30,9 +30,9 @@ public class Worker(
 
       InitializeHowbotServices(cancellationToken);
 
-      await discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken).ConfigureAwait(false);
+      await discordClientService.LoginDiscordBotAsync(Configuration.DiscordToken);
 
-      await discordClientService.StartDiscordBotAsync().ConfigureAwait(false);
+      await discordClientService.StartDiscordBotAsync();
 
       await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
     }
@@ -59,7 +59,7 @@ public class Worker(
 
     await base.StopAsync(cancellationToken);
 
-    await discordSocketClient.StopAsync().ConfigureAwait(false);
+    await discordSocketClient.StopAsync();
 
     logger.LogCritical("Discord client has been stopped");
   }

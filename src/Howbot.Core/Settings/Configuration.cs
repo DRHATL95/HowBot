@@ -14,18 +14,14 @@ namespace Howbot.Core.Settings;
 public static class Configuration
 {
   // The names of the environment variable
-  private const string DiscordTokenDev = "DiscordTokenDev";
-  private const string DiscordTokenProd = "DiscordTokenProd";
+  private const string DiscordApiToken = "DiscordToken";
   private const string YouTube = "YoutubeToken";
   private const string Postgres = "HowbotPostgres";
   private const string Lavalink = "DiscordLavalinkServerPassword";
   private const string LavalinkAddress = "DiscordLavalinkServerAddress";
   private const string WatchTogetherKey = "Watch2GetherKey";
-
-  /// <summary>
-  ///   The Discord token. Depending on the environment, this will be either the production or development token.
-  /// </summary>
-  public static string DiscordToken => GetTokenByName(IsDebug() ? DiscordTokenDev : DiscordTokenProd);
+  
+  public static string DiscordToken => GetTokenByName(DiscordApiToken);
 
   public static string YouTubeToken => GetTokenByName(YouTube);
 

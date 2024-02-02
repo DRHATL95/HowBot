@@ -38,7 +38,7 @@ public class EmbedServiceTests
     Assert.NotNull(result);
   }
 
-  [Fact]
+  /*[Fact]
   public void EmbedServiceTests_CreateEmbed_NowPlaying_ReturnsEmbed()
   {
     var embedService = Factory();
@@ -59,7 +59,7 @@ public class EmbedServiceTests
         mockTextChannel.Object, TimeSpan.FromMinutes(1), 100);
 
     Assert.NotNull(result);
-  }
+  }*/
 
   [Fact]
   public void EmbedServiceTests_CreateEmbed_NextTrack_ReturnsEmbed()

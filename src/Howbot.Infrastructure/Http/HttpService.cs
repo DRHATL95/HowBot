@@ -1,11 +1,17 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Howbot.Core.Interfaces;
-using Howbot.Infrastructure.Data.Config;
+using Howbot.Core.Models;
+using Howbot.Core.Settings;
 using Newtonsoft.Json;
+using Constants = Howbot.Infrastructure.Data.Config.Constants;
 
 namespace Howbot.Infrastructure.Http;
 
@@ -39,7 +45,7 @@ public class HttpService : IHttpService
 
     Watch2GetherParameters parameters = new Watch2GetherParameters()
     {
-      W2GApiKey = Howbot.Core.Settings.Configuration.WatchTogetherApiKey,
+      W2GApiKey = Core.Settings.Configuration.WatchTogetherApiKey,
       Share = url,
       BackgroundColor = "#00ff00",
       BackgroundOpacity = "50"
@@ -72,6 +78,91 @@ public class HttpService : IHttpService
 
     return $"{Constants.WatchTogetherRoomUrl}/{convertedResponse.StreamKey}";
   }
+
+  public async Task<List<ActivityApplication>> GetCurrentApplicationIdsAsync(CancellationToken token = default)
+  {
+    token.ThrowIfCancellationRequested();
+
+    const string rowPattern = @"\|\s*!\[Icon\]\((.*?)\)\s*\|\s*(\d{18})\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|";
+    const string versionPattern = @"###\s*(.+)";
+
+    var data = new List<ActivityApplication>();
+    
+    const string url = "https://raw.githubusercontent.com/Delitefully/DiscordLists/master/activities.md";
+    using var client = new HttpClient();
+    
+    var result = await client.GetAsync(url, token);
+    if (!result.IsSuccessStatusCode)
+    {
+      throw new Exception($"Failed to download data from {url}. Status code: {result.StatusCode}");
+    }
+
+    var content = await result.Content.ReadAsStringAsync(token);
+    var lines = content.Split(["\n", "\r\n"], StringSplitOptions.RemoveEmptyEntries);
+
+    string version = string.Empty;
+
+    foreach (var line in lines)
+    {
+      var versionMatch = Regex.Match(line, versionPattern);
+      if (versionMatch.Success)
+      {
+        // Should only define version once at beginning of table. I.e. Stable, Development, Staging, etc.
+        version = versionMatch.Groups[1].Value;
+      }
+      
+      var match = Regex.Match(line, rowPattern);
+      if (match.Success)
+      {
+        data.Add(new ActivityApplication
+        {
+          Version = version,
+          IconUrl = match.Groups[1].Value,
+          Id = Convert.ToUInt64(match.Groups[2].Value),
+          Name = match.Groups[3].Value.Trim(),
+          MaxParticipants = match.Groups[4].Value.Trim()
+        });
+      }
+    }
+
+    return data;
+  }
+
+  public async Task<string> StartDiscordActivity(string channelId, string activityId)
+  {
+    var requestUri = $"https://discord.com/api/v9/channels/{channelId}/invites";
+    
+    var requestContent = new StringContent(JsonConvert.SerializeObject(new
+    {
+      max_age = 86400,
+      max_uses = 10,
+      target_application_id = activityId,
+      target_type = 2,
+      temporary = false,
+      validate = false // null?
+    }), Encoding.UTF8, "application/json");
+    
+    using var client = new HttpClient();
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", Configuration.DiscordToken);
+    
+    var response = await client.PostAsync($"https://discord.com/api/v8/channels/{channelId}/invites", requestContent);
+    var responseContent = await response.Content.ReadAsStringAsync();
+    
+    if (!response.IsSuccessStatusCode)
+    {
+      throw new Exception($"Failed to start activity. Status code: {response.StatusCode}. Response: {responseContent}");
+    }
+    
+    var invite = JsonConvert.DeserializeObject<DiscordInvite>(responseContent);
+    
+    // Return the invite link
+    return $"https://discord.gg/{invite.Code}";
+  }
+}
+
+struct DiscordInvite
+{
+  public string Code { get; set; }
 }
 
 struct Watch2GetherParameters
