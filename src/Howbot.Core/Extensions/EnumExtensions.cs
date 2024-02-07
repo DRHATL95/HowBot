@@ -14,13 +14,13 @@ public static class EnumExtensions
   /// <returns>The display name for that enum or empty string</returns>
   public static string GetDisplayName(this Enum enumValue)
   {
-    Type type = enumValue.GetType();
-    string enumName = enumValue.ToString(); // Convert to lowercase
+    var type = enumValue.GetType();
+    var enumName = enumValue.ToString(); // Convert to lowercase
 
-    MemberInfo memberInfo = type.GetMember(enumName).FirstOrDefault();
+    var memberInfo = type.GetMember(enumName).FirstOrDefault();
     if (memberInfo != null)
     {
-      DisplayNameAttribute displayNameAttribute = memberInfo
+      var displayNameAttribute = memberInfo
         .GetCustomAttribute<DisplayNameAttribute>();
 
       if (displayNameAttribute != null)

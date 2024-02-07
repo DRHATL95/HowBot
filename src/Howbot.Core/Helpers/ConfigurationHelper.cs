@@ -7,14 +7,14 @@ using Serilog;
 namespace Howbot.Core.Helpers;
 
 /// <summary>
-/// Class of static helpers used for handling configuration.
+///   Class of static helpers used for handling configuration.
 /// </summary>
 public static class ConfigurationHelper
 {
   public static IConfiguration HostConfiguration { get; private set; }
 
   /// <summary>
-  /// Adds or updates configuration settings in appsettings.json
+  ///   Adds or updates configuration settings in appsettings.json
   /// </summary>
   /// <typeparam name="T"></typeparam>
   /// <param name="sectionPathKey"></param>
@@ -24,7 +24,7 @@ public static class ConfigurationHelper
     try
     {
       var filePath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-      string json = File.ReadAllText(filePath);
+      var json = File.ReadAllText(filePath);
       dynamic jsonObj = JsonConvert.DeserializeObject(json);
 
       SetValueRecursively(sectionPathKey, jsonObj, value);
@@ -39,7 +39,7 @@ public static class ConfigurationHelper
   }
 
   /// <summary>
-  /// Used to update a section of a jsonObjection, specifically used for <see cref="AddOrUpdateAppSetting{T}(string, T)"/>
+  ///   Used to update a section of a jsonObjection, specifically used for <see cref="AddOrUpdateAppSetting{T}(string, T)" />
   /// </summary>
   /// <typeparam name="T"></typeparam>
   /// <param name="sectionPathKey"></param>

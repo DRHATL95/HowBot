@@ -14,7 +14,58 @@ namespace Howbot.Core.Services;
 public class InteractionService : Discord.Interactions.InteractionService, IInteractionService
 {
   private readonly IServiceProvider _services;
-  
+
+  private ILoggerAdapter<InteractionService> Logger { get; }
+
+  public async Task Initialize()
+  {
+    await AddModulesToDiscordBotAsync();
+
+    InteractionExecuted += OnInteractionExecuted;
+  }
+
+  public async Task RegisterCommandsToGuildAsync(ulong discordDevelopmentGuildId)
+  {
+    await base.RegisterCommandsToGuildAsync(discordDevelopmentGuildId);
+  }
+
+  public async Task RegisterCommandsGloballyAsync()
+  {
+    await base.RegisterCommandsGloballyAsync();
+  }
+
+  public async Task<IResult> ExecuteCommandAsync(SocketInteractionContext context)
+  {
+    return await base.ExecuteCommandAsync(context, _services);
+  }
+
+  private async Task OnInteractionExecuted(ICommandInfo commandInfo, IInteractionContext interactionContext,
+    IResult result)
+  {
+    if (!result.IsSuccess)
+    {
+      await DiscordHelper.HandleSocketInteractionErrorAsync(interactionContext.Interaction as SocketInteraction, result,
+        Logger);
+    }
+  }
+
+  private async Task AddModulesToDiscordBotAsync()
+  {
+    try
+    {
+      var modules = await AddModulesAsync(Assembly.GetExecutingAssembly(), _services);
+      if (!modules.Any())
+      {
+        throw new Exception("No modules were added to the Discord bot.");
+      }
+    }
+    catch (Exception e)
+    {
+      Logger.LogError(e, nameof(AddModulesToDiscordBotAsync));
+      throw;
+    }
+  }
+
   #region Constructors
 
   public InteractionService(DiscordSocketClient discord, IServiceProvider services,
@@ -46,54 +97,4 @@ public class InteractionService : Discord.Interactions.InteractionService, IInte
   }
 
   #endregion
-
-  private ILoggerAdapter<InteractionService> Logger { get; }
-
-  public async Task Initialize()
-  {
-    await AddModulesToDiscordBotAsync();
-    
-    this.InteractionExecuted += OnInteractionExecuted;
-  }
-
-  private async Task OnInteractionExecuted(ICommandInfo commandInfo, IInteractionContext interactionContext, IResult result)
-  {
-    if (!result.IsSuccess)
-    {
-      await DiscordHelper.HandleSocketInteractionErrorAsync(interactionContext.Interaction as SocketInteraction, result,
-        Logger);
-    }
-  }
-
-  public async Task RegisterCommandsToGuildAsync(ulong discordDevelopmentGuildId)
-  {
-    await base.RegisterCommandsToGuildAsync(discordDevelopmentGuildId);
-  }
-
-  public async Task RegisterCommandsGloballyAsync()
-  {
-    await base.RegisterCommandsGloballyAsync();
-  }
-
-  public async Task<IResult> ExecuteCommandAsync(SocketInteractionContext context)
-  {
-    return await base.ExecuteCommandAsync(context, _services);
-  }
-
-  private async Task AddModulesToDiscordBotAsync()
-  {
-    try
-    {
-      var modules = await AddModulesAsync(Assembly.GetExecutingAssembly(), _services);
-      if (!modules.Any())
-      {
-        throw new Exception("No modules were added to the Discord bot.");
-      }
-    }
-    catch (Exception e)
-    {
-      Logger.LogError(e, nameof(AddModulesToDiscordBotAsync));
-      throw;
-    }
-  }
 }

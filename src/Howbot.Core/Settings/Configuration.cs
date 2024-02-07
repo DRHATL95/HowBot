@@ -9,7 +9,7 @@ using Lavalink4NET;
 namespace Howbot.Core.Settings;
 
 /// <summary>
-/// The Configuration class provides access to various configuration settings used in the application.
+///   The Configuration class provides access to various configuration settings used in the application.
 /// </summary>
 public static class Configuration
 {
@@ -20,7 +20,7 @@ public static class Configuration
   private const string Lavalink = "DiscordLavalinkServerPassword";
   private const string LavalinkAddress = "DiscordLavalinkServerAddress";
   private const string WatchTogetherKey = "Watch2GetherKey";
-  
+
   public static string DiscordToken => GetTokenByName(DiscordApiToken);
 
   public static string YouTubeToken => GetTokenByName(YouTube);
@@ -81,7 +81,7 @@ public static class Configuration
   }
 
   /// <summary>
-  /// Can be used to retrieve either env. variable or secrets using secret manager
+  ///   Can be used to retrieve either env. variable or secrets using secret manager
   /// </summary>
   /// <param name="tokenName"></param>
   /// <returns></returns>
@@ -91,7 +91,7 @@ public static class Configuration
     ArgumentException.ThrowIfNullOrEmpty(tokenName);
 
     // First attempt to get token, using hosted process
-    string token = Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Process);
+    var token = Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Process);
     // Second attempt to get token, using user environment variables
     token ??= Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.User);
     // Third attempt to get token, using machine environment variables

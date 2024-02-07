@@ -1,6 +1,7 @@
 ﻿using System;
 
 namespace Howbot.Core.Models.Exceptions;
+
 public class CommandException : Exception
 {
   public CommandException(string message) : base(message)

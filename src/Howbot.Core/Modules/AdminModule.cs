@@ -29,12 +29,18 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
 
       if (messages.Any())
       {
-        if (Context.Channel is not ITextChannel channel) return;
+        if (Context.Channel is not ITextChannel channel)
+        {
+          return;
+        }
 
         var responseMessage =
-          await ModifyOriginalResponseAsync(properties => properties.Content = $"Purging messages..");
+          await ModifyOriginalResponseAsync(properties => properties.Content = "Purging messages..");
 
-        if (responseMessage is null) return;
+        if (responseMessage is null)
+        {
+          return;
+        }
 
         var bulkMessagesToDelete =
           messages.Where(x => x.Id != responseMessage.Id && x.Timestamp.DateTime >= bulkDeleteDate).ToList();

@@ -4,14 +4,13 @@ using Lavalink4NET.Players;
 namespace Howbot.Core.Helpers;
 
 /// <summary>
-/// Class of static helpers that help with Music Module Commands.
+///   Class of static helpers that help with Music Module Commands.
 /// </summary>
 public static class MusicHelper
 {
-
   /// <summary>
-  /// Checks if two <see cref="ITrackQueueItem"/> are similar based on Levenshtein distance.
-  /// Compares the track's title, author and URL.
+  ///   Checks if two <see cref="ITrackQueueItem" /> are similar based on Levenshtein distance.
+  ///   Compares the track's title, author and URL.
   /// </summary>
   /// <param name="queueItem"></param>
   /// <param name="secondQueueItem"></param>
@@ -31,8 +30,8 @@ public static class MusicHelper
   }
 
   /// <summary>
-  /// Algorithm used to compare if two strings are similar.
-  /// This will be used to recommend new songs based on songs already played avoiding duplicates. 
+  ///   Algorithm used to compare if two strings are similar.
+  ///   This will be used to recommend new songs based on songs already played avoiding duplicates.
   /// </summary>
   /// <param name="a"></param>
   /// <param name="b"></param>

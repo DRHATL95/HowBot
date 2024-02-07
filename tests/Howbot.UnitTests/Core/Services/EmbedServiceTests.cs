@@ -1,10 +1,8 @@
-﻿using System;
-using Discord;
+﻿using Discord;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Services;
 using Lavalink4NET.Players.Queued;
-using Lavalink4NET.Tracks;
 using Moq;
 using Xunit;
 

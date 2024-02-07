@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
 using Howbot.Core.Models.Players;
 using Lavalink4NET;
 using Lavalink4NET.Clients.Events;
@@ -14,9 +12,26 @@ using Lavalink4NET.Protocol.Payloads.Events;
 
 namespace Howbot.Core.Services;
 
-public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNodeService> logger, IEmbedService embedService)
+public class LavaNodeService(
+  IAudioService audioService,
+  ILoggerAdapter<LavaNodeService> logger,
+  IEmbedService embedService)
   : ServiceBase<LavaNodeService>(logger), ILavaNodeService, IAsyncDisposable
 {
+  public async ValueTask DisposeAsync()
+  {
+    await audioService.DisposeAsync();
+
+    audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
+    audioService.TrackEnded -= AudioServiceOnTrackEnded;
+    audioService.TrackException -= AudioServiceOnTrackException;
+    audioService.TrackStarted -= AudioServiceOnTrackStarted;
+    audioService.TrackStuck -= AudioServiceOnTrackStuck;
+    audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
+
+    GC.SuppressFinalize(this);
+  }
+
   public override void Initialize()
   {
     base.Initialize();
@@ -72,7 +87,8 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
 
     Logger.LogDebug("Starting track [{TrackTitle}]", eventArgs.Track.Title);
 
-    await channel.SendMessageAsync(embed: embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(track)) as Embed);
+    await channel.SendMessageAsync(
+      embed: embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(track)) as Embed);
   }
 
   private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventArgs)
@@ -93,7 +109,7 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
         eventArgs.Reason);
       return Task.CompletedTask;
     }
-    
+
     Logger.LogDebug("Current song [{SongName}] has ended.", eventArgs.Track.Title);
 
     return Task.CompletedTask;
@@ -108,20 +124,6 @@ public class LavaNodeService(IAudioService audioService, ILoggerAdapter<LavaNode
 
   #endregion Events
 
-  public async ValueTask DisposeAsync()
-  {
-    await audioService.DisposeAsync();
-
-    audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
-    audioService.TrackEnded -= AudioServiceOnTrackEnded;
-    audioService.TrackException -= AudioServiceOnTrackException;
-    audioService.TrackStarted -= AudioServiceOnTrackStarted;
-    audioService.TrackStuck -= AudioServiceOnTrackStuck;
-    audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
-
-    GC.SuppressFinalize(this);
-  }
-  
   /*private async Task<LavalinkTrack> GetUniqueRadioTrack(ILavalinkPlayer player, int attempt = 0)
   {
     ArgumentNullException.ThrowIfNull(player);

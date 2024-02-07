@@ -1,10 +1,8 @@
-﻿using System;
-using Discord;
+﻿using Discord;
 using Howbot.Core.Models;
 using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
-using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Interfaces;
 
@@ -40,7 +38,7 @@ public interface IEmbedService
   IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue);
 
   /// <summary>
-  /// Create an embed for a track added to the queue.
+  ///   Create an embed for a track added to the queue.
   /// </summary>
   /// <param name="lavalinkTrack"></param>
   /// <param name="user"></param>

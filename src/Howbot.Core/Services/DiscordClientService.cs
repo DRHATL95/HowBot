@@ -22,6 +22,7 @@ public class DiscordClientService(
   : ServiceBase<DiscordClientService>(logger), IDiscordClientService, IDisposable
 {
   private string _loggedInUsername = string.Empty;
+
   private string LoggedInUsername
   {
     get => string.IsNullOrEmpty(_loggedInUsername) ? Constants.BotName : _loggedInUsername;
@@ -33,12 +34,123 @@ public class DiscordClientService(
       }
     }
   }
-  
+
   public override void Initialize()
   {
     base.Initialize();
 
     SubscribeToDiscordSocketEvents();
+  }
+
+  public async Task LoginDiscordBotAsync(string discordToken)
+  {
+    try
+    {
+      Guard.Against.NullOrWhiteSpace(discordToken, nameof(discordToken));
+
+      await discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
+    }
+    catch (ArgumentException argumentException)
+    {
+      Logger.LogError(argumentException, "The provided token is invalid.");
+      throw;
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, nameof(LoginDiscordBotAsync));
+      throw;
+    }
+  }
+
+  public async Task StartDiscordBotAsync()
+  {
+    try
+    {
+      // Will signal ready state. Must be called only when bot has finished logging in.
+      await discordSocketClient.StartAsync();
+
+      // Only in debug, set bots online presence to offline
+      if (Configuration.IsDebug())
+      {
+        await discordSocketClient.SetStatusAsync(UserStatus.Invisible);
+      }
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, DiscordStart);
+      throw;
+    }
+  }
+
+  public void Dispose()
+  {
+    UnsubscribeFromDiscordSocketEvents();
+
+    GC.SuppressFinalize(this);
+  }
+
+  private void SubscribeToDiscordSocketEvents()
+  {
+    discordSocketClient.Log += DiscordSocketClientOnLog;
+    discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
+    discordSocketClient.JoinedGuild += DiscordSocketClientOnJoinedGuild;
+    discordSocketClient.LoggedIn += DiscordSocketClientOnLoggedIn;
+    discordSocketClient.LoggedOut += DiscordSocketClientOnLoggedOut;
+    discordSocketClient.Ready += DiscordSocketClientOnReady;
+    discordSocketClient.Connected += DiscordSocketClientOnConnected;
+    discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
+    // discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
+    discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
+    discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
+    discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
+  }
+
+  private void UnsubscribeFromDiscordSocketEvents()
+  {
+    discordSocketClient.Log -= DiscordSocketClientOnLog;
+    discordSocketClient.UserJoined -= DiscordSocketClientOnUserJoined;
+    discordSocketClient.JoinedGuild -= DiscordSocketClientOnJoinedGuild;
+    discordSocketClient.LoggedIn -= DiscordSocketClientOnLoggedIn;
+    discordSocketClient.LoggedOut -= DiscordSocketClientOnLoggedOut;
+    discordSocketClient.Ready -= DiscordSocketClientOnReady;
+    discordSocketClient.Connected -= DiscordSocketClientOnConnected;
+    discordSocketClient.Disconnected -= DiscordSocketClientOnDisconnected;
+    discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted;
+    discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
+    discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
+    discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
+  }
+
+  private static LogLevel MapLogSeverity(LogSeverity severity)
+  {
+    return severity switch
+    {
+      LogSeverity.Critical => LogLevel.Critical,
+      LogSeverity.Error => LogLevel.Error,
+      LogSeverity.Warning => LogLevel.Warning,
+      LogSeverity.Info => LogLevel.Information,
+      LogSeverity.Verbose => LogLevel.Trace,
+      LogSeverity.Debug => LogLevel.Debug,
+      _ => LogLevel.Information
+    };
+  }
+
+  private static string CreateLogMessage(LogMessage log)
+  {
+    return log.Message ?? log.Exception?.Message ?? "No message provided";
+  }
+
+  private SocketGuild GetGuildById(ulong? guildId)
+  {
+    return guildId != null ? discordSocketClient.Guilds.FirstOrDefault(x => x.Id == guildId) : null;
+  }
+
+  private void LogErrorGuildLookup(string eventName)
+  {
+    var exception = new Exception();
+    var message = $"Unable to look-up guild for event [{eventName}]";
+
+    Logger.LogError(exception, message);
   }
 
   #region Discord Client Events
@@ -92,20 +204,20 @@ public class DiscordClientService(
   private async Task DiscordSocketClientOnReady()
   {
     Logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
-    
+
     try
     {
       if (Configuration.IsDebug())
       {
         Logger.LogDebug("Registering commands to DEV Guild.");
-        
+
         await interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
       }
       else
       {
         Logger.LogDebug("Registering commands globally.");
-        
-        await interactionService.RegisterCommandsGloballyAsync(); 
+
+        await interactionService.RegisterCommandsGloballyAsync();
       }
     }
     catch (Exception exception)
@@ -157,7 +269,7 @@ public class DiscordClientService(
 
     return Task.CompletedTask;
   }
-  
+
   private async Task DiscordSocketClientOnInteractionCreated(SocketInteraction socketInteraction)
   {
     try
@@ -189,115 +301,4 @@ public class DiscordClientService(
   }
 
   #endregion Discord Client Events
-
-  public async Task LoginDiscordBotAsync(string discordToken)
-  {
-    try
-    {
-      Guard.Against.NullOrWhiteSpace(discordToken, nameof(discordToken));
-
-      await discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
-    }
-    catch (ArgumentException argumentException)
-    {
-      Logger.LogError(argumentException, "The provided token is invalid.");
-      throw;
-    }
-    catch (Exception exception)
-    {
-      Logger.LogError(exception, nameof(LoginDiscordBotAsync));
-      throw;
-    }
-  }
-
-  public async Task StartDiscordBotAsync()
-  {
-    try
-    {
-      // Will signal ready state. Must be called only when bot has finished logging in.
-      await discordSocketClient.StartAsync();
-
-      // Only in debug, set bots online presence to offline
-      if (Configuration.IsDebug())
-      {
-        await discordSocketClient.SetStatusAsync(UserStatus.Invisible);
-      }
-    }
-    catch (Exception exception)
-    {
-      Logger.LogError(exception, DiscordStart);
-      throw;
-    }
-  }
-
-  private void SubscribeToDiscordSocketEvents()
-  {
-    discordSocketClient.Log += DiscordSocketClientOnLog;
-    discordSocketClient.UserJoined += DiscordSocketClientOnUserJoined;
-    discordSocketClient.JoinedGuild += DiscordSocketClientOnJoinedGuild;
-    discordSocketClient.LoggedIn += DiscordSocketClientOnLoggedIn;
-    discordSocketClient.LoggedOut += DiscordSocketClientOnLoggedOut;
-    discordSocketClient.Ready += DiscordSocketClientOnReady;
-    discordSocketClient.Connected += DiscordSocketClientOnConnected;
-    discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
-    // discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
-    discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
-    discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
-    discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
-  }
-  
-  private void UnsubscribeFromDiscordSocketEvents()
-  {
-    discordSocketClient.Log -= DiscordSocketClientOnLog;
-    discordSocketClient.UserJoined -= DiscordSocketClientOnUserJoined;
-    discordSocketClient.JoinedGuild -= DiscordSocketClientOnJoinedGuild;
-    discordSocketClient.LoggedIn -= DiscordSocketClientOnLoggedIn;
-    discordSocketClient.LoggedOut -= DiscordSocketClientOnLoggedOut;
-    discordSocketClient.Ready -= DiscordSocketClientOnReady;
-    discordSocketClient.Connected -= DiscordSocketClientOnConnected;
-    discordSocketClient.Disconnected -= DiscordSocketClientOnDisconnected;
-    discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted;
-    discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
-    discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
-    discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
-  }
-
-  private static LogLevel MapLogSeverity(LogSeverity severity)
-  {
-    return severity switch
-    {
-      LogSeverity.Critical => LogLevel.Critical,
-      LogSeverity.Error => LogLevel.Error,
-      LogSeverity.Warning => LogLevel.Warning,
-      LogSeverity.Info => LogLevel.Information,
-      LogSeverity.Verbose => LogLevel.Trace,
-      LogSeverity.Debug => LogLevel.Debug,
-      _ => LogLevel.Information
-    };
-  }
-
-  private static string CreateLogMessage(LogMessage log)
-  {
-    return log.Message ?? log.Exception?.Message ?? "No message provided";
-  }
-
-  private SocketGuild GetGuildById(ulong? guildId)
-  {
-    return guildId != null ? discordSocketClient.Guilds.FirstOrDefault(x => x.Id == guildId) : null;
-  }
-
-  private void LogErrorGuildLookup(string eventName)
-  {
-    var exception = new Exception();
-    var message = $"Unable to look-up guild for event [{eventName}]";
-    
-    Logger.LogError(exception, message);
-  }
-  
-  public void Dispose()
-  {
-    UnsubscribeFromDiscordSocketEvents();
-    
-    GC.SuppressFinalize(this);
-  }
 }

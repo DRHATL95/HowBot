@@ -18,7 +18,11 @@ using static Howbot.Core.Models.Permissions.User;
 
 namespace Howbot.Core.Modules;
 
-public class MusicModule(IMusicService musicService, ILyricsService lyricsService, IEmbedService embedService, ILoggerAdapter<MusicModule> logger)
+public class MusicModule(
+  IMusicService musicService,
+  ILyricsService lyricsService,
+  IEmbedService embedService,
+  ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
   [SlashCommand(PlayCommandName, PlayCommandDescription, true, RunMode.Async)]
@@ -47,12 +51,13 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
 
       if (player is not null)
       {
-        var user = (Context.User as IGuildUser) ?? throw new ArgumentNullException(nameof(Context.User));
-        var voiceState = (Context.User as IVoiceState) ?? throw new ArgumentNullException(nameof(Context.User));
-        var channel = (Context.Channel as ITextChannel) ?? throw new ArgumentNullException(nameof(Context.Channel));
+        var user = Context.User as IGuildUser ?? throw new ArgumentNullException(nameof(Context.User));
+        var voiceState = Context.User as IVoiceState ?? throw new ArgumentNullException(nameof(Context.User));
+        var channel = Context.Channel as ITextChannel ?? throw new ArgumentNullException(nameof(Context.Channel));
 
         var response =
-          await musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState, channel);
+          await musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
+            channel);
 
         if (!response.IsSuccessful)
         {
@@ -63,8 +68,9 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
 
         if (player.Queue.Any())
         {
-          var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack), user);
-          
+          var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
+            user);
+
           await FollowupAsync(embed: embed as Embed);
         }
         else
@@ -133,7 +139,7 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
 
       var player = await musicService
         .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Paused));
-      
+
       if (player is not null)
       {
         var commandResponse = await musicService.ResumeTrackAsync(player);
@@ -178,8 +184,8 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
 
       var player = await musicService.GetPlayerByContextAsync(Context);
 
-      TimeSpan timeSpan =
-        (timeToSeek == default) ? ModuleHelper.ConvertToTimeSpan(hours, minutes, seconds) : timeToSeek;
+      var timeSpan =
+        timeToSeek == default ? ModuleHelper.ConvertToTimeSpan(hours, minutes, seconds) : timeToSeek;
 
       var commandResponse = await musicService.SeekTrackAsync(player, timeSpan);
 
@@ -287,8 +293,11 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
 
       var player = await musicService
         .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Playing));
-      
-      if (Context.User is not IGuildUser guildUser || Context.Channel is not ITextChannel textChannel) return;
+
+      if (Context.User is not IGuildUser guildUser || Context.Channel is not ITextChannel textChannel)
+      {
+        return;
+      }
 
       var commandResponse =
         musicService.NowPlaying(player, guildUser, textChannel);
@@ -333,7 +342,7 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
     try
     {
       logger.LogDebug(Messages.Debug.PlayingRadio);
-      
+
       await RespondAsync("This command is not quite ready yet. Check back later.");
 
       // await RespondAsync(Messages.Responses.PlayingRadio);
@@ -356,10 +365,10 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
     {
       await DeferAsync();
 
-      var player = await musicService.GetPlayerByContextAsync(Context, 
+      var player = await musicService.GetPlayerByContextAsync(Context,
         preconditions: ImmutableArray.Create(PlayerPrecondition.QueueNotEmpty));
-      
-      CommandResponse commandResponse = musicService.ToggleShuffle(player);
+
+      var commandResponse = musicService.ToggleShuffle(player);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -459,7 +468,7 @@ public class MusicModule(IMusicService musicService, ILyricsService lyricsServic
 
       if (commandResponse.Embed != null)
       {
-        await ModifyOriginalResponseAsync(properties => properties.Embed = (commandResponse.Embed as Embed));
+        await ModifyOriginalResponseAsync(properties => properties.Embed = commandResponse.Embed as Embed);
       }
       else
       {
