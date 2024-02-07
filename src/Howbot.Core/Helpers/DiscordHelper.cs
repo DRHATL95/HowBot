@@ -12,9 +12,8 @@ namespace Howbot.Core.Helpers;
 
 public static class DiscordHelper
 {
-  
   /// <summary>
-  /// Converts a log severity value to a log level.
+  ///   Converts a log severity value to a log level.
   /// </summary>
   /// <param name="logSeverity">The log severity to convert.</param>
   /// <returns>The corresponding log level.</returns>
@@ -34,7 +33,7 @@ public static class DiscordHelper
   }
 
   /// <summary>
-  /// Helper function to create a tag consisting of guild name and guild id.
+  ///   Helper function to create a tag consisting of guild name and guild id.
   /// </summary>
   /// <param name="guild">Specified guild to build</param>
   /// <returns></returns>
@@ -42,21 +41,22 @@ public static class DiscordHelper
   {
     return guild == null ? string.Empty : $"[{guild.Name} - {guild.Id}]";
   }
-  
+
   /// <summary>
-  /// TODO: Add summary.
+  ///   TODO: Add summary.
   /// </summary>
   /// <param name="socketInteraction"></param>
   /// <param name="result"></param>
   /// <param name="logger"></param>
   /// <typeparam name="T"></typeparam>
   /// <exception cref="ArgumentOutOfRangeException"></exception>
-  public static async Task HandleSocketInteractionErrorAsync<T>(SocketInteraction socketInteraction, IResult result, ILoggerAdapter<T> logger)
+  public static async Task HandleSocketInteractionErrorAsync<T>(SocketInteraction socketInteraction, IResult result,
+    ILoggerAdapter<T> logger)
   {
     Guard.Against.Null(socketInteraction, nameof(socketInteraction));
     Guard.Against.Null(result, nameof(result));
     Guard.Against.Null(logger, nameof(logger));
-    
+
     switch (result.Error)
     {
       case InteractionCommandError.UnknownCommand:
@@ -89,15 +89,14 @@ public static class DiscordHelper
 
       case null:
         logger.LogError(new Exception(result.ErrorReason), Messages.Errors.InteractionNullLog);
-        
+
         break;
-      
+
       default:
         throw new ArgumentOutOfRangeException();
     }
-    
+
     // Will respond with error reason ephemeral by default. TODO: Maybe create config variable to change this?
     await socketInteraction.RespondAsync(result.ErrorReason, ephemeral: true);
   }
-    
 }

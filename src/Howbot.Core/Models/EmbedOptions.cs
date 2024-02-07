@@ -1,5 +1,4 @@
 ﻿using Discord;
-using JetBrains.Annotations;
 
 namespace Howbot.Core.Models;
 

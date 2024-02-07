@@ -20,9 +20,12 @@ public class VideoModule(IHttpService httpService, ILoggerAdapter<VideoModule> l
     try
     {
       var responseMessage =
-        await ModifyOriginalResponseAsync(properties => properties.Content = $"Creating Watch2gether room..");
+        await ModifyOriginalResponseAsync(properties => properties.Content = "Creating Watch2gether room..");
 
-      if (responseMessage is null) return;
+      if (responseMessage is null)
+      {
+        return;
+      }
 
       var watch2GetherRoomUrl = await httpService.CreateWatchTogetherRoomAsync(url);
       if (string.IsNullOrEmpty(watch2GetherRoomUrl))
@@ -30,13 +33,14 @@ public class VideoModule(IHttpService httpService, ILoggerAdapter<VideoModule> l
         throw new Exception();
       }
 
-      await ModifyOriginalResponseAsync(properties => properties.Content = $"Watch2gether room created: {watch2GetherRoomUrl}");
+      await ModifyOriginalResponseAsync(properties =>
+        properties.Content = $"Watch2gether room created: {watch2GetherRoomUrl}");
     }
     catch (Exception ex)
     {
       logger.LogError(ex, "Error creating Watch2gether room");
-      
-      await ModifyOriginalResponseAsync(properties => properties.Content = $"Error creating Watch2gether room");
+
+      await ModifyOriginalResponseAsync(properties => properties.Content = "Error creating Watch2gether room");
     }
   }
 }

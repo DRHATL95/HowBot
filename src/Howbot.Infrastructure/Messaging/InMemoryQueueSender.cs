@@ -4,12 +4,12 @@ using Howbot.Core.Interfaces;
 namespace Howbot.Infrastructure.Messaging;
 
 /// <summary>
-/// Represents a class for sending messages to an in-memory queue.
+///   Represents a class for sending messages to an in-memory queue.
 /// </summary>
 public class InMemoryQueueSender : IQueueSender
 {
   /// <summary>
-  /// Send a message to a queue asynchronously.
+  ///   Send a message to a queue asynchronously.
   /// </summary>
   /// <param name="message">The message to be sent to the queue.</param>
   /// <param name="queueName">The name of the queue to which the message will be sent.</param>
@@ -18,7 +18,7 @@ public class InMemoryQueueSender : IQueueSender
   {
     await Task.Run(() =>
     {
-      lock(InMemoryQueueReceiver.MessageQueue)
+      lock (InMemoryQueueReceiver.MessageQueue)
       {
         InMemoryQueueReceiver.MessageQueue.Enqueue(message);
       }

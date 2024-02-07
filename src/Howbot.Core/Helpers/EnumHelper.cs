@@ -2,6 +2,7 @@
 using System.ComponentModel;
 
 namespace Howbot.Core.Helpers;
+
 public static class EnumHelper
 {
   public static T GetValueFromDescription<T>(string description) where T : Enum

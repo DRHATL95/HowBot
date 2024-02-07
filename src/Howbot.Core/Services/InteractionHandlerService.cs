@@ -43,7 +43,7 @@ public class InteractionHandlerService(
         throw logMessage.Exception ?? new Exception(logMessage.Message);
       }
 
-      Logger.Log(logLevel, message: logMessage.Message);
+      Logger.Log(logLevel, logMessage.Message);
 
       return Task.CompletedTask;
     }
@@ -88,7 +88,7 @@ public class InteractionHandlerService(
       Logger.LogError(exception, "An exception occurred while handling interaction command execution");
     }
   }
-  
+
   /*private Task InteractionServiceOnAutocompleteHandlerExecuted(IAutocompleteHandler arg1, IInteractionContext arg2,
     IResult arg3)
   {

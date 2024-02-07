@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Models;
-using JetBrains.Annotations;
 
 namespace Howbot.Core.Interfaces;
 

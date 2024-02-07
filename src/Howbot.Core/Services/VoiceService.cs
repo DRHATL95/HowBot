@@ -45,7 +45,7 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
   {
     try
     {
-      var player = await GetPlayerAsync(new GetPlayerParameters()
+      var player = await GetPlayerAsync(new GetPlayerParameters
       {
         ConnectToVoiceChannel = false,
         GuildId = guildChannel.GuildId,
@@ -81,13 +81,13 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
     }
 
     var retrieveOptions = new PlayerRetrieveOptions(
-      ChannelBehavior: playerParams.ConnectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None);
+      playerParams.ConnectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None);
 
     var result = await audioService.Players
-      .RetrieveAsync(guildId: playerParams.GuildId, memberVoiceChannel: playerParams.VoiceChannelId,
-        playerFactory: PlayerFactory.Default,
-        options: new OptionsWrapper<LavalinkPlayerOptions>(new LavalinkPlayerOptions()),
-        retrieveOptions: retrieveOptions);
+      .RetrieveAsync(playerParams.GuildId, playerParams.VoiceChannelId,
+        PlayerFactory.Default,
+        new OptionsWrapper<LavalinkPlayerOptions>(new LavalinkPlayerOptions()),
+        retrieveOptions);
 
     if (result.IsSuccess)
     {
@@ -98,7 +98,7 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
     {
       PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
       PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected.",
-      _ => "Unknown error.",
+      _ => "Unknown error."
     };
 
     await playerParams.TextChannel.SendMessageAsync(errorMessage);

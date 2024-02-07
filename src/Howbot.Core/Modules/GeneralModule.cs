@@ -71,7 +71,7 @@ public class GeneralModule(
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
-        CommandResponse commandResponse =
+        var commandResponse =
           await voiceService.LeaveVoiceChannelAsync(user, channel);
 
         await ModuleHelper.HandleCommandResponseAsync(commandResponse, Context);
@@ -124,81 +124,85 @@ public class GeneralModule(
   [RequireBotPermission(GuildPermission.ViewChannel | GuildPermission.SendMessages)]
   [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
                          GuildPermission.ViewChannel)]
-  public async Task HelpCommandAsync([Summary("command", "The name of the command to get help for.")] string commandName = null)
+  public async Task HelpCommandAsync(
+    [Summary("command", "The name of the command to get help for.")] string commandName = null)
   {
-  try
-  {
-    var commands = interactionService.SlashCommands
-      .Where(c => !c.Preconditions.OfType<RequireOwnerAttribute>().Any()); // Ignore owner-only commands
-    if (!string.IsNullOrEmpty(commandName))
+    try
     {
-      // If a command name is provided, find the command and return its description and example
-      var command = commands.FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
-
-      if (command != null)
+      var commands = interactionService.SlashCommands
+        .Where(c => !c.Preconditions.OfType<RequireOwnerAttribute>().Any()); // Ignore owner-only commands
+      if (!string.IsNullOrEmpty(commandName))
       {
-        var example = ModuleHelper.CommandExampleDictionary.GetValueOrDefault(command.Name, "No example available");
-        var embedBuilder = new EmbedBuilder
-        {
-          Title = $"{command.Name}",
-          Description = $"{command.Description}\nExample: {example}",
-          Color = Constants.ThemeColor
-        };
+        // If a command name is provided, find the command and return its description and example
+        var command = commands.FirstOrDefault(c => c.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase));
 
-        await RespondAsync(embeds: [embedBuilder.Build()]);
+        if (command != null)
+        {
+          var example = ModuleHelper.CommandExampleDictionary.GetValueOrDefault(command.Name, "No example available");
+          var embedBuilder = new EmbedBuilder
+          {
+            Title = $"{command.Name}",
+            Description = $"{command.Description}\nExample: {example}",
+            Color = Constants.ThemeColor
+          };
+
+          await RespondAsync(embeds: [embedBuilder.Build()]);
+        }
+        else
+        {
+          await RespondAsync($"No command found with the name `{commandName}`.");
+        }
       }
       else
       {
-        await RespondAsync($"No command found with the name `{commandName}`.");
-      }
-    }
-    else
-    {
-      // If no command name is provided, return the list of all commands as before
-      var groupedCommands = commands.GroupBy(c => c.Module.Name);
+        // If no command name is provided, return the list of all commands as before
+        var groupedCommands = commands.GroupBy(c => c.Module.Name);
 
-      var embedBuilder = new EmbedBuilder { Title = "Command List", Color = Constants.ThemeColor };
+        var embedBuilder = new EmbedBuilder { Title = "Command List", Color = Constants.ThemeColor };
 
-      foreach (var group in groupedCommands)
-      {
-        var moduleName = group.Key.Replace("Module", ""); // Remove the word "Module" from the group key
-        var commandList = new List<string>();
-        var continuationFields = new List<EmbedFieldBuilder>();
-
-        foreach (var command in group)
+        foreach (var group in groupedCommands)
         {
-          var commandInfo = $"`/{command.Name}`: {command.Description}\n"; // Removed example
+          var moduleName = group.Key.Replace("Module", ""); // Remove the word "Module" from the group key
+          var commandList = new List<string>();
+          var continuationFields = new List<EmbedFieldBuilder>();
 
-          // If adding the next command would exceed the limit and there are already commands in the list, add the current list as a field and start a new list
-          if (commandList.Any() && commandList.Sum(c => c.Length) + commandInfo.Length > 1024)
+          foreach (var command in group)
           {
-            continuationFields.Add(new EmbedFieldBuilder { Name = $"{moduleName} (cont.)", Value = string.Join("\n", commandList) });
-            commandList.Clear();
+            var commandInfo = $"`/{command.Name}`: {command.Description}\n"; // Removed example
+
+            // If adding the next command would exceed the limit and there are already commands in the list, add the current list as a field and start a new list
+            if (commandList.Any() && commandList.Sum(c => c.Length) + commandInfo.Length > 1024)
+            {
+              continuationFields.Add(new EmbedFieldBuilder
+              {
+                Name = $"{moduleName} (cont.)", Value = string.Join("\n", commandList)
+              });
+              commandList.Clear();
+            }
+
+            commandList.Add(commandInfo);
           }
 
-          commandList.Add(commandInfo);
+          // Add main section as a field
+          if (commandList.Any())
+          {
+            embedBuilder.AddField(moduleName, string.Join("\n", commandList));
+          }
+
+          // Add continuation sections as fields
+          foreach (var field in continuationFields)
+          {
+            embedBuilder.AddField(field);
+          }
         }
 
-        // Add main section as a field
-        if (commandList.Any())
-        {
-          embedBuilder.AddField(moduleName, string.Join("\n", commandList));
-        }
-
-        // Add continuation sections as fields
-        foreach (var field in continuationFields)
-        {
-          embedBuilder.AddField(field);
-        }
+        await RespondAsync(embeds: [embedBuilder.Build()]);
       }
-
-      await RespondAsync(embeds: [embedBuilder.Build()]);
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(HelpCommandAsync));
+      throw;
     }
   }
-  catch (Exception exception)
-  {
-    logger.LogError(exception, nameof(HelpCommandAsync));
-    throw;
-  }
-}
 }

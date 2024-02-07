@@ -30,7 +30,7 @@ public static class ServiceCollectionSetupExtensions
   /// <param name="configuration">The host builder configuration</param>
   public static void AddDbContext(this IServiceCollection services, IConfiguration configuration)
   {
-    services.AddDbContext<AppDbContext>((options) =>
+    services.AddDbContext<AppDbContext>(options =>
       options.UseNpgsql(
         configuration.GetConnectionString(Constants.DatabaseConnectionStringName)));
   }

@@ -22,9 +22,9 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-    
+
     _logger.LogDebug("Player is being tracked as active");
-    
+
     if (TextChannel is not null && Configuration.IsDebug())
     {
       await TextChannel.SendMessageAsync("Player is being tracked as active");
@@ -35,7 +35,7 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-    
+
     _logger.LogDebug("Player exceeded inactive timeout");
 
     return ValueTask.CompletedTask;
@@ -45,7 +45,7 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-    
+
     _logger.LogDebug("Player is being tracked as inactive");
 
     if (TextChannel is not null && Configuration.IsDebug())

@@ -15,7 +15,7 @@ namespace Howbot.Worker;
 
 public static class Program
 {
-  static async Task<int> Main(string[] args)
+  private static async Task<int> Main(string[] args)
   {
     try
     {

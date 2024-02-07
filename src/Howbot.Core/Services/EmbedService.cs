@@ -53,12 +53,12 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
 
     return embedBuilder.Build();
   }
-  
+
   public IEmbed GenerateMusicNextTrackEmbed(ITrackQueue queue)
   {
     ArgumentException.ThrowIfNullOrEmpty(nameof(queue));
 
-    if (!queue.TryPeek(out ITrackQueueItem nextTrackItem))
+    if (!queue.TryPeek(out var nextTrackItem))
     {
       return CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." });
     }
@@ -68,12 +68,12 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
       return CreateEmbed(new EmbedOptions { Title = "There are no more songs in the queue." });
     }
 
-    var embed = CreateEmbed(new EmbedOptions()
+    var embed = CreateEmbed(new EmbedOptions
     {
       Title = "Next Track In Queue",
       Fields = new[]
       {
-        new EmbedFieldBuilder()
+        new EmbedFieldBuilder
         {
           IsInline = false,
           Name = nextTrackItem.Identifier,
@@ -84,11 +84,11 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
 
     return embed;
   }
-  
+
   public IEmbed GenerateMusicCurrentQueueEmbed(ITrackQueue queue)
   {
     Guard.Against.Null(queue, nameof(queue));
-    
+
     if (queue.IsEmpty)
     {
       return CreateEmbed(new EmbedOptions { Title = "There are no songs in the queue." });
@@ -99,46 +99,40 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
       : string.Join(Environment.NewLine,
         queue.Select((item, i) => $"`{i + 1}.` {item.Track?.Title ?? "No Track Title"}"));
 
-    var embed = CreateEmbed(new EmbedOptions()
+    var embed = CreateEmbed(new EmbedOptions
     {
       Title = $"Current Queue ({queue.Count})",
-      Fields = new[] { new EmbedFieldBuilder() { IsInline = false, Name = "Songs", Value = queueList } }
+      Fields = new[] { new EmbedFieldBuilder { IsInline = false, Name = "Songs", Value = queueList } }
     });
 
     return embed;
   }
-  
-  public IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user, TrackPosition? trackPosition, float volume)
+
+  public IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user, TrackPosition? trackPosition,
+    float volume)
   {
     var embedBuilder = GenerateEmbedBuilderForNowPlaying(lavalinkTrack, user);
-    
-    embedBuilder.Fields.Add(new EmbedFieldBuilder()
+
+    embedBuilder.Fields.Add(new EmbedFieldBuilder
     {
-      IsInline = true,
-      Name = "Source",
-      Value = LavalinkHelper.GetSourceAsString(lavalinkTrack.SourceName)
+      IsInline = true, Name = "Source", Value = LavalinkHelper.GetSourceAsString(lavalinkTrack.SourceName)
     });
 
     if (trackPosition.HasValue)
     {
-      embedBuilder.Fields.Add(new EmbedFieldBuilder()
+      embedBuilder.Fields.Add(new EmbedFieldBuilder
       {
         IsInline = true,
         Name = "Position",
         Value = $@"{trackPosition.Value.Position:hh\:mm\:ss} / {lavalinkTrack.Duration:hh\:mm\:ss}"
       });
     }
-    
-    embedBuilder.Fields.Add(new EmbedFieldBuilder()
-    {
-      IsInline = true,
-      Name = "Volume",
-      Value = $"{volume * 100}%"
-    });
-    
+
+    embedBuilder.Fields.Add(new EmbedFieldBuilder { IsInline = true, Name = "Volume", Value = $"{volume * 100}%" });
+
     return embedBuilder.Build();
   }
-  
+
   public IEmbed CreateNowPlayingEmbed(ExtendedLavalinkTrack lavalinkTrack)
   {
     var embedBuilder = new EmbedBuilder()
@@ -147,18 +141,18 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
 
     return embedBuilder.Build();
   }
-  
+
   public IEmbed CreateTrackAddedToQueueEmbed(ExtendedLavalinkTrack lavalinkTrack, IUser user)
   {
-    var embedBuilder = new EmbedBuilder()
+    var embedBuilder = new EmbedBuilder
     {
       Color = Constants.ThemeColor,
-      Description = $"{Emojis.MusicalNote} Added **{lavalinkTrack.Title}** to the queue.",
+      Description = $"{Emojis.MusicalNote} Added **{lavalinkTrack.Title}** to the queue."
     };
-    
+
     return embedBuilder.Build();
   }
-  
+
   private EmbedBuilder GenerateEmbedBuilderForNowPlaying(ExtendedLavalinkTrack lavalinkTrack, IUser user)
   {
     var embedBuilder = new EmbedBuilder()
@@ -168,10 +162,10 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
       .WithColor(Constants.ThemeColor)
       .WithFooter(GenerateEmbedFooterBuilderFromDiscordUser(user))
       .WithCurrentTimestamp();
-    
+
     return embedBuilder;
   }
-  
+
   private EmbedFooterBuilder GenerateEmbedFooterBuilderFromDiscordUser(IUser user)
   {
     try

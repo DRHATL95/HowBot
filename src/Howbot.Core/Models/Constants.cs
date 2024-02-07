@@ -4,10 +4,8 @@ namespace Howbot.Core.Models;
 
 public abstract record Constants
 {
-  public static readonly Color ThemeColor = Color.DarkPurple;
-
   public const string DatabaseConnectionStringName = "DefaultConnection";
-  
+
   // Discord Development Server (DevTest2)
   public const ulong DiscordDevelopmentGuildId = 656305202185633810;
   public const string BotName = "Howbot";
@@ -23,12 +21,18 @@ public abstract record Constants
   public const int ApplicationTimeoutInMs = 3000;
   public const int MaximumMessageCount = 10000;
   public const string DefaultPrefix = "!~";
-  
+
   // Regex Patterns
-  public const string UrlRegexPattern = @"^(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?$";
+  public const string UrlRegexPattern =
+    @"^(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?$";
+
   public const string PlaylistRegexPattern = @"playlist\s\w+";
-  public const string YoutubePlaylistRegexPattern = @"^(?:http(?:s)?:\/\/)?(?:www\.)?(?:music\.)?youtube\.com\/playlist\?list=(?<id>[a-zA-Z0-9-_]+)$";
+
+  public const string YoutubePlaylistRegexPattern =
+    @"^(?:http(?:s)?:\/\/)?(?:www\.)?(?:music\.)?youtube\.com\/playlist\?list=(?<id>[a-zA-Z0-9-_]+)$";
+
   public const string ApplicationIdRegexPattern = @"\|.*\|.*\|.*\|.*\|\s*\n([\s\S]+?)(?=\|\s*\n\|\s*[\-]+\s*\|)";
+  public static readonly Color ThemeColor = Color.DarkPurple;
 
   public readonly struct Commands
   {
@@ -38,6 +42,7 @@ public abstract record Constants
 
     // Play Command
     public const string PlayCommandName = "play";
+
     public const string PlayCommandDescription =
       "Plays a track from a given search query. Optionally, can choose different search providers.";
 
@@ -45,7 +50,9 @@ public abstract record Constants
     public const string PlaySearchRequestArgumentName = "search_request";
     public const string PlaySearchRequestArgumentDescription = "Search request used for search provider.";
     public const string PlaySearchTypeArgumentName = "search_type";
-    public const string PlaySearchTypeArgumentDescription = "Optional search type used for search request. (Default: YouTube)";
+
+    public const string PlaySearchTypeArgumentDescription =
+      "Optional search type used for search request. (Default: YouTube)";
 
     // Pause Command
     public const string PauseCommandName = "pause";
@@ -61,12 +68,15 @@ public abstract record Constants
 
     // Skip Command
     public const string SkipCommandName = "skip";
+
     public const string SkipCommandDescription =
       "Skip either to the next track or a valid number of songs in the track queue.";
 
     // Volume Command
     public const string VolumeCommandName = "volume";
-    public const string VolumeCommandDescription = "Change the volume of the current playing track. Leaving blank will show the current volume.";
+
+    public const string VolumeCommandDescription =
+      "Change the volume of the current playing track. Leaving blank will show the current volume.";
 
     // NowPlaying Command
     public const string NowPlayingCommandName = "nowplaying";
@@ -82,7 +92,9 @@ public abstract record Constants
 
     // Leave Command
     public const string LeaveCommandName = "leave";
-    public const string LeaveCommandDescription = "Leaves the current voice channel and removes any songs from the queue.";
+
+    public const string LeaveCommandDescription =
+      "Leaves the current voice channel and removes any songs from the queue.";
 
     // Ping Command
     public const string PingCommandName = "ping";
@@ -107,11 +119,11 @@ public abstract record Constants
     // Lyrics Command
     public const string LyricsCommandName = "lyrics";
     public const string LyricsCommandDescription = "Gets lyrics from lyrics.ovh for the current playing track.";
-    
+
     // Queue Command
     public const string QueueCommandName = "queue";
     public const string QueueCommandDescription = "Gets the current music queue for the server.";
-    
+
     // Purge Command
     public const string PurgeCommandName = "purge";
     public const string PurgeCommandDescription = "Purge current text channel from up to 10,000 messages.";
@@ -119,16 +131,16 @@ public abstract record Constants
     // Ban Command
     public const string BanCommandName = "ban";
     public const string BanCommandDescription = "Permanently ban a user from the server.";
-    
+
     // TODO: Add unban command
     // Unban Command
     public const string UnbanCommandName = "unban";
     public const string UnbanCommandDescription = "Unban a user from the server.";
-    
+
     // Roll Command
     public const string RollCommandName = "roll";
     public const string RollCommandDescription = "Rolls a dice.";
-    
+
     // Flip Command
     public const string FlipCommandName = "flip";
     public const string FlipCommandDescription = "Flips a coin.";

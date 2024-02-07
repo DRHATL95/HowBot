@@ -13,7 +13,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
   public void AddNewGuild(Guild guild)
   {
     Guard.Against.Null(guild, nameof(guild));
-    
+
     try
     {
       repository.Add(guild);
@@ -54,12 +54,12 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       {
         return guildEntity.Volume;
       }
-      
+
       Logger.LogWarning("Unable to find guild with id {GuildId}", guildId);
       Logger.LogInformation("Adding new guild with id {GuildId} to database", guildId);
-      
-      this.AddNewGuild(new Guild { Id = guildId });
-      
+
+      AddNewGuild(new Guild { Id = guildId });
+
       return 0;
     }
     catch (Exception exception)

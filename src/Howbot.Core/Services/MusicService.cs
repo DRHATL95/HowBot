@@ -62,14 +62,14 @@ public class MusicService(
       return null;
     }
 
-    ulong voiceChannelId = guildUser.VoiceChannel?.Id ?? 0;
+    var voiceChannelId = guildUser.VoiceChannel?.Id ?? 0;
     IGuild guild = context.Guild;
-    ulong guildId = guild.Id;
+    var guildId = guild.Id;
 
     var retrieveOptions = new PlayerRetrieveOptions(
-      ChannelBehavior: allowConnect ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None,
-      VoiceStateBehavior: requireChannel ? MemberVoiceStateBehavior.RequireSame : MemberVoiceStateBehavior.Ignore,
-      Preconditions: preconditions);
+      allowConnect ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None,
+      requireChannel ? MemberVoiceStateBehavior.RequireSame : MemberVoiceStateBehavior.Ignore,
+      preconditions);
 
     float persistedVolume;
 
@@ -79,7 +79,7 @@ public class MusicService(
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
     }
 
-    HowbotPlayerOptions playerOptions = new HowbotPlayerOptions(context.Channel as ITextChannel, guildUser)
+    var playerOptions = new HowbotPlayerOptions(context.Channel as ITextChannel, guildUser)
     {
       DisconnectOnDestroy = true,
       DisconnectOnStop = true,
@@ -120,7 +120,7 @@ public class MusicService(
 
     return null;
   }
-  
+
   public ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
   {
     throw new NotImplementedException();
@@ -160,9 +160,9 @@ public class MusicService(
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-    
+
     Guard.Against.Null(properties, nameof(properties));
-    
+
     Log.Logger.Information("Creating new player..");
 
     return ValueTask.FromResult(new HowbotPlayer(properties));
@@ -188,7 +188,7 @@ public class MusicService(
     {
       // Convert from enum to Lavalink struct for searching providers (default is YouTube)
       var type = LavalinkHelper.ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
-      
+
       var trackOptions = new TrackLoadOptions(type, StrictSearchBehavior.Resolve);
 
       // LavaSearch categories to be returned (Tracks, Albums, Artists, etc.)
@@ -309,7 +309,7 @@ public class MusicService(
       else
       {
         // Needs to be added to db
-        db.AddNewGuild(new Guild {Id = player.GuildId, Volume = newVolume});
+        db.AddNewGuild(new Guild { Id = player.GuildId, Volume = newVolume });
       }
 
       return CommandResponse.CommandSuccessful($"Volume set to {newVolume}%");
