@@ -15,10 +15,10 @@ public static class LavalinkHelper
       // SearchProviderTypes.Deezer => TrackSearchMode.Deezer,
       SearchProviderTypes.SoundCloud => TrackSearchMode.SoundCloud,
       SearchProviderTypes.Spotify => TrackSearchMode.Spotify,
-      SearchProviderTypes.YouTube => TrackSearchMode.YouTube,
+      // SearchProviderTypes.YouTube => TrackSearchMode.YouTube,
       SearchProviderTypes.YouTubeMusic => TrackSearchMode.YouTubeMusic,
       // SearchProviderTypes.YandexMusic => TrackSearchMode.YandexMusic,
-      _ => TrackSearchMode.YouTube
+      _ => TrackSearchMode.YouTubeMusic
     };
   }
 

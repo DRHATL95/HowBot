@@ -34,7 +34,7 @@ public class MusicModule(
     [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
     string searchRequest,
     [Summary(PlaySearchTypeArgumentName, PlaySearchTypeArgumentDescription)]
-    SearchProviderTypes searchProviderType = SearchProviderTypes.YouTube)
+    SearchProviderTypes searchProviderType = SearchProviderTypes.YouTubeMusic)
   {
     try
     {

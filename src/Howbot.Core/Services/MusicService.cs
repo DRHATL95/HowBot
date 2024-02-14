@@ -162,9 +162,7 @@ public class MusicService(
     cancellationToken.ThrowIfCancellationRequested();
 
     Guard.Against.Null(properties, nameof(properties));
-
-    Log.Logger.Information("Creating new player..");
-
+    
     return ValueTask.FromResult(new HowbotPlayer(properties));
   }
 
