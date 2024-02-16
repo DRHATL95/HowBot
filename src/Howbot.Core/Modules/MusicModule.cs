@@ -52,6 +52,8 @@ public class MusicModule(
         var user = Context.User as IGuildUser ?? throw new ArgumentNullException(nameof(Context.User));
         var voiceState = Context.User as IVoiceState ?? throw new ArgumentNullException(nameof(Context.User));
         var channel = Context.Channel as ITextChannel ?? throw new ArgumentNullException(nameof(Context.Channel));
+        
+        int tracksBeforePlay = player.Queue.Count;
 
         var response =
           await musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
@@ -66,10 +68,18 @@ public class MusicModule(
 
         if (player.Queue.Any())
         {
-          var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
-            user);
+          // Added more than one track to the queue
+          if (player.Queue.Count > (tracksBeforePlay + 1))
+          {
+            await FollowupAsync("🎵 Added multiple tracks to the queue.");
+          }
+          else
+          {
+            var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
+              user);
 
-          await FollowupAsync(embed: embed as Embed);
+            await FollowupAsync(embed: embed as Embed); 
+          }
         }
         else
         {
@@ -485,48 +495,6 @@ public class MusicModule(
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(GetQueueCommandAsync));
-      throw;
-    }
-  }
-
-  [SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
-  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  [RequireOwner]
-  public async Task TwentyFourSevenCommandAsync()
-  {
-    try
-    {
-      await DeferAsync();
-
-      var player = await musicService.GetPlayerByContextAsync(Context,
-        preconditions: ImmutableArray.Create(PlayerPrecondition.Playing));
-
-      if (player is null)
-      {
-        return;
-      }
-
-      var commandResponse = musicService.ToggleTwoFourSeven(player);
-
-      if (!commandResponse.IsSuccessful)
-      {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-
-        if (string.IsNullOrEmpty(commandResponse.Message))
-        {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
-          return;
-        }
-      }
-
-      await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
-    }
-    catch (Exception exception)
-    {
-      logger.LogError(exception, nameof(TwentyFourSevenCommandAsync));
       throw;
     }
   }

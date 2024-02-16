@@ -25,7 +25,7 @@ public class DiscordClientService(
 
   private string LoggedInUsername
   {
-    get => string.IsNullOrEmpty(_loggedInUsername) ? Constants.BotName : _loggedInUsername;
+    get => string.IsNullOrEmpty(_loggedInUsername) ? Constants.Discord.BotName : _loggedInUsername;
     set
     {
       if (!value.Equals(_loggedInUsername, StringComparison.OrdinalIgnoreCase))
@@ -211,7 +211,7 @@ public class DiscordClientService(
       {
         Logger.LogDebug("Registering commands to DEV Guild.");
 
-        await interactionService.RegisterCommandsToGuildAsync(Constants.DiscordDevelopmentGuildId);
+        await interactionService.RegisterCommandsToGuildAsync(Constants.Discord.DiscordDevelopmentGuildId);
       }
       else
       {

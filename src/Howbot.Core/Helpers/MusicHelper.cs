@@ -4,18 +4,8 @@ using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Helpers;
 
-/// <summary>
-///   Class of static helpers that help with Music Module Commands.
-/// </summary>
 public static class MusicHelper
 {
-  /// <summary>
-  ///   Checks if two <see cref="LavalinkTrack" /> are similar based on Levenshtein distance.
-  ///   Compares the track's title, author and URL.
-  /// </summary>
-  /// <param name="lavalinkTrack"></param>
-  /// <param name="secondLavalinkTrack"></param>
-  /// <returns></returns>
   public static bool AreTracksSimilar(LavalinkTrack lavalinkTrack, LavalinkTrack secondLavalinkTrack)
   {
     Guard.Against.Null(lavalinkTrack, nameof(lavalinkTrack));
@@ -27,14 +17,7 @@ public static class MusicHelper
 
     return titleDistance < 5 && authorDistance < 5 && urlDistance < 5;
   }
-
-  /// <summary>
-  ///   Algorithm used to compare if two strings are similar.
-  ///   This will be used to recommend new songs based on songs already played avoiding duplicates.
-  /// </summary>
-  /// <param name="a"></param>
-  /// <param name="b"></param>
-  /// <returns></returns>
+  
   private static int CalculateLevenshteinDistance(string a, string b)
   {
     var distance = new int[a.Length + 1, b.Length + 1];

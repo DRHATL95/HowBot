@@ -67,7 +67,7 @@ public static class ServiceCollectionSetupExtensions
     // YouTube related service
     services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
     {
-      ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
+      ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.Discord.BotName
     }));
 
     // Lavalink4NET related services

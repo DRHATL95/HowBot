@@ -43,7 +43,5 @@ public interface IMusicService
     ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false, int initialVolume = 100,
     CancellationToken cancellationToken = default);
 
-  CommandResponse ToggleTwoFourSeven(HowbotPlayer player);
-
   CommandResponse GetGuildMusicQueueEmbed(HowbotPlayer player);
 }
