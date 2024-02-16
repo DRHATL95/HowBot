@@ -9,7 +9,6 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Lavalink4NET.Integrations.Lavasrc;
-using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
@@ -20,7 +19,6 @@ namespace Howbot.Core.Modules;
 
 public class MusicModule(
   IMusicService musicService,
-  ILyricsService lyricsService,
   IEmbedService embedService,
   ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
@@ -279,8 +277,7 @@ public class MusicModule(
     }
   }
 
-  [SlashCommand(NowPlayingCommandName, NowPlayingCommandDescription, true,
-    RunMode.Async)]
+  [SlashCommand(NowPlayingCommandName, NowPlayingCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
@@ -395,9 +392,11 @@ public class MusicModule(
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireOwner]
-  public async Task LyricsCommandAsync()
+  public Task LyricsCommandAsync()
   {
-    try
+    throw new NotImplementedException();
+
+    /*try
     {
       await DeferAsync();
 
@@ -431,7 +430,7 @@ public class MusicModule(
     {
       logger.LogError(exception, nameof(LyricsCommandAsync));
       throw;
-    }
+    }*/
   }
 
   [SlashCommand(QueueCommandName, QueueCommandDescription, true, RunMode.Async)]
@@ -450,6 +449,12 @@ public class MusicModule(
 
       if (player is null)
       {
+        return;
+      }
+
+      if (!player.Queue.Any())
+      {
+        await ModifyOriginalResponseAsync(properties => properties.Content = "No tracks in queue.");
         return;
       }
 
@@ -484,20 +489,29 @@ public class MusicModule(
     }
   }
 
-  /*[SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
+  [SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
+  [RequireOwner]
   public async Task TwentyFourSevenCommandAsync()
   {
     try
     {
       await DeferAsync();
 
-      CommandResponse commandResponse = _musicService.ToggleTwoFourSeven(Context.Guild);
+      var player = await musicService.GetPlayerByContextAsync(Context,
+        preconditions: ImmutableArray.Create(PlayerPrecondition.Playing));
 
-      if (!commandResponse.Success)
+      if (player is null)
+      {
+        return;
+      }
+
+      var commandResponse = musicService.ToggleTwoFourSeven(player);
+
+      if (!commandResponse.IsSuccessful)
       {
         ModuleHelper.HandleCommandFailed(commandResponse);
 
@@ -512,8 +526,8 @@ public class MusicModule(
     }
     catch (Exception exception)
     {
-      _logger.LogError(exception, nameof(TwentyFourSevenCommandAsync));
+      logger.LogError(exception, nameof(TwentyFourSevenCommandAsync));
       throw;
     }
-  }*/
+  }
 }

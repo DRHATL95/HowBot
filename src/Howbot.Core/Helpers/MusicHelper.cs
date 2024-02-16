@@ -1,5 +1,6 @@
 ﻿using System;
-using Lavalink4NET.Players;
+using Ardalis.GuardClauses;
+using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Helpers;
 
@@ -9,22 +10,20 @@ namespace Howbot.Core.Helpers;
 public static class MusicHelper
 {
   /// <summary>
-  ///   Checks if two <see cref="ITrackQueueItem" /> are similar based on Levenshtein distance.
+  ///   Checks if two <see cref="LavalinkTrack" /> are similar based on Levenshtein distance.
   ///   Compares the track's title, author and URL.
   /// </summary>
-  /// <param name="queueItem"></param>
-  /// <param name="secondQueueItem"></param>
+  /// <param name="lavalinkTrack"></param>
+  /// <param name="secondLavalinkTrack"></param>
   /// <returns></returns>
-  public static bool AreTracksSimilar(ITrackQueueItem queueItem, ITrackQueueItem secondQueueItem)
+  public static bool AreTracksSimilar(LavalinkTrack lavalinkTrack, LavalinkTrack secondLavalinkTrack)
   {
-    if (queueItem.Track is null || secondQueueItem.Track is null)
-    {
-      return false;
-    }
+    Guard.Against.Null(lavalinkTrack, nameof(lavalinkTrack));
+    Guard.Against.Null(secondLavalinkTrack, nameof(secondLavalinkTrack));
 
-    var titleDistance = CalculateLevenshteinDistance(queueItem.Track!.Title, secondQueueItem.Track!.Title);
-    var authorDistance = CalculateLevenshteinDistance(queueItem.Track!.Author, secondQueueItem.Track!.Author);
-    var urlDistance = CalculateLevenshteinDistance(queueItem.Track!.Identifier, secondQueueItem.Track!.Identifier);
+    var titleDistance = CalculateLevenshteinDistance(lavalinkTrack.Title, secondLavalinkTrack.Title);
+    var authorDistance = CalculateLevenshteinDistance(lavalinkTrack.Author, secondLavalinkTrack.Author);
+    var urlDistance = CalculateLevenshteinDistance(lavalinkTrack.Identifier, secondLavalinkTrack.Identifier);
 
     return titleDistance < 5 && authorDistance < 5 && urlDistance < 5;
   }

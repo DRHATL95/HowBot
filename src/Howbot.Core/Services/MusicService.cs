@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,7 +22,6 @@ using Lavalink4NET.Rest.Entities.Tracks;
 using Lavalink4NET.Tracks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Serilog;
 
 namespace Howbot.Core.Services;
 
@@ -121,11 +119,6 @@ public class MusicService(
     return null;
   }
 
-  public ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
-  {
-    throw new NotImplementedException();
-  }
-
   public CommandResponse GetGuildMusicQueueEmbed(HowbotPlayer player)
   {
     try
@@ -162,7 +155,7 @@ public class MusicService(
     cancellationToken.ThrowIfCancellationRequested();
 
     Guard.Against.Null(properties, nameof(properties));
-    
+
     return ValueTask.FromResult(new HowbotPlayer(properties));
   }
 
@@ -384,7 +377,18 @@ public class MusicService(
 
   public CommandResponse ToggleTwoFourSeven(HowbotPlayer player)
   {
-    throw new NotImplementedException();
+    try
+    {
+      player.IsTwoFourSevenEnabled = !player.IsTwoFourSevenEnabled;
+
+      return CommandResponse.CommandSuccessful(
+        $"24/7 mode is now {(player.IsTwoFourSevenEnabled ? "enabled" : "disabled")}.");
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, nameof(SeekTrackAsync));
+      return CommandResponse.CommandNotSuccessful(exception);
+    }
   }
 
   #endregion Music Module Commands

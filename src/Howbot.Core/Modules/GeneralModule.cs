@@ -125,7 +125,8 @@ public class GeneralModule(
   [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
                          GuildPermission.ViewChannel)]
   public async Task HelpCommandAsync(
-    [Summary("command", "The name of the command to get help for.")] string commandName = null)
+    [Summary("command", "The name of the command to get help for.")]
+    string commandName = null)
   {
     try
     {
