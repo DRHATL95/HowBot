@@ -1,7 +1,5 @@
 ﻿using System;
 using Discord.WebSocket;
-using Google.Apis.Services;
-using Google.Apis.YouTube.v3;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Services;
@@ -9,6 +7,11 @@ using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data;
 using Howbot.Infrastructure.Http;
 using Lavalink4NET.Extensions;
+using Lavalink4NET.InactivityTracking;
+using Lavalink4NET.InactivityTracking.Extensions;
+using Lavalink4NET.InactivityTracking.Trackers.Idle;
+using Lavalink4NET.InactivityTracking.Trackers.Users;
+using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,10 +68,10 @@ public static class ServiceCollectionSetupExtensions
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
 
     // YouTube related service
-    services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
+    /*services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
     {
       ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.Discord.BotName
-    }));
+    }));*/
 
     // Lavalink4NET related services
     services.AddLavalink();
@@ -77,7 +80,7 @@ public static class ServiceCollectionSetupExtensions
       x.BaseAddress = Configuration.LavalinkUrl;
       x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
     });
-    /*services.AddLyrics();
+    services.AddLyrics();
     services.AddInactivityTracking();
 
     services.ConfigureInactivityTracking(x =>
@@ -98,7 +101,7 @@ public static class ServiceCollectionSetupExtensions
       x.Threshold = 1; // default
       x.Timeout = TimeSpan.FromSeconds(30); // default is 10 seconds
       x.ExcludeBots = true; // default
-    });*/
+    });
 
     // Transient Services
     services.AddTransient<IHttpService, HttpService>();

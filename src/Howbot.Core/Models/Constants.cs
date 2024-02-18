@@ -31,6 +31,11 @@ public abstract record Constants
     public const string YoutubePlaylistRegexPattern = @"^(?:http(?:s)?:\/\/)?(?:www\.)?(?:music\.)?youtube\.com\/playlist\?list=(?<id>[a-zA-Z0-9-_]+)$";
     public const string ApplicationIdRegexPattern = @"\|.*\|.*\|.*\|.*\|\s*\n([\s\S]+?)(?=\|\s*\n\|\s*[\-]+\s*\|)";
   }
+
+  public static class EscapeFromTarkov
+  {
+    public const string EftApiBaseUrl = "https://api.tarkov.dev/graphql";
+  }
   
   public struct Commands
   {
