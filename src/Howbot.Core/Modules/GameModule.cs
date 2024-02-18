@@ -127,7 +127,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
         return;
       }
       
-      await ModifyOriginalResponseAsync(properties => properties.Content = $"The item **{priceTuple.Item1}** is being sold by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
+      await ModifyOriginalResponseAsync(properties => properties.Content = $"The item **{priceTuple.Item1}** is being bought by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
     }
     catch (Exception exception)
     {
