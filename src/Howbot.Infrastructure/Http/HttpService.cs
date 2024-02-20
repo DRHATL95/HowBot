@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Settings;
@@ -121,7 +124,7 @@ public class HttpService : IHttpService
     return data;
   }
 
-  public async Task<string> StartDiscordActivity(string channelId, string activityId)
+  public async Task<string> StartDiscordActivityAsync(string channelId, string activityId)
   {
     var requestUri = $"https://discord.com/api/v9/channels/{channelId}/invites";
 
@@ -151,6 +154,188 @@ public class HttpService : IHttpService
     // Return the invite link
     return $"https://discord.gg/{invite.Code}";
   }
+  
+  /*public async Task<Tuple<string, string, int>> GetTarkovMarketPriceByItemNameAsync(string itemName)
+  {
+    using var client = new HttpClient();
+    
+    var query = $"{{items(name: \"{itemName}\") {{id name shortName basePrice wikiLink avg24hPrice iconLink sellFor {{price currency priceRUB source}}}}}}";
+    var data = new Dictionary<string, string> { { "query", query } };
+
+    const string url = Core.Models.Constants.EscapeFromTarkov.EftApiBaseUrl;
+    
+    var response = await client.PostAsJsonAsync(url, data);
+    
+    var responseContent = await response.Content.ReadAsStringAsync();
+
+    if (!response.IsSuccessStatusCode || responseContent.Contains("errors"))
+    {
+      throw new Exception($"Failed to get Tarkov market price. Status code: {response.StatusCode}. Response: {responseContent}");
+    }
+
+    var rawResponse = JsonConvert.DeserializeObject<GraphQlResponse>(responseContent);
+    
+    if (rawResponse.Data.Items.Count == 0 || rawResponse.Data.Items.All(x => x.SellFor.Count == 0))
+    {
+      return null;
+    }
+
+    Dictionary<string, int> dictionary = new Dictionary<string, int>();
+
+    foreach (var item in rawResponse.Data.Items)
+    {
+      dictionary[item.Name] = StringHelper.CalculateLevenshteinDistance(itemName, item.Name);
+    }
+    
+    // var result = dictionary.Where(kvp => kvp.Key.EndsWith(itemName, StringComparison.OrdinalIgnoreCase)).OrderBy(kvp => kvp.Value).FirstOrDefault();
+    var result = dictionary.OrderBy(kvp => kvp.Value).FirstOrDefault();
+    
+    if (result.Key is null) return null;
+    
+    var marketItem = rawResponse.Data.Items.FirstOrDefault(x => x.Name == result.Key);
+    
+    // Get the highest price and the trader
+    int maxPrice = 0; // Rubles
+    string trader = string.Empty;
+    
+    foreach (var item in marketItem.SellFor.Where(x => x is { PriceInRubles: > 0, Price: > 0 }))
+    {
+      if (item.PriceInRubles <= maxPrice)
+      {
+        continue;
+      }
+
+      maxPrice = item.Price;
+      trader = item.Source;
+    }
+    
+    if (maxPrice == 0 || string.IsNullOrEmpty(trader)) return null;
+    
+    return new Tuple<string, string, int>(result.Key, trader, maxPrice);
+  }*/
+  
+  public async Task<Tuple<string, string, int>> GetTarkovMarketPriceByItemNameAsync(string itemName)
+{
+    using var client = new HttpClient();
+
+    var query = $"{{items(name: \"{itemName}\") {{id name shortName basePrice wikiLink avg24hPrice iconLink updated sellFor {{price currency priceRUB source}}}}}}";
+    var data = new Dictionary<string, string> { { "query", query } };
+
+    const string url = Core.Models.Constants.EscapeFromTarkov.EftApiBaseUrl;
+
+    var response = await client.PostAsJsonAsync(url, data);
+
+    var responseContent = await response.Content.ReadAsStringAsync();
+
+    if (!response.IsSuccessStatusCode || responseContent.Contains("errors"))
+    {
+        throw new Exception($"Failed to get Tarkov market price. Status code: {response.StatusCode}. Response: {responseContent}");
+    }
+
+    var rawResponse = JsonConvert.DeserializeObject<GraphQlResponse>(responseContent);
+
+    if (rawResponse.Data.Items.Count == 0 || rawResponse.Data.Items.All(x => x.SellFor.Count == 0))
+    {
+        return null;
+    }
+
+    Dictionary<string, int> dictionary = new Dictionary<string, int>();
+
+    foreach (var item in rawResponse.Data.Items)
+    {
+        var splitName = item.Name.Split(' ');
+        if (splitName.Contains(itemName, StringComparer.OrdinalIgnoreCase))
+        {
+            dictionary[item.Name] = 0;
+        }
+        else
+        {
+            dictionary[item.Name] = StringHelper.CalculateLevenshteinDistance(itemName, item.Name);
+        }
+    }
+
+    var result = dictionary.OrderBy(kvp => kvp.Value).FirstOrDefault();
+
+    if (result.Key is null) return null;
+
+    var marketItem = rawResponse.Data.Items.FirstOrDefault(x => x.Name == result.Key);
+
+    // Get the highest price and the trader
+    int maxPrice = 0; // Rubles
+    string trader = string.Empty;
+
+    foreach (var item in marketItem.SellFor.Where(x => x is { PriceInRubles: > 0, Price: > 0 }))
+    {
+        if (item.PriceInRubles <= maxPrice)
+        {
+            continue;
+        }
+
+        maxPrice = item.Price;
+        trader = item.Source;
+    }
+
+    if (maxPrice == 0 || string.IsNullOrEmpty(trader)) return null;
+
+    return new Tuple<string, string, int>(result.Key, trader, maxPrice);
+}
+}
+
+internal struct GraphQlResponse
+{
+  [JsonProperty("data")] 
+  public Data Data { get; set; }
+}
+
+internal struct Data
+{
+  [JsonProperty("items")]
+  public List<TarkovMarketItem> Items { get; set; }
+}
+
+internal struct TarkovMarketItem
+{
+  [JsonProperty("id")]
+  public string Id { get; set; }
+  
+  [JsonProperty("name")]
+  public string Name { get; set; }
+  
+  [JsonProperty("shortName")]
+  public string ShortName { get; set; }
+  
+  [JsonProperty("basePrice")]
+  public string BasePrice { get; set; }
+  
+  [JsonProperty("wikiLink")]
+  public string WikiLink { get; set; }
+  
+  [JsonProperty("avg24hPrice")]
+  public string Avg24hPrice { get; set; }
+  
+  [JsonProperty("iconLink")]
+  public string IconLink { get; set; }
+  
+  [JsonProperty("updated")]
+  public string Updated { get; set; }
+  
+  [JsonProperty("sellFor")]
+  public List<TarkovSellForRequest> SellFor { get; set; }
+}
+
+internal struct TarkovSellForRequest
+{
+  [JsonProperty("price")]
+  public int Price { get; set; }
+  
+  [JsonProperty("currency")]
+  public string Currency { get; set; }
+  
+  [JsonProperty("priceRUB")]
+  public int PriceInRubles { get; set; }
+  
+  [JsonProperty("source")]
+  public string Source { get; set; }
 }
 
 internal struct DiscordInvite

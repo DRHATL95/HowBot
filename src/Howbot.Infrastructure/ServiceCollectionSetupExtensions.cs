@@ -1,7 +1,5 @@
 ﻿using System;
 using Discord.WebSocket;
-using Google.Apis.Services;
-using Google.Apis.YouTube.v3;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Services;
@@ -70,10 +68,10 @@ public static class ServiceCollectionSetupExtensions
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
 
     // YouTube related service
-    services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
+    /*services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
     {
-      ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.BotName
-    }));
+      ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.Discord.BotName
+    }));*/
 
     // Lavalink4NET related services
     services.AddLavalink();

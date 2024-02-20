@@ -50,7 +50,7 @@ public abstract record Messages
       "Client is not connected to voice channel. Unable to execute command.";
 
     public const string ClientQueueOutOfBounds = "Requested number of tracks to skip exceeds queue count.";
-    public const string DiscordSocketClientConnected = "{Username} has connected to the web socket.";
+    public const string DiscordSocketClientConnected = "[{Username}] has connected to the web socket.";
 
     public const string RegisteredCommandsMessage = "Successfully registered commands to discord bot.";
   }
@@ -74,6 +74,8 @@ public abstract record Messages
     public const string DiscordStart = "Unable to start discord bot.";
     public const string UnableToGetPlayerForGuild = "Unable to get audio player for Guild VoiceChannel.";
     public const string InteractionTextChannelRequired = "This command can only be used in a server text channel.";
+    public const string ArgumentException = "An incorrect argument has been provided. Argument exception thrown.";
+    public const string Exception = "An exception has been thrown.";
   }
 
   public readonly struct Warnings

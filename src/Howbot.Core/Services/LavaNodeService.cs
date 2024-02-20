@@ -107,10 +107,11 @@ public class LavaNodeService(
     {
       Logger.LogInformation("Track [{TrackName}] has ended with reason [{Reason}]", eventArgs.Track.Title,
         eventArgs.Reason);
-      return Task.CompletedTask;
     }
-
-    Logger.LogDebug("Current song [{SongName}] has ended.", eventArgs.Track.Title);
+    else
+    {
+      Logger.LogDebug("Current song [{SongName}] has ended.", eventArgs.Track.Title);
+    }
 
     return Task.CompletedTask;
   }
@@ -123,67 +124,4 @@ public class LavaNodeService(
   }
 
   #endregion Events
-
-  /*private async Task<LavalinkTrack> GetUniqueRadioTrack(ILavalinkPlayer player, int attempt = 0)
-  {
-    ArgumentNullException.ThrowIfNull(player);
-
-    List<string> uniqueVideoIds;
-
-    // Recursive base case
-    if (attempt >= Constants.MaximumUniqueSearchAttempts)
-    {
-      _logger.LogDebug("Unable to find a song after {SearchLimit} attempts.", Constants.MaximumUniqueSearchAttempts);
-      return null;
-    }
-
-    if (player.LastPlayed == null && !player.RecentlyPlayed.Any())
-    {
-      _logger.LogError("Unable to find another song, last song is null.");
-      return null;
-    }
-
-    if (attempt > 0)
-    {
-      // Recursive pass
-      uniqueVideoIds = (await _musicService.GetYoutubeRecommendedVideoId(player.LastPlayed.Id, Constants.RelatedSearchResultsLimit + attempt)).ToList();
-    }
-    else
-    {
-      // First pass
-      uniqueVideoIds = (await _musicService.GetYoutubeRecommendedVideoId(player.LastPlayed.Id, Constants.RelatedSearchResultsLimit)).ToList();
-    }
-
-    var videoId = uniqueVideoIds.FirstOrDefault(videoId => player.RecentlyPlayed.Any(track => track.Id != videoId));
-    if (string.IsNullOrEmpty(videoId))
-    {
-      // Recursive call
-      return await GetUniqueRadioTrack(player, ++attempt);
-    }
-
-    var videoUrl = Constants.YouTubeBaseShortUrl + videoId;
-    var searchResult = await _lavaNode.SearchAsync(SearchType.Direct, videoUrl);
-    if (!searchResult.Tracks.Any())
-    {
-      _logger.LogError("Unable to find a track using Victoria search.");
-      return null;
-    }
-
-    var nextTrack = searchResult.Tracks.First();
-    if (player.RecentlyPlayed.Any(x => x.Id == nextTrack.Id))
-    {
-      // Recursive call
-      return await GetUniqueRadioTrack(player, ++attempt);
-    }
-
-    if (MusicHelper.AreTracksSimilar(player.LastPlayed, nextTrack))
-    {
-      // Recursive call
-      return await GetUniqueRadioTrack(player, ++attempt);
-    }
-
-    _logger.LogDebug("{TrackName} was returned.", nextTrack.Title);
-
-    return nextTrack;
-  }*/
 }

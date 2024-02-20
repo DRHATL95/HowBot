@@ -7,17 +7,13 @@ using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace Howbot.Core.Helpers;
 
 public static class DiscordHelper
 {
-  /// <summary>
-  ///   Converts a log severity value to a log level.
-  /// </summary>
-  /// <param name="logSeverity">The log severity to convert.</param>
-  /// <returns>The corresponding log level.</returns>
-  /// <exception cref="ArgumentOutOfRangeException">Thrown when the log severity is not a valid value.</exception>
+
   public static LogLevel ConvertLogSeverityToLogLevel(LogSeverity logSeverity)
   {
     return logSeverity switch
@@ -31,25 +27,30 @@ public static class DiscordHelper
       _ => throw new ArgumentOutOfRangeException(nameof(logSeverity), logSeverity, null)
     };
   }
-
-  /// <summary>
-  ///   Helper function to create a tag consisting of guild name and guild id.
-  /// </summary>
-  /// <param name="guild">Specified guild to build</param>
-  /// <returns></returns>
+  
   public static string GetGuildTag(IGuild guild)
   {
+    try
+    {
+      Guard.Against.Null(guild, nameof(guild));
+
+      string guildName = guild.Name ?? "Unknown Guild";
+      ulong guildId = guild.Id;
+      
+      return $"[{guildName} - {guildId}]";
+    }
+    catch (ArgumentException argumentException)
+    {
+      Log.Error(argumentException, Messages.Errors.ArgumentException);
+    }
+    catch (Exception exception)
+    {
+      Log.Error(exception, Messages.Errors.Exception);
+    }
+    
     return guild == null ? string.Empty : $"[{guild.Name} - {guild.Id}]";
   }
-
-  /// <summary>
-  ///   TODO: Add summary.
-  /// </summary>
-  /// <param name="socketInteraction"></param>
-  /// <param name="result"></param>
-  /// <param name="logger"></param>
-  /// <typeparam name="T"></typeparam>
-  /// <exception cref="ArgumentOutOfRangeException"></exception>
+  
   public static async Task HandleSocketInteractionErrorAsync<T>(SocketInteraction socketInteraction, IResult result,
     ILoggerAdapter<T> logger)
   {
@@ -96,7 +97,8 @@ public static class DiscordHelper
         throw new ArgumentOutOfRangeException();
     }
 
-    // Will respond with error reason ephemeral by default. TODO: Maybe create config variable to change this?
+    // TODO: Maybe create config variable to change this?
+    // Will respond with error reason ephemeral by default.
     await socketInteraction.RespondAsync(result.ErrorReason, ephemeral: true);
   }
 }

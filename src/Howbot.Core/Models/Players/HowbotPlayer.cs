@@ -13,10 +13,10 @@ namespace Howbot.Core.Models.Players;
 public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties)
   : QueuedLavalinkPlayer(properties), IInactivityPlayerListener
 {
-  // public bool IsTwoFourSevenEnabled { get; set; } = false;
   private readonly ILogger<HowbotPlayer> _logger = properties.Logger;
   public ITextChannel TextChannel { get; } = properties.Options.Value.TextChannel;
-  public IUser User { get; } = properties.Options.Value.LastRequestedBy;
+
+  #region Inactivity Tracking Events
 
   public async ValueTask NotifyPlayerActiveAsync(PlayerTrackingState trackingState,
     CancellationToken cancellationToken = default)
@@ -53,4 +53,6 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
       await TextChannel.SendMessageAsync("Player is being tracked as inactive");
     }
   }
+
+  #endregion
 }
