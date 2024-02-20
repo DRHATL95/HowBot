@@ -99,8 +99,8 @@ public class DiscordClientService(
     discordSocketClient.Ready += DiscordSocketClientOnReady;
     discordSocketClient.Connected += DiscordSocketClientOnConnected;
     discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
-    // discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted;
-    discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
+    // discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted; TODO: Revisit this
+    // discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated; TODO: Revisit this
     discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
     discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
   }
@@ -115,12 +115,17 @@ public class DiscordClientService(
     discordSocketClient.Ready -= DiscordSocketClientOnReady;
     discordSocketClient.Connected -= DiscordSocketClientOnConnected;
     discordSocketClient.Disconnected -= DiscordSocketClientOnDisconnected;
-    discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted;
-    discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
+    // discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted; TODO: Revisit this
+    // discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated; TODO: Revisit this
     discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
     discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
   }
 
+  /// <summary>
+  /// Maps <see cref="LogSeverity"/> enum to <see cref="LogLevel"/> enum.
+  /// </summary>
+  /// <param name="severity">The Discord.NET <see cref="LogSeverity"/> level</param>
+  /// <returns>The <see cref="LogLevel"/> representation</returns>
   private static LogLevel MapLogSeverity(LogSeverity severity)
   {
     return severity switch
@@ -135,43 +140,28 @@ public class DiscordClientService(
     };
   }
 
-  private static string CreateLogMessage(LogMessage log)
-  {
-    return log.Message ?? log.Exception?.Message ?? "No message provided";
-  }
-
-  private SocketGuild GetGuildById(ulong? guildId)
-  {
-    return guildId != null ? discordSocketClient.Guilds.FirstOrDefault(x => x.Id == guildId) : null;
-  }
-
-  private void LogErrorGuildLookup(string eventName)
-  {
-    var exception = new Exception();
-    var message = $"Unable to look-up guild for event [{eventName}]";
-
-    Logger.LogError(exception, message);
-  }
-
   #region Discord Client Events
 
   private Task DiscordSocketClientOnLog(LogMessage arg)
   {
     var severity = MapLogSeverity(arg.Severity);
-    var message = CreateLogMessage(arg);
+    
+    var message = arg.Message ?? arg.Exception?.Message ?? "No message provided";
 
     Logger.Log(severity, message);
+    
     return Task.CompletedTask;
   }
 
-  private Task DiscordSocketClientOnUserJoined(SocketGuildUser arg)
+  private Task DiscordSocketClientOnUserJoined(SocketGuildUser socketGuildUser)
   {
-    Logger.LogDebug("{GuildUserName} has joined Guild {GuildTag}", arg.Username, DiscordHelper.GetGuildTag(arg.Guild));
+    Logger.LogDebug("[{0}] has joined Guild [{1}]", socketGuildUser.Username, DiscordHelper.GetGuildTag(socketGuildUser.Guild));
 
     return Task.CompletedTask;
   }
 
-  private Task DiscordSocketClientOnSlashCommandExecuted(SocketSlashCommand arg)
+  // TODO: Revisit this
+  /*private Task DiscordSocketClientOnSlashCommandExecuted(SocketSlashCommand arg)
   {
     var guild = GetGuildById(arg.GuildId);
     if (guild == null)
@@ -183,17 +173,18 @@ public class DiscordClientService(
     Logger.LogDebug(logMessage);
 
     return Task.CompletedTask;
-  }
+  }*/
 
-  private Task DiscordSocketClientOnDisconnected(Exception arg)
+  private Task DiscordSocketClientOnDisconnected(Exception exception)
   {
-    Logger.LogError(arg, "{Username} has disconnected from the ws.", LoggedInUsername);
+    Logger.LogError(exception, "[{0}] has disconnected from the WS", LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnConnected()
   {
+    // Assign instance variable to the current username. By this point there should be a value for discordSocketClient.CurrentUser.Username
     LoggedInUsername = discordSocketClient.CurrentUser.Username;
 
     Logger.LogDebug(DiscordSocketClientConnected, LoggedInUsername);
@@ -203,20 +194,21 @@ public class DiscordClientService(
 
   private async Task DiscordSocketClientOnReady()
   {
-    Logger.LogDebug("{Username} is now in READY state", LoggedInUsername);
+    Logger.LogDebug("[{0}] is now in READY state", LoggedInUsername);
 
     try
     {
       if (Configuration.IsDebug())
       {
-        Logger.LogDebug("Registering commands to DEV Guild.");
+        Logger.LogInformation($"Registering commands to DEV Guild [{Constants.Discord.DiscordDevelopmentGuildId}]");
 
         await interactionService.RegisterCommandsToGuildAsync(Constants.Discord.DiscordDevelopmentGuildId);
       }
       else
       {
-        Logger.LogDebug("Registering commands globally.");
+        Logger.LogInformation("Registering commands globally");
 
+        // TODO: Investigate if this is necessary
         await interactionService.RegisterCommandsGloballyAsync();
       }
     }
@@ -229,43 +221,52 @@ public class DiscordClientService(
 
   private Task DiscordSocketClientOnLoggedOut()
   {
-    Logger.LogDebug("{Username} has logged out successfully", LoggedInUsername);
+    Logger.LogDebug("[{0}] has logged out successfully", LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnLoggedIn()
   {
-    Logger.LogDebug("{Username} has logged in successfully", LoggedInUsername);
+    Logger.LogDebug("[{0}] has logged in successfully", LoggedInUsername);
 
     return Task.CompletedTask;
   }
 
-  private Task DiscordSocketClientOnJoinedGuild(SocketGuild arg)
+  private Task DiscordSocketClientOnJoinedGuild(SocketGuild guild)
   {
-    Logger.LogDebug("{Username} has joined Guild {GuildTag}", LoggedInUsername, DiscordHelper.GetGuildTag(arg));
+    Logger.LogDebug("[{0}] has joined Guild [{1}]", LoggedInUsername, $"{guild.Name} - {guild.Id}");
 
     return Task.CompletedTask;
   }
 
-  private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
+  // TODO: Revisit this
+  /*private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
     if (user.IsBot && user.Id == discordSocketClient.CurrentUser.Id)
     {
-      Logger.LogDebug("Voice state update ignored for bot user {Username}.", user.Username);
+      Logger.LogDebug("Voice state update ignored for bot user [{0}].", user.Username);
+      
       return Task.CompletedTask;
     }
 
-    Logger.LogDebug("User {Username} has updated voice state.", user.Username);
+    Logger.LogDebug("User {0} has updated voice state.", user.Username);
 
     return Task.CompletedTask;
-  }
+  }*/
 
-  private Task DiscordSocketClientOnVoiceServerUpdated(SocketVoiceServer arg)
+  private Task DiscordSocketClientOnVoiceServerUpdated(SocketVoiceServer socketVoiceServer)
   {
-    Logger.LogDebug("Bot has connected to server {X}", DiscordHelper.GetGuildTag(arg.Guild.Value));
+    if (!socketVoiceServer.Guild.HasValue)
+    {
+      return Task.CompletedTask;
+    }
+
+    var guildTag = $"{socketVoiceServer.Guild.Value.Name} - {socketVoiceServer.Guild.Value.Id}";
+      
+    Logger.LogDebug("[{0}] has connected to server [{1}]", LoggedInUsername, guildTag);
 
     return Task.CompletedTask;
   }
@@ -290,12 +291,12 @@ public class DiscordClientService(
 
       if (socketInteraction.Type is InteractionType.ApplicationCommand)
       {
-        Logger.LogInformation("Attempting to delete the failed command..");
+        Logger.LogInformation("Attempting to delete the failed command");
 
         // If exception is thrown, acknowledgement will still be there. This will clean-up.
         await socketInteraction.DeleteOriginalResponseAsync();
 
-        Logger.LogInformation("Successfully deleted the failed command.");
+        Logger.LogInformation("Successfully deleted the failed command");
       }
     }
   }

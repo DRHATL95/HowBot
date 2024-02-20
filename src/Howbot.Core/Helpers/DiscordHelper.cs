@@ -7,6 +7,7 @@ using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace Howbot.Core.Helpers;
 
@@ -29,6 +30,24 @@ public static class DiscordHelper
   
   public static string GetGuildTag(IGuild guild)
   {
+    try
+    {
+      Guard.Against.Null(guild, nameof(guild));
+
+      string guildName = guild.Name ?? "Unknown Guild";
+      ulong guildId = guild.Id;
+      
+      return $"[{guildName} - {guildId}]";
+    }
+    catch (ArgumentException argumentException)
+    {
+      Log.Error(argumentException, Messages.Errors.ArgumentException);
+    }
+    catch (Exception exception)
+    {
+      Log.Error(exception, Messages.Errors.Exception);
+    }
+    
     return guild == null ? string.Empty : $"[{guild.Name} - {guild.Id}]";
   }
   
