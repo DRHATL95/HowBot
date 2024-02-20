@@ -32,12 +32,12 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
 
       Logger.LogDebug("Successfully joined voice channel {0}.", guildTag);
 
-      return CommandResponse.CommandSuccessful("Successfully joined voice channel.", true);
+      return CommandResponse.Create(true, "Successfully joined voice channel.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(JoinVoiceChannelAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -55,19 +55,17 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
 
       if (player is null)
       {
-        return CommandResponse.CommandNotSuccessful("Unable to leave channel. Not in a voice channel.");
+        return CommandResponse.Create(false, "Unable to leave channel. Not in a voice channel.");
       }
 
-      // Using lavalink player disconnect from the voice channel.
       await player.DisconnectAsync();
 
-      // Return successful response
-      return CommandResponse.CommandSuccessful("Successfully disconnected from voice channel.");
+      return CommandResponse.Create(true, "Successfully disconnected from voice channel.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(LeaveVoiceChannelAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
