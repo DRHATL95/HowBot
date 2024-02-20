@@ -122,17 +122,18 @@ public partial class MusicService(
     {
       if (player.Queue.Count == 0)
       {
-        return CommandResponse.CommandNotSuccessful("No tracks in queue.");
+        return CommandResponse.Create(false, "No tracks in queue.");
       }
 
       var embed = embedService.GenerateMusicCurrentQueueEmbed(player.Queue);
 
-      return CommandResponse.CommandSuccessful(embed);
+      return CommandResponse.Create(true, embed: embed);
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(GetGuildMusicQueueEmbed));
-      return CommandResponse.CommandNotSuccessful(exception);
+      
+      return CommandResponse.Create(false, exception: exception);
     }
   }
   
@@ -209,8 +210,8 @@ public partial class MusicService(
         if (track != null)
         {
           await player.PlayAsync(track);
-          
-          return CommandResponse.CommandSuccessful(track);
+
+          return CommandResponse.Create(true, lavalinkTrack: track);
         }
       }
       else
@@ -223,18 +224,18 @@ public partial class MusicService(
         if (player.State is PlayerState.Playing or PlayerState.Paused)
         {
           // If the player is already playing or paused, return the tracks added to queue
-          return CommandResponse.CommandSuccessful($"Added {trackQueueItems.Count} tracks to queue.");
+          return CommandResponse.Create(true, $"Added {trackQueueItems.Count} tracks to queue.");
         }
         
-        var track = await player.Queue.TryDequeueAsync(player.Shuffle ? TrackDequeueMode.Shuffle : TrackDequeueMode.Normal);
-        if (track is null)
+        var trackQueueItem = await player.Queue.TryDequeueAsync(player.Shuffle ? TrackDequeueMode.Shuffle : TrackDequeueMode.Normal);
+        if (trackQueueItem is null)
         {
-          return CommandResponse.CommandNotSuccessful(Messages.Responses.CommandPlayNotSuccessfulResponse);
+          return CommandResponse.Create(false, Messages.Responses.CommandPlayNotSuccessfulResponse);
         }
         
-        await player.PlayAsync(track, false);
+        await player.PlayAsync(trackQueueItem, false);
         
-        return CommandResponse.CommandSuccessful(track.Track);
+        return CommandResponse.Create(true, lavalinkTrack: trackQueueItem.Track);
       }
     }
     catch (Exception exception)
@@ -242,7 +243,7 @@ public partial class MusicService(
       Logger.LogError(exception, nameof(PlayTrackBySearchTypeAsync));
     }
 
-    return CommandResponse.CommandNotSuccessful(Messages.Responses.CommandPlayNotSuccessfulResponse);
+    return CommandResponse.Create(false, Messages.Responses.CommandPlayNotSuccessfulResponse);
   }
 
 
@@ -252,12 +253,12 @@ public partial class MusicService(
     {
       await player.PauseAsync();
 
-      return CommandResponse.CommandSuccessful(Messages.Responses.CommandPausedSuccessfulResponse);
+      return CommandResponse.Create(true, Messages.Responses.CommandPausedSuccessfulResponse);
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(PlayTrackBySearchTypeAsync));
-      return CommandResponse.CommandNotSuccessful(Messages.Responses.CommandPausedNotSuccessfulResponse);
+      return CommandResponse.Create(false, Messages.Responses.CommandPausedNotSuccessfulResponse);
     }
   }
 
@@ -267,12 +268,13 @@ public partial class MusicService(
     {
       await player.ResumeAsync();
 
-      return CommandResponse.CommandSuccessful("Successfully resumed track.");
+      return CommandResponse.Create(true,"Successfully resumed track.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(ResumeTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -282,12 +284,12 @@ public partial class MusicService(
     {
       await player.SkipAsync(numberOfTracks ?? 1);
 
-      return CommandResponse.CommandSuccessful($"Skipped {numberOfTracks} tracks in queue.");
+      return CommandResponse.Create(true, $"Skipped {numberOfTracks} tracks in queue.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SkipTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -299,12 +301,12 @@ public partial class MusicService(
 
       await player.SeekAsync(seekPosition);
 
-      return CommandResponse.CommandSuccessful($"Seeking to {seekPosition:g}.");
+      return CommandResponse.Create(true, $"Seeking to {seekPosition:g}.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SeekTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -312,7 +314,7 @@ public partial class MusicService(
   {
     if (newVolume is > 1000 or < 0)
     {
-      return CommandResponse.CommandNotSuccessful("Volume out of range: 0% - 1000%!");
+      return CommandResponse.Create(false, "Volume out of range: 0% - 1000%!");
     }
 
     try
@@ -333,12 +335,12 @@ public partial class MusicService(
         db.AddNewGuild(new Guild { Id = player.GuildId, Volume = newVolume });
       }
 
-      return CommandResponse.CommandSuccessful($"Volume set to {newVolume}%");
+      return CommandResponse.Create(true, $"Volume set to {newVolume}%");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(ChangeVolumeAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -348,18 +350,18 @@ public partial class MusicService(
     {
       if (player.CurrentTrack is null)
       {
-        return CommandResponse.CommandNotSuccessful("No track is currently playing.");
+        return CommandResponse.Create(false, "No track is currently playing.");
       }
 
       var embed = embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(player.CurrentTrack), user,
         player.Position, player.Volume);
 
-      return CommandResponse.CommandSuccessful(embed);
+      return CommandResponse.Create(true, embed: embed);
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SeekTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -375,12 +377,13 @@ public partial class MusicService(
 
       player.Filters.Echo(options);*/
 
-      return ValueTask.FromResult(CommandResponse.CommandSuccessful());
+      return ValueTask.FromResult(CommandResponse.Create(true));
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SeekTrackAsync));
-      return ValueTask.FromResult(CommandResponse.CommandNotSuccessful(exception));
+      
+      return ValueTask.FromResult(CommandResponse.Create(false, exception: exception));
     }
   }
 
@@ -395,13 +398,13 @@ public partial class MusicService(
     {
       player.Shuffle = !player.Shuffle;
 
-      return CommandResponse.CommandSuccessful(
+      return CommandResponse.Create(true,
         $"Shuffle is now {(player.Shuffle ? "enabled" : "disabled")}.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SeekTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 

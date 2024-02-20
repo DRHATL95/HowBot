@@ -61,11 +61,10 @@ public static class ServiceCollectionSetupExtensions
     services.AddSingleton<IEmbedService, EmbedService>();
     services.AddSingleton<IDiscordClientService, DiscordClientService>();
     services.AddSingleton<IInteractionService, InteractionService>();
-    // services.AddSingleton<IDockerService, DockerService>();
-    // services.AddSingleton<IDeploymentService, DeploymentService>();
     services.AddSingleton<ILavaNodeService, LavaNodeService>();
-    services.AddScoped<IDatabaseService, DatabaseService>();
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
+    
+    services.AddScoped<IDatabaseService, DatabaseService>();
 
     // YouTube related service
     /*services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer

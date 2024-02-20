@@ -18,18 +18,18 @@ public abstract record Constants
     public const string BotName = "Howbot"; 
   }
 
+  // TODO: Revisit this later
   /*public static class YouTube
   {
     public const string YouTubeBaseShortUrl = "https://youtu.be/";
     public const string YouTubeBaseLongUrl = "https://www.youtube.com/watch?v="; 
+    public const string YoutubePlaylistRegexPattern = @"^(?:http(?:s)?:\/\/)?(?:www\.)?(?:music\.)?youtube\.com\/playlist\?list=(?<id>[a-zA-Z0-9-_]+)$";
   }*/
 
   public static class RegexPatterns
   {
     public const string UrlPattern = @"^(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?$"; 
-    public const string PlaylistRegexPattern = @"playlist\s\w+";
-    public const string YoutubePlaylistRegexPattern = @"^(?:http(?:s)?:\/\/)?(?:www\.)?(?:music\.)?youtube\.com\/playlist\?list=(?<id>[a-zA-Z0-9-_]+)$";
-    public const string ApplicationIdRegexPattern = @"\|.*\|.*\|.*\|.*\|\s*\n([\s\S]+?)(?=\|\s*\n\|\s*[\-]+\s*\|)";
+    // public const string PlaylistRegexPattern = @"playlist\s\w+";
   }
 
   public static class EscapeFromTarkov
@@ -49,7 +49,7 @@ public abstract record Constants
     public const string PlaySearchRequestArgumentDescription = "Search request used for search provider.";
     public const string PlaySearchTypeArgumentName = "search_type";
 
-    public const string PlaySearchTypeArgumentDescription = "Optional search type used for search request. (Default: YouTube)";
+    public const string PlaySearchTypeArgumentDescription = "Optional search type used for search request. (Default: YouTube Music)";
 
     public const string PauseCommandName = "pause";
     public const string PauseCommandDescription = "Pauses a currently playing song, otherwise nothing.";
@@ -89,9 +89,6 @@ public abstract record Constants
 
     public const string ShuffleCommandName = "shuffle";
     public const string ShuffleCommandDescription = "Shuffles the current servers music queue.";
-
-    public const string TwoFourSevenCommandName = "247";
-    public const string TwoFourSevenCommandDescription = "Toggles 24/7 for playing music based off related.";
 
     public const string LyricsCommandName = "lyrics";
     public const string LyricsCommandDescription = "Gets lyrics from lyrics.ovh for the current playing track.";

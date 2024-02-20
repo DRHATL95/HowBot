@@ -9,6 +9,7 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Lavalink4NET.Integrations.Lavasrc;
+using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
@@ -20,6 +21,7 @@ namespace Howbot.Core.Modules;
 public class MusicModule(
   IMusicService musicService,
   IEmbedService embedService,
+  ILyricsService lyricsService,
   ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
@@ -257,7 +259,7 @@ public class MusicModule(
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  public async Task VolumeCommandAsync(int newVolume = 100)
+  public async Task VolumeCommandAsync(int? newVolume = null)
   {
     try
     {
@@ -265,7 +267,16 @@ public class MusicModule(
 
       var player = await musicService.GetPlayerByContextAsync(Context);
 
-      var commandResponse = await musicService.ChangeVolumeAsync(player, newVolume);
+      if (!newVolume.HasValue)
+      {
+        // Respond with the current volume
+        await ModifyOriginalResponseAsync(properties =>
+          properties.Content = $"🔊 Current volume is {player.Volume * 100}%");
+
+        return;
+      }
+
+      var commandResponse = await musicService.ChangeVolumeAsync(player, newVolume.Value);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -338,29 +349,6 @@ public class MusicModule(
     }
   }
 
-  [SlashCommand(RadioCommandName, RadioCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
-  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  [RequireOwner]
-  public async Task RadioCommandAsync()
-  {
-    try
-    {
-      logger.LogDebug(Messages.Debug.PlayingRadio);
-
-      await RespondAsync("This command is not quite ready yet. Check back later.");
-
-      // await RespondAsync(Messages.Responses.PlayingRadio);
-    }
-    catch (Exception exception)
-    {
-      logger.LogError(exception, nameof(RadioCommandAsync));
-      throw;
-    }
-  }
-
   [SlashCommand(ShuffleCommandName, ShuffleCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
@@ -401,12 +389,9 @@ public class MusicModule(
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireOwner]
-  public Task LyricsCommandAsync()
+  public async Task LyricsCommandAsync()
   {
-    throw new NotImplementedException();
-
-    /*try
+    try
     {
       await DeferAsync();
 
@@ -426,21 +411,38 @@ public class MusicModule(
         return;
       }
 
-      var lyrics = await lyricsService.GetLyricsAsync(track.Title, track.Author);
+      var lyrics = await lyricsService.GetLyricsAsync(track.Author, track.Title);
 
       if (lyrics is null)
       {
         await FollowupAsync("😖 No lyrics found.");
         return;
       }
+      
+      // Filter out the french at the beginning (Paroles de la chanson <title> par <artist>)
+      var index = lyrics.IndexOf("\r\n", StringComparison.Ordinal);
+      lyrics = lyrics.Remove(0, index + 2);
 
-      await FollowupAsync($"📃 Lyrics for {track.Title} by {track.Author}:\n{lyrics}");
+      // Check if lyrics length is less or equal to 2000 characters
+      if (lyrics.Length <= 2000)
+      {
+        await FollowupAsync($"📃 Lyrics for {track.Title} by {track.Author}:\n{lyrics}");
+      }
+      else
+      {
+        for (int i = 0; i < lyrics.Length; i += 2000)
+        {
+          await DeleteOriginalResponseAsync();
+          
+          await Context.Channel.SendMessageAsync(lyrics.Substring(i, Math.Min(2000, lyrics.Length - i)));
+        }
+      }
     }
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(LyricsCommandAsync));
       throw;
-    }*/
+    }
   }
 
   [SlashCommand(QueueCommandName, QueueCommandDescription, true, RunMode.Async)]

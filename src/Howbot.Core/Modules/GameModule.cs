@@ -10,8 +10,7 @@ namespace Howbot.Core.Modules;
 public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
-  private ILoggerAdapter<GameModule> Logger { get; } = logger;
-
+  
   [SlashCommand(Constants.Commands.RollCommandName, Constants.Commands.RollCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   public async Task RollCommandAsync([Summary("totalDice", "Amount of dice to roll. Max is 10.")] int amountOfDice = 1)
@@ -54,7 +53,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(RollCommandAsync));
+      logger.LogError(exception, nameof(RollCommandAsync));
       throw;
     }
   }
@@ -77,7 +76,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(FlipCommandAsync));
+      logger.LogError(exception, nameof(FlipCommandAsync));
       throw;
     }
   }
@@ -107,7 +106,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(TestCommandAsync));
+      logger.LogError(exception, nameof(TestCommandAsync));
       throw;
     }
   }
@@ -131,7 +130,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(EftCommandAsync));
+      logger.LogError(exception, nameof(EftCommandAsync));
       await DeleteOriginalResponseAsync();
     }
   }

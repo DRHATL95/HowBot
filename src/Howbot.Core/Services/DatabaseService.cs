@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Howbot.Core.Services;
@@ -47,7 +48,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     }
     catch (Exception e)
     {
-      Logger.LogError(e, "Failed to get guild by id {GuildId}", guildId);
+      Logger.LogError(e, "Failed to get guild by id [{GuildId}]", guildId);
       return null;
     }
   }
@@ -64,8 +65,8 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
         return guildEntity.Volume;
       }
 
-      Logger.LogWarning("Unable to find guild with id {GuildId}", guildId);
-      Logger.LogInformation("Adding new guild with id {GuildId} to database", guildId);
+      Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
+      Logger.LogInformation("Adding new guild with id [{GuildId}] to database", guildId);
 
       AddNewGuild(new Guild { Id = guildId });
 
@@ -93,7 +94,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       var guildEntity = repository.GetById<Guild>(playerGuildId);
       if (guildEntity is null)
       {
-        Logger.LogWarning("Unable to find guild with id {GuildId}", playerGuildId);
+        Logger.LogWarning("Unable to find guild with id [{GuildId}]", playerGuildId);
         return;
       }
 
@@ -112,6 +113,33 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     catch (Exception exception)
     {
       Logger.LogError(exception, "Failed to update guild volume level");
+    }
+  }
+
+  public async Task UpdateSearchProviderAsync(ulong guildId, SearchProviderTypes searchProviderType)
+  {
+    try
+    {
+      if (guildId <= 0)
+      {
+        throw new ArgumentException("Invalid guild id");
+      }
+      
+      var guildEntity = repository.GetById<Guild>(guildId);
+      if (guildEntity is null)
+      {
+        Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
+        return;
+      }
+      
+      guildEntity.SearchProvider = searchProviderType;
+      
+      await repository.UpdateAsync(guildEntity);
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, "Failed to update search provider for guild [{GuildId}]", guildId);
+      throw;
     }
   }
 
