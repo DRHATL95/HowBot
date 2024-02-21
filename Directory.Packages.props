@@ -16,7 +16,7 @@
     <PackageVersion Include="Ardalis.Specification.EntityFrameworkCore" Version="6.1.0" />
     <PackageVersion Include="Autofac" Version="7.0.0" />
     <PackageVersion Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.0">
+    <PackageVersion Include="coverlet.collector" Version="6.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
