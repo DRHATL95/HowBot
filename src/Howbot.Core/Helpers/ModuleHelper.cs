@@ -9,9 +9,6 @@ using CommandException = Howbot.Core.Models.Exceptions.CommandException;
 
 namespace Howbot.Core.Helpers;
 
-/// <summary>
-///   Class of static helpers used to handle <seealso cref="Discord.Interactions.InteractionModuleBase" /> execution.
-/// </summary>
 public static class ModuleHelper
 {
   public static readonly Dictionary<string, string> CommandExampleDictionary = new()
@@ -32,13 +29,7 @@ public static class ModuleHelper
     { Constants.Commands.ShuffleCommandName, "/shuffle" },
     { Constants.Commands.NowPlayingCommandName, "/nowplaying" }
   };
-
-  /// <summary>
-  ///   Helper function to handle Module Command failed.
-  ///   Should handle exceptions or responses returned from Services.
-  /// </summary>
-  /// <param name="commandResponse"></param>
-  /// <exception cref="Models.Exceptions.CommandException"></exception>
+  
   public static void HandleCommandFailed(CommandResponse commandResponse)
   {
     ArgumentNullException.ThrowIfNull(commandResponse, nameof(commandResponse));
@@ -50,15 +41,11 @@ public static class ModuleHelper
 
     if (!string.IsNullOrEmpty(commandResponse.Message))
     {
+      // TODO: Needs a compile-time constant for logging message
       Log.Logger.Error(commandResponse.Message);
     }
   }
-
-  /// <summary>
-  ///   Helper function to check if Command Module parameters are valid.
-  /// </summary>
-  /// <param name="args"></param>
-  /// <returns></returns>
+  
   public static bool CheckValidCommandParameter(params object[] args)
   {
     foreach (var arg in args)
@@ -79,14 +66,7 @@ public static class ModuleHelper
 
     return false;
   }
-
-  /// <summary>
-  ///   Helper function used to convert hours,minutes and seconds to a <see cref="TimeSpan" />.
-  /// </summary>
-  /// <param name="hours"></param>
-  /// <param name="minutes"></param>
-  /// <param name="seconds"></param>
-  /// <returns></returns>
+  
   public static TimeSpan ConvertToTimeSpan(int hours, int minutes, int seconds)
   {
     if (hours == 0 && minutes == 0 && seconds == 0)

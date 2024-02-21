@@ -56,7 +56,7 @@ public static class Configuration
   /// </summary>
   public static AudioServiceOptions AudioServiceOptions => new()
   {
-    Passphrase = LavaNodePassword, BaseAddress = LavalinkUrl, HttpClientName = Constants.BotName
+    Passphrase = LavaNodePassword, BaseAddress = LavalinkUrl, HttpClientName = Constants.Discord.BotName
   };
 
   /// <summary>

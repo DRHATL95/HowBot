@@ -20,8 +20,8 @@ namespace Howbot.Core.Modules;
 
 public class MusicModule(
   IMusicService musicService,
-  ILyricsService lyricsService,
   IEmbedService embedService,
+  ILyricsService lyricsService,
   ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
@@ -34,7 +34,7 @@ public class MusicModule(
     [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
     string searchRequest,
     [Summary(PlaySearchTypeArgumentName, PlaySearchTypeArgumentDescription)]
-    SearchProviderTypes searchProviderType = SearchProviderTypes.YouTube)
+    SearchProviderTypes searchProviderType = SearchProviderTypes.YouTubeMusic)
   {
     try
     {
@@ -54,6 +54,8 @@ public class MusicModule(
         var user = Context.User as IGuildUser ?? throw new ArgumentNullException(nameof(Context.User));
         var voiceState = Context.User as IVoiceState ?? throw new ArgumentNullException(nameof(Context.User));
         var channel = Context.Channel as ITextChannel ?? throw new ArgumentNullException(nameof(Context.Channel));
+        
+        int tracksBeforePlay = player.Queue.Count;
 
         var response =
           await musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
@@ -68,10 +70,18 @@ public class MusicModule(
 
         if (player.Queue.Any())
         {
-          var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
-            user);
+          // Added more than one track to the queue
+          if (player.Queue.Count > (tracksBeforePlay + 1))
+          {
+            await FollowupAsync("🎵 Added multiple tracks to the queue.");
+          }
+          else
+          {
+            var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
+              user);
 
-          await FollowupAsync(embed: embed as Embed);
+            await FollowupAsync(embed: embed as Embed); 
+          }
         }
         else
         {
@@ -249,7 +259,7 @@ public class MusicModule(
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
-  public async Task VolumeCommandAsync(int newVolume = 100)
+  public async Task VolumeCommandAsync(int? newVolume = null)
   {
     try
     {
@@ -257,7 +267,16 @@ public class MusicModule(
 
       var player = await musicService.GetPlayerByContextAsync(Context);
 
-      var commandResponse = await musicService.ChangeVolumeAsync(player, newVolume);
+      if (!newVolume.HasValue)
+      {
+        // Respond with the current volume
+        await ModifyOriginalResponseAsync(properties =>
+          properties.Content = $"🔊 Current volume is {player.Volume * 100}%");
+
+        return;
+      }
+
+      var commandResponse = await musicService.ChangeVolumeAsync(player, newVolume.Value);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -279,8 +298,7 @@ public class MusicModule(
     }
   }
 
-  [SlashCommand(NowPlayingCommandName, NowPlayingCommandDescription, true,
-    RunMode.Async)]
+  [SlashCommand(NowPlayingCommandName, NowPlayingCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
@@ -331,29 +349,6 @@ public class MusicModule(
     }
   }
 
-  [SlashCommand(RadioCommandName, RadioCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
-  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  [RequireOwner]
-  public async Task RadioCommandAsync()
-  {
-    try
-    {
-      logger.LogDebug(Messages.Debug.PlayingRadio);
-
-      await RespondAsync("This command is not quite ready yet. Check back later.");
-
-      // await RespondAsync(Messages.Responses.PlayingRadio);
-    }
-    catch (Exception exception)
-    {
-      logger.LogError(exception, nameof(RadioCommandAsync));
-      throw;
-    }
-  }
-
   [SlashCommand(ShuffleCommandName, ShuffleCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
@@ -394,7 +389,6 @@ public class MusicModule(
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireOwner]
   public async Task LyricsCommandAsync()
   {
     try
@@ -417,15 +411,32 @@ public class MusicModule(
         return;
       }
 
-      var lyrics = await lyricsService.GetLyricsAsync(track.Title, track.Author);
+      var lyrics = await lyricsService.GetLyricsAsync(track.Author, track.Title);
 
       if (lyrics is null)
       {
         await FollowupAsync("😖 No lyrics found.");
         return;
       }
+      
+      // Filter out the french at the beginning (Paroles de la chanson <title> par <artist>)
+      var index = lyrics.IndexOf("\r\n", StringComparison.Ordinal);
+      lyrics = lyrics.Remove(0, index + 2);
 
-      await FollowupAsync($"📃 Lyrics for {track.Title} by {track.Author}:\n{lyrics}");
+      // Check if lyrics length is less or equal to 2000 characters
+      if (lyrics.Length <= 2000)
+      {
+        await FollowupAsync($"📃 Lyrics for {track.Title} by {track.Author}:\n{lyrics}");
+      }
+      else
+      {
+        for (int i = 0; i < lyrics.Length; i += 2000)
+        {
+          await DeleteOriginalResponseAsync();
+          
+          await Context.Channel.SendMessageAsync(lyrics.Substring(i, Math.Min(2000, lyrics.Length - i)));
+        }
+      }
     }
     catch (Exception exception)
     {
@@ -450,6 +461,12 @@ public class MusicModule(
 
       if (player is null)
       {
+        return;
+      }
+
+      if (!player.Queue.Any())
+      {
+        await ModifyOriginalResponseAsync(properties => properties.Content = "No tracks in queue.");
         return;
       }
 
@@ -483,37 +500,4 @@ public class MusicModule(
       throw;
     }
   }
-
-  /*[SlashCommand(TwoFourSevenCommandName, TwoFourSevenCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
-  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  public async Task TwentyFourSevenCommandAsync()
-  {
-    try
-    {
-      await DeferAsync();
-
-      CommandResponse commandResponse = _musicService.ToggleTwoFourSeven(Context.Guild);
-
-      if (!commandResponse.Success)
-      {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-
-        if (string.IsNullOrEmpty(commandResponse.Message))
-        {
-          await GetOriginalResponseAsync().ContinueWith(async task => await task.Result.DeleteAsync());
-          return;
-        }
-      }
-
-      await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
-    }
-    catch (Exception exception)
-    {
-      _logger.LogError(exception, nameof(TwentyFourSevenCommandAsync));
-      throw;
-    }
-  }*/
 }

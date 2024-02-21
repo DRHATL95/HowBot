@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
@@ -19,32 +21,25 @@ using Lavalink4NET.Integrations.Lavasearch.Extensions;
 using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
+using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
 using Lavalink4NET.Tracks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Serilog;
 
 namespace Howbot.Core.Services;
 
-public class MusicService(
+public partial class MusicService(
   IEmbedService embedService,
   IAudioService audioService,
   IServiceProvider serviceProvider,
   ILoggerAdapter<MusicService> logger)
   : ServiceBase<MusicService>(logger), IMusicService
 {
-  /// <summary>
-  ///   Retrieves or creates a player for the given socket interaction context.
-  /// </summary>
-  /// <param name="context">The socket interaction context.</param>
-  /// <param name="allowConnect">Indicates whether the player can join the voice channel if necessary. Default is false.</param>
-  /// <param name="requireChannel">Indicates whether the player requires a voice channel. Default is true.</param>
-  /// <param name="preconditions">The preconditions for the player. Default is empty.</param>
-  /// <param name="isDeferred">Indicates whether the player is deferred. Default is false.</param>
-  /// <param name="initialVolume">The initial volume of the player. Default is 100.</param>
-  /// <param name="cancellationToken">The cancellation token. Default is empty.</param>
-  /// <returns>The retrieved or created HowbotPlayer instance, or null if an error occurs.</returns>
+  
+  [GeneratedRegex(Constants.RegexPatterns.UrlPattern)]
+  private static partial Regex UrlRegex();
+  
   public async ValueTask<HowbotPlayer> GetPlayerByContextAsync(SocketInteractionContext context,
     bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default,
     bool isDeferred = false, int initialVolume = 100,
@@ -121,40 +116,27 @@ public class MusicService(
     return null;
   }
 
-  public ValueTask<IEnumerable<string>> GetYoutubeRecommendedVideoId(string videoId, int count = 1)
-  {
-    throw new NotImplementedException();
-  }
-
   public CommandResponse GetGuildMusicQueueEmbed(HowbotPlayer player)
   {
     try
     {
       if (player.Queue.Count == 0)
       {
-        return CommandResponse.CommandNotSuccessful("No tracks in queue.");
+        return CommandResponse.Create(false, "No tracks in queue.");
       }
 
       var embed = embedService.GenerateMusicCurrentQueueEmbed(player.Queue);
 
-      return CommandResponse.CommandSuccessful(embed);
+      return CommandResponse.Create(true, embed: embed);
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(GetGuildMusicQueueEmbed));
-      return CommandResponse.CommandNotSuccessful(exception);
+      
+      return CommandResponse.Create(false, exception: exception);
     }
   }
-
-  /// <summary>
-  ///   Creates a new player asynchronously.
-  /// </summary>
-  /// <param name="properties">The properties of the player to be created.</param>
-  /// <param name="cancellationToken">The cancellation token.</param>
-  /// <returns>
-  ///   A <see cref="ValueTask{TResult}" /> representing the asynchronous operation. The result of the task will be
-  ///   the created <see cref="HowbotPlayer" /> instance.
-  /// </returns>
+  
   private ValueTask<HowbotPlayer> CreatePlayerAsync(
     IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties,
     CancellationToken cancellationToken = default)
@@ -163,57 +145,97 @@ public class MusicService(
 
     Guard.Against.Null(properties, nameof(properties));
 
-    Log.Logger.Information("Creating new player..");
-
     return ValueTask.FromResult(new HowbotPlayer(properties));
   }
 
-  #region Music Module Commands
+  private async Task<List<LavalinkTrack>> GetTracksFromSearchRequestAndProviderAsync(string searchRequest, TrackSearchMode trackSearchMode)
+  {
+    List<LavalinkTrack> tracks = [];
+    
+    TrackLoadOptions trackLoadOptions = new(trackSearchMode, StrictSearchBehavior.Resolve);
+    // LavaSearch categories to be returned (Tracks, Albums, Artists, Playlists, Text)
+    ImmutableArray<SearchCategory> searchCategories = ImmutableArray.Create(SearchCategory.Track, SearchCategory.Playlist);
 
-  /// <summary>
-  ///   Plays a track by search type asynchronously.
-  /// </summary>
-  /// <param name="player">The HowbotPlayer instance.</param>
-  /// <param name="searchProviderType">The search provider type.</param>
-  /// <param name="searchRequest">The search request.</param>
-  /// <param name="user">The IGuildUser to play the track for.</param>
-  /// <param name="voiceState">The IVoiceState of the user.</param>
-  /// <param name="textChannel">The ITextChannel where the command is executed.</param>
-  /// <returns>A ValueTask of type CommandResponse.</returns>
+    SearchResult searchResult = null;
+    
+    try
+    {
+      searchResult = await audioService.Tracks
+        .SearchAsync(searchRequest, loadOptions: trackLoadOptions, categories: searchCategories);
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, nameof(GetTracksFromSearchRequestAndProviderAsync));
+      
+      var x = await audioService.Tracks
+                            .LoadTracksAsync(searchRequest, trackLoadOptions);
+
+      searchResult = new SearchResult(x.Tracks, [], [], [], [], ImmutableDictionary<string, JsonElement>.Empty);
+    }
+
+    if (searchResult == null || searchResult.Tracks.IsDefaultOrEmpty)
+    {
+      return tracks;
+    }
+
+    if (trackSearchMode == TrackSearchMode.None)
+    {
+      tracks.AddRange(searchResult.Tracks);
+    }
+    else
+    {
+      tracks.Add(searchResult.Tracks[0]);
+    }
+
+    return tracks;
+  }
+  
+  #region Music Module Commands
+  
   public async ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player,
     SearchProviderTypes searchProviderType, string searchRequest, IGuildUser user,
     IVoiceState voiceState, ITextChannel textChannel)
   {
     try
     {
-      // Convert from enum to Lavalink struct for searching providers (default is YouTube)
-      var type = LavalinkHelper.ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
-
-      var trackOptions = new TrackLoadOptions(type, StrictSearchBehavior.Resolve);
-
-      // LavaSearch categories to be returned (Tracks, Albums, Artists, etc.)
-      var categories = ImmutableArray.Create(SearchCategory.Track);
-
-      var searchResult = await audioService.Tracks
-        .SearchAsync(searchRequest, loadOptions: trackOptions, categories: categories);
-
-      LavalinkTrack track;
-      if (searchResult is null || searchResult.Tracks.IsDefaultOrEmpty)
+      TrackSearchMode trackSearchMode = UrlRegex().IsMatch(searchRequest) ? TrackSearchMode.None : LavalinkHelper.ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
+      
+      var tracks = await GetTracksFromSearchRequestAndProviderAsync(searchRequest, trackSearchMode);
+      if (tracks.Count == 0)
       {
-        // Attempts to use native lavalink native search when lava search plugin isn't working or doesn't return results for categories specified
-        track = await audioService.Tracks
-          .LoadTrackAsync(searchRequest, trackOptions);
+        // No tracks found using LavaSearch plugin, use the default native LoadTrackAsync method
+        var track = await audioService.Tracks
+          .LoadTrackAsync(searchRequest, new TrackLoadOptions(trackSearchMode, StrictSearchBehavior.Resolve));
+        
+        if (track != null)
+        {
+          await player.PlayAsync(track);
+
+          return CommandResponse.Create(true, lavalinkTrack: track);
+        }
       }
       else
       {
-        track = searchResult.Tracks[0];
-      }
-
-      if (track != null)
-      {
-        await player.PlayAsync(track);
-
-        return CommandResponse.CommandSuccessful(track);
+        var trackQueueItems = tracks.ConvertAll(track => new TrackQueueItem(new TrackReference(track)));
+        
+        // First enqueue the tracks
+        await player.Queue.AddRangeAsync(trackQueueItems);
+        
+        if (player.State is PlayerState.Playing or PlayerState.Paused)
+        {
+          // If the player is already playing or paused, return the tracks added to queue
+          return CommandResponse.Create(true, $"Added {trackQueueItems.Count} tracks to queue.");
+        }
+        
+        var trackQueueItem = await player.Queue.TryDequeueAsync(player.Shuffle ? TrackDequeueMode.Shuffle : TrackDequeueMode.Normal);
+        if (trackQueueItem is null)
+        {
+          return CommandResponse.Create(false, Messages.Responses.CommandPlayNotSuccessfulResponse);
+        }
+        
+        await player.PlayAsync(trackQueueItem, false);
+        
+        return CommandResponse.Create(true, lavalinkTrack: trackQueueItem.Track);
       }
     }
     catch (Exception exception)
@@ -221,7 +243,7 @@ public class MusicService(
       Logger.LogError(exception, nameof(PlayTrackBySearchTypeAsync));
     }
 
-    return CommandResponse.CommandNotSuccessful(Messages.Responses.CommandPlayNotSuccessfulResponse);
+    return CommandResponse.Create(false, Messages.Responses.CommandPlayNotSuccessfulResponse);
   }
 
 
@@ -231,12 +253,12 @@ public class MusicService(
     {
       await player.PauseAsync();
 
-      return CommandResponse.CommandSuccessful(Messages.Responses.CommandPausedSuccessfulResponse);
+      return CommandResponse.Create(true, Messages.Responses.CommandPausedSuccessfulResponse);
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(PlayTrackBySearchTypeAsync));
-      return CommandResponse.CommandNotSuccessful(Messages.Responses.CommandPausedNotSuccessfulResponse);
+      return CommandResponse.Create(false, Messages.Responses.CommandPausedNotSuccessfulResponse);
     }
   }
 
@@ -246,12 +268,13 @@ public class MusicService(
     {
       await player.ResumeAsync();
 
-      return CommandResponse.CommandSuccessful("Successfully resumed track.");
+      return CommandResponse.Create(true,"Successfully resumed track.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(ResumeTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -261,12 +284,12 @@ public class MusicService(
     {
       await player.SkipAsync(numberOfTracks ?? 1);
 
-      return CommandResponse.CommandSuccessful($"Skipped {numberOfTracks} tracks in queue.");
+      return CommandResponse.Create(true, $"Skipped {numberOfTracks} tracks in queue.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SkipTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -278,12 +301,12 @@ public class MusicService(
 
       await player.SeekAsync(seekPosition);
 
-      return CommandResponse.CommandSuccessful($"Seeking to {seekPosition:g}.");
+      return CommandResponse.Create(true, $"Seeking to {seekPosition:g}.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SeekTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -291,7 +314,7 @@ public class MusicService(
   {
     if (newVolume is > 1000 or < 0)
     {
-      return CommandResponse.CommandNotSuccessful("Volume out of range: 0% - 1000%!");
+      return CommandResponse.Create(false, "Volume out of range: 0% - 1000%!");
     }
 
     try
@@ -312,12 +335,12 @@ public class MusicService(
         db.AddNewGuild(new Guild { Id = player.GuildId, Volume = newVolume });
       }
 
-      return CommandResponse.CommandSuccessful($"Volume set to {newVolume}%");
+      return CommandResponse.Create(true, $"Volume set to {newVolume}%");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(ChangeVolumeAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -327,18 +350,18 @@ public class MusicService(
     {
       if (player.CurrentTrack is null)
       {
-        return CommandResponse.CommandNotSuccessful("No track is currently playing.");
+        return CommandResponse.Create(false, "No track is currently playing.");
       }
 
       var embed = embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(player.CurrentTrack), user,
         player.Position, player.Volume);
 
-      return CommandResponse.CommandSuccessful(embed);
+      return CommandResponse.Create(true, embed: embed);
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SeekTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -354,12 +377,13 @@ public class MusicService(
 
       player.Filters.Echo(options);*/
 
-      return ValueTask.FromResult(CommandResponse.CommandSuccessful());
+      return ValueTask.FromResult(CommandResponse.Create(true));
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SeekTrackAsync));
-      return ValueTask.FromResult(CommandResponse.CommandNotSuccessful(exception));
+      
+      return ValueTask.FromResult(CommandResponse.Create(false, exception: exception));
     }
   }
 
@@ -374,19 +398,14 @@ public class MusicService(
     {
       player.Shuffle = !player.Shuffle;
 
-      return CommandResponse.CommandSuccessful(
+      return CommandResponse.Create(true,
         $"Shuffle is now {(player.Shuffle ? "enabled" : "disabled")}.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(SeekTrackAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
-  }
-
-  public CommandResponse ToggleTwoFourSeven(HowbotPlayer player)
-  {
-    throw new NotImplementedException();
   }
 
   #endregion Music Module Commands
