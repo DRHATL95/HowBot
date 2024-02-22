@@ -5,6 +5,7 @@ using Howbot.Core.Interfaces;
 using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
+using Howbot.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -81,6 +82,9 @@ public static class Program
         services.AddSingleton(workerSettings);
 
         services.AddHostedService<Worker>();
+        
+        // RabbitMQ - Worker only needs to consume messages
+        services.AddHostedService(sp => new MessageQueueConsumerService(Configuration.RabbitMqConnectionFactory, sp.GetRequiredService<ILoggerAdapter<MessageQueueConsumerService>>()));
       });
   }
 }

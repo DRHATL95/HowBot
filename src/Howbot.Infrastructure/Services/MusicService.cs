@@ -14,6 +14,7 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Players;
+using Howbot.Core.Services;
 using Lavalink4NET;
 using Lavalink4NET.Clients;
 using Lavalink4NET.Integrations.Lavasearch;
@@ -27,10 +28,11 @@ using Lavalink4NET.Tracks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public partial class MusicService(
   IEmbedService embedService,
+  IHowbotService howbotService,
   IAudioService audioService,
   IServiceProvider serviceProvider,
   ILoggerAdapter<MusicService> logger)
@@ -81,16 +83,21 @@ public partial class MusicService(
       SelfDeaf = true,
       ClearQueueOnStop = true,
       ClearHistoryOnStop = true,
-      InitialVolume = persistedVolume > 0 ? persistedVolume / 100f : initialVolume / 100f
+      InitialVolume = persistedVolume > 0 ? persistedVolume / 100f : initialVolume / 100f,
     };
 
     var result = await audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
       CreatePlayerAsync,
       retrieveOptions: retrieveOptions, options: new OptionsWrapper<HowbotPlayerOptions>(playerOptions),
       cancellationToken: cancellationToken);
-
+    
     if (result.IsSuccess)
     {
+      if (!howbotService.SessionIds.ContainsKey(guildId))
+      {
+        howbotService.SessionIds.TryAdd(guildId, result.Player.VoiceState.SessionId);
+      }
+      
       return result.Player;
     }
 

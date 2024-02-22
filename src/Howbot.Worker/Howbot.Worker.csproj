@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting"/>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets"/>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore"/>
+    <PackageReference Include="RabbitMQ.Client" />
     <PackageReference Include="Serilog"/>
     <PackageReference Include="Serilog.Extensions.Hosting"/>
     <PackageReference Include="Serilog.Extensions.Logging"/>

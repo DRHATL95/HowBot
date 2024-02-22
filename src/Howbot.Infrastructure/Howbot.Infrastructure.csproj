@@ -8,6 +8,7 @@
     <PackageReference Include="Ardalis.GuardClauses"/>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
+    <PackageReference Include="RabbitMQ.Client" />
   </ItemGroup>
 
   <ItemGroup>

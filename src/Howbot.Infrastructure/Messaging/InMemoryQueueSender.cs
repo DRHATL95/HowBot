@@ -16,12 +16,16 @@ public class InMemoryQueueSender : IQueueSender
   /// <returns>A Task representing the asynchronous operation.</returns>
   public async Task SendMessageToQueueAsync(string message, string queueName)
   {
-    await Task.Run(() =>
+    await Task.CompletedTask;
+    
+    InMemoryQueueReceiver.MessageQueue.Enqueue(message);
+    
+    /*await Task.Run(() =>
     {
       lock (InMemoryQueueReceiver.MessageQueue)
       {
         InMemoryQueueReceiver.MessageQueue.Enqueue(message);
       }
-    });
+    });*/
   }
 }

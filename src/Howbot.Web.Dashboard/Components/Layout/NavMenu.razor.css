@@ -1,0 +1,6 @@
+﻿.navbar-dark .navbar-nav .nav-link {
+    color: var(--nord4);
+}
+.navbar-dark .navbar-nav .nav-link:hover {
+    color: var(--nord8);
+}

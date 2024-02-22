@@ -4,9 +4,10 @@ using Discord;
 using Discord.Interactions;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Services;
 using Microsoft.Extensions.Logging;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public class InteractionHandlerService(
   InteractionService interactionService,

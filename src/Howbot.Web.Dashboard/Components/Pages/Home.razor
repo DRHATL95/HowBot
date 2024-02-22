@@ -1,0 +1,29 @@
+﻿@using Newtonsoft.Json
+@inherits ComponentBase
+@inject HttpClient HttpClient
+
+@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <p>@Message</p>
+}
+else
+{
+    <p>Nothing in Queue!</p>
+}
+
+@code {
+
+    private string? Message { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+}

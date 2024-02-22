@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using Discord;
@@ -8,12 +8,15 @@ using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Exceptions;
+using Howbot.Core.Services;
 using Howbot.Core.Settings;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Messages.Debug;
 using static Howbot.Core.Models.Messages.Errors;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public class DiscordClientService(
   DiscordSocketClient discordSocketClient,
@@ -38,7 +41,7 @@ public class DiscordClientService(
   public override void Initialize()
   {
     base.Initialize();
-
+    
     SubscribeToDiscordSocketEvents();
   }
 
@@ -50,15 +53,15 @@ public class DiscordClientService(
 
       await discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
     }
-    catch (ArgumentException argumentException)
+    catch (ArgumentException)
     {
-      Logger.LogError(argumentException, "The provided token is invalid.");
-      throw;
+      // Should bubble up to the caller
+      throw new DiscordLoginException("Invalid token provided.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(LoginDiscordBotAsync));
-      throw;
+      throw new DiscordLoginException("An exception has been thrown while logging into Discord.");
     }
   }
 
@@ -81,7 +84,7 @@ public class DiscordClientService(
       throw;
     }
   }
-
+  
   public void Dispose()
   {
     UnsubscribeFromDiscordSocketEvents();
@@ -100,7 +103,7 @@ public class DiscordClientService(
     discordSocketClient.Connected += DiscordSocketClientOnConnected;
     discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
     // discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted; TODO: Revisit this
-    // discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated; TODO: Revisit this
+    discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
     discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
     discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
   }
@@ -116,7 +119,7 @@ public class DiscordClientService(
     discordSocketClient.Connected -= DiscordSocketClientOnConnected;
     discordSocketClient.Disconnected -= DiscordSocketClientOnDisconnected;
     // discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted; TODO: Revisit this
-    // discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated; TODO: Revisit this
+    discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
     discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
     discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
   }
@@ -240,8 +243,7 @@ public class DiscordClientService(
     return Task.CompletedTask;
   }
 
-  // TODO: Revisit this
-  /*private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
+  private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
@@ -255,7 +257,7 @@ public class DiscordClientService(
     Logger.LogDebug("User {0} has updated voice state.", user.Username);
 
     return Task.CompletedTask;
-  }*/
+  }
 
   private Task DiscordSocketClientOnVoiceServerUpdated(SocketVoiceServer socketVoiceServer)
   {

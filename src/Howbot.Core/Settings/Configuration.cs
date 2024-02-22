@@ -1,10 +1,12 @@
 ﻿using System;
+using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
-using Howbot.Core.Models;
 using Lavalink4NET;
+using RabbitMQ.Client;
+using Constants = Howbot.Core.Models.Constants;
 
 namespace Howbot.Core.Settings;
 
@@ -15,15 +17,20 @@ public static class Configuration
 {
   // The names of the environment variable
   private const string DiscordApiToken = "DiscordToken";
-  private const string YouTube = "YoutubeToken";
+  // private const string YouTube = "YoutubeToken";
   private const string Postgres = "HowbotPostgres";
   private const string Lavalink = "DiscordLavalinkServerPassword";
   private const string LavalinkAddress = "DiscordLavalinkServerAddress";
   private const string WatchTogetherKey = "Watch2GetherKey";
+  
+  private const string RabbitMqHostNameKey = "RabbitMQHost";
+  private const string RabbitMqPortKey = "RabbitMQPort";
+  private const string RabbitMqUserNameKey = "RabbitMQUser";
+  private const string RabbitMqPasswordKey = "RabbitMQPassword";
 
   public static string DiscordToken => GetTokenByName(DiscordApiToken);
 
-  public static string YouTubeToken => GetTokenByName(YouTube);
+  // public static string YouTubeToken => GetTokenByName(YouTube);
 
   public static string PostgresConnectionString => GetTokenByName(Postgres);
 
@@ -32,6 +39,14 @@ public static class Configuration
   private static string LavaNodePassword => GetTokenByName(Lavalink);
 
   private static string LavaNodeAddress => GetTokenByName(LavalinkAddress);
+  
+  private static string RabbitMqHostName => GetTokenByName(RabbitMqHostNameKey);
+  
+  private static string RabbitMqPort => GetTokenByName(RabbitMqPortKey);
+  
+  private static string RabbitMqUserName => GetTokenByName(RabbitMqUserNameKey);
+  
+  private static string RabbitMqPassword => GetTokenByName(RabbitMqPasswordKey);
 
   /// <summary>
   ///   Represents the gateway intents to subscribe to.
@@ -79,6 +94,14 @@ public static class Configuration
       return false;
 #endif
   }
+  
+  public static ConnectionFactory RabbitMqConnectionFactory => new()
+  {
+    HostName = RabbitMqHostName,
+    Port = int.TryParse(RabbitMqPort, out var portAsInt) ? portAsInt : 5672,
+    UserName = RabbitMqUserName,
+    Password = RabbitMqPassword
+  };
 
   /// <summary>
   ///   Can be used to retrieve either env. variable or secrets using secret manager
@@ -88,7 +111,7 @@ public static class Configuration
   private static string GetTokenByName(string tokenName)
   {
     // Should only be hit if empty, should never be null
-    ArgumentException.ThrowIfNullOrEmpty(tokenName);
+    Guard.Against.NullOrEmpty(tokenName, nameof(tokenName));
 
     // First attempt to get token, using hosted process
     var token = Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Process);

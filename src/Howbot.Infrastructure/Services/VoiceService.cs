@@ -4,11 +4,12 @@ using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Services;
 using Lavalink4NET;
 using Lavalink4NET.Players;
 using Microsoft.Extensions.Options;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceService> logger)
   : ServiceBase<VoiceService>(logger), IVoiceService

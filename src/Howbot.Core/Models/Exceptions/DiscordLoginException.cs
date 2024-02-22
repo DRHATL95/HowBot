@@ -2,4 +2,4 @@
 
 namespace Howbot.Core.Models.Exceptions;
 
-public abstract class DiscordLoginException(string message) : Exception(message);
+public class DiscordLoginException(string message) : Exception(message);

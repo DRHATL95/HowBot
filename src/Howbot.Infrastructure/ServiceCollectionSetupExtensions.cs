@@ -6,6 +6,7 @@ using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data;
 using Howbot.Infrastructure.Http;
+using Howbot.Infrastructure.Services;
 using Lavalink4NET.Extensions;
 using Lavalink4NET.InactivityTracking;
 using Lavalink4NET.InactivityTracking.Extensions;
@@ -56,6 +57,7 @@ public static class ServiceCollectionSetupExtensions
         x.GetRequiredService<ILoggerAdapter<InteractionService>>(), Configuration.InteractionServiceConfig));
 
     // Howbot related services
+    services.AddSingleton<IHowbotService, HowbotService>();
     services.AddSingleton<IVoiceService, VoiceService>();
     services.AddSingleton<IMusicService, MusicService>();
     services.AddSingleton<IEmbedService, EmbedService>();
@@ -66,6 +68,7 @@ public static class ServiceCollectionSetupExtensions
     
     services.AddScoped<IDatabaseService, DatabaseService>();
 
+    // TODO: Revisit this
     // YouTube related service
     /*services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
     {

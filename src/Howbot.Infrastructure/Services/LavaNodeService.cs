@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Discord;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models.Players;
+using Howbot.Core.Services;
 using Lavalink4NET;
 using Lavalink4NET.Clients.Events;
 using Lavalink4NET.Events;
@@ -10,7 +11,7 @@ using Lavalink4NET.Events.Players;
 using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Protocol.Payloads.Events;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public class LavaNodeService(
   IAudioService audioService,
@@ -18,20 +19,6 @@ public class LavaNodeService(
   IEmbedService embedService)
   : ServiceBase<LavaNodeService>(logger), ILavaNodeService, IAsyncDisposable
 {
-  public async ValueTask DisposeAsync()
-  {
-    await audioService.DisposeAsync();
-
-    audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
-    audioService.TrackEnded -= AudioServiceOnTrackEnded;
-    audioService.TrackException -= AudioServiceOnTrackException;
-    audioService.TrackStarted -= AudioServiceOnTrackStarted;
-    audioService.TrackStuck -= AudioServiceOnTrackStuck;
-    audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
-
-    GC.SuppressFinalize(this);
-  }
-
   public override void Initialize()
   {
     base.Initialize();
@@ -46,6 +33,20 @@ public class LavaNodeService(
     // Discord Client Wrapper (Lavalink4Net) Events
     audioService.DiscordClient.VoiceServerUpdated += DiscordClientOnVoiceServerUpdated;
     audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
+  }
+  
+  public async ValueTask DisposeAsync()
+  {
+    await audioService.DisposeAsync();
+
+    audioService.StatisticsUpdated -= AudioServiceOnStatisticsUpdated;
+    audioService.TrackEnded -= AudioServiceOnTrackEnded;
+    audioService.TrackException -= AudioServiceOnTrackException;
+    audioService.TrackStarted -= AudioServiceOnTrackStarted;
+    audioService.TrackStuck -= AudioServiceOnTrackStuck;
+    audioService.WebSocketClosed -= AudioServiceOnWebSocketClosed;
+
+    GC.SuppressFinalize(this);
   }
 
   #region Events

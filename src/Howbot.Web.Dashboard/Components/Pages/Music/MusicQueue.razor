@@ -1,0 +1,70 @@
+﻿@page "/music-queue"
+@rendermode InteractiveServer
+
+<PageTitle>Music Queue</PageTitle>
+
+@using Lavalink4NET.Tracks
+
+<h3 class="text-center mb-5">Music Queue</h3>
+
+<div class="input-group mb-3">
+    <input type="text" class="form-control" placeholder="Search songs..." @bind="_searchQuery">
+    <button class="btn btn-primary" type="button" @onclick="SearchSongs">Search</button>
+</div>
+
+
+@if (_currentTrack != null)
+{
+    <div class="card mb-3" style="background-color: var(--nord1);">
+        <div class="card-body">
+            <h5 class="card-title">Now Playing</h5>
+            <p class="card-text">@_currentTrack.Title by @_currentTrack.Author</p>
+        </div>
+    </div>   
+}
+
+@if (_musicQueue.Any())
+{
+    <ul class="list-group">
+        @foreach (var track in _musicQueue)
+        {
+            <li class="list-group-item" style="background-color: var(--nord2); color: var(--nord4);">
+                @track.Title by @track.Author
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No tracks in queue.</p>
+}
+
+@code {
+    private string? _searchQuery;
+    private LavalinkTrack? _currentTrack; // Assuming you have a Track model
+    private readonly List<LavalinkTrack> _musicQueue = []; // This would be populated from your backend
+    
+    private void SearchSongs()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            return;
+        }
+        
+        var track = new LavalinkTrack
+        {
+            Title = "The Best Song",
+            Identifier = "123",
+            Author = "The Best Artist",
+        };
+        
+        if (_currentTrack != null)
+        {
+            _musicQueue.Add(track);
+        }
+        else
+        {
+            _currentTrack = track;
+        }
+    }
+}
