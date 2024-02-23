@@ -16,7 +16,7 @@ namespace Howbot.Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.1")
+                .HasAnnotation("ProductVersion", "8.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -31,6 +31,9 @@ namespace Howbot.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
+
+                    b.Property<int>("SearchProvider")
+                        .HasColumnType("integer");
 
                     b.Property<float>("Volume")
                         .HasColumnType("real");

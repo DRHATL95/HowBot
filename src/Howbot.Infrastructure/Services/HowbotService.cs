@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +16,7 @@ public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClie
 {
   // TODO: This will be used to store the session IDs of the guilds that the bot is connected to
   // IMPORTANT: The music functionality requires session IDs to get the player for the guild
-  public Dictionary<ulong, string> SessionIds { get; set; } = new();
+  public ConcurrentDictionary<ulong, string> SessionIds { get; set; } = new();
   
   public new void Initialize()
   {
