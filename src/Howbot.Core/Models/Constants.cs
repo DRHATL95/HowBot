@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System;
+using Discord;
 
 namespace Howbot.Core.Models;
 
@@ -110,5 +111,13 @@ public abstract record Constants
 
     public const string FlipCommandName = "flip";
     public const string FlipCommandDescription = "Flips a coin.";
+  }
+
+  public struct RabbitMq
+  {
+    public static TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
+    public static TimeSpan DefaultMessageQueueTimeout = TimeSpan.FromMinutes(5);
+    
+    public const string RpcQueue = "rpc_queue";
   }
 }

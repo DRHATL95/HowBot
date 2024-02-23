@@ -16,9 +16,9 @@ public class CommandController(MessageQueuePublisherService publisherService, Di
   {
     var message = Encoding.UTF8.GetBytes(commandPayload.Message);
     
-    await publisherService.PublishAsync("CommandQueue", commandPayload);
+    var response = await publisherService.CallAsync("A message");
 
-    return Ok(commandPayload);
+    return Ok(response);
   }
   
   [HttpGet]

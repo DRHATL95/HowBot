@@ -64,7 +64,7 @@ public static class Program
       {
         services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
         services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
-
+        
         services.AddHowbotServices();
 
         // Add in-memory cache
@@ -82,9 +82,8 @@ public static class Program
         services.AddSingleton(workerSettings);
 
         services.AddHostedService<Worker>();
-        
-        // RabbitMQ - Worker only needs to consume messages
-        services.AddHostedService(sp => new MessageQueueConsumerService(Configuration.RabbitMqConnectionFactory, sp.GetRequiredService<ILoggerAdapter<MessageQueueConsumerService>>()));
+        services.AddHostedService(sp => new MessageQueueConsumerService(Configuration.RabbitMqConnectionFactory,
+          sp.GetRequiredService<ILoggerAdapter<MessageQueueConsumerService>>()));
       });
   }
 }

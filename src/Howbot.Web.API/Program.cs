@@ -30,7 +30,7 @@ builder.Services.AddMemoryCache();
 builder.Services.TryAddSingleton<ILavalinkApiClientFactory, LavalinkApiClientFactory>();
 
 // RabbitMQ - Web API only needs to publish messages
-builder.Services.AddSingleton<MessageQueuePublisherService>(_ => new MessageQueuePublisherService(Configuration.RabbitMqConnectionFactory));
+builder.Services.AddSingleton<MessageQueuePublisherService>(sp => new MessageQueuePublisherService(Configuration.RabbitMqConnectionFactory, sp.GetRequiredService<ILoggerAdapter<MessageQueuePublisherService>>()));
 
 var app = builder.Build();
 
