@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Discord.Rest;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Commands;
 using Howbot.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +13,11 @@ public class CommandController(MessageQueuePublisherService publisherService, Di
 {
   
   [HttpPost]
-  public async Task<IActionResult> SendCommand([FromBody] CommandPayload commandPayload)
+  public async Task<IActionResult> SendCommand([FromBody] CommandRequest commandRequest)
   {
-    var message = Encoding.UTF8.GetBytes(commandPayload.Message);
+    var message = Encoding.UTF8.GetBytes(commandRequest.ToString() ?? string.Empty);
     
-    var response = await publisherService.CallAsync("A message");
+    var response = await publisherService.CallAsync("message");
 
     return Ok(response);
   }

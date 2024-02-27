@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Commands;
 using Serilog;
 using CommandException = Howbot.Core.Models.Exceptions.CommandException;
 

@@ -82,7 +82,7 @@ public static class Program
         services.AddSingleton(workerSettings);
 
         services.AddHostedService<Worker>();
-        services.AddHostedService(sp => new MessageQueueConsumerService(Configuration.RabbitMqConnectionFactory,
+        services.AddHostedService(sp => new MessageQueueConsumerService(Configuration.RabbitMqConnectionFactory, sp.GetRequiredService<IHowbotService>(),
           sp.GetRequiredService<ILoggerAdapter<MessageQueueConsumerService>>()));
       });
   }

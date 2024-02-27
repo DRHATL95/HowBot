@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Commands;
 using Howbot.Core.Models.Players;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
@@ -43,5 +44,10 @@ public interface IMusicService
     ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false, int initialVolume = 100,
     CancellationToken cancellationToken = default);
 
-  CommandResponse GetGuildMusicQueueEmbed(HowbotPlayer player);
+  ValueTask<CommandResponse> JoinVoiceChannelAsync(ulong guildId, ulong voiceChannelId,
+    CancellationToken cancellationToken = default);
+  
+  CommandResponse GetMusicQueueForServer(HowbotPlayer player);
+  
+  ValueTask<HowbotPlayer> GetPlayerByGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default);
 }

@@ -3,7 +3,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models.Commands;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using MessageQueueConstants = Howbot.Core.Models.Constants.RabbitMq;
@@ -13,6 +15,7 @@ namespace Howbot.Infrastructure.Services;
 // TODO: Consider name change, this doesn't just consume, it also publishes.
 public class MessageQueueConsumerService(
   IConnectionFactory connectionFactory,
+  IHowbotService howbotService,
   ILoggerAdapter<MessageQueueConsumerService> logger)
   : BackgroundService
 {
@@ -35,7 +38,7 @@ public class MessageQueueConsumerService(
     await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
   }
 
-  private void ConsumerOnReceived(object sender, BasicDeliverEventArgs e)
+  private async void ConsumerOnReceived(object sender, BasicDeliverEventArgs e)
   {
     if (sender is not EventingBasicConsumer consumer) return;
     
@@ -45,30 +48,42 @@ public class MessageQueueConsumerService(
     replyProps.CorrelationId = props?.CorrelationId;
     
     var body = e.Body.ToArray();
-
+    
     try
     {
-      var message = Encoding.UTF8.GetString(body);
+      var response = await HandleMessageRequestAsync(body);
+      var responseAsJson = JsonConvert.SerializeObject(response);
+      
+      // Send the response back to the client
+      var responseBytes = Encoding.UTF8.GetBytes(responseAsJson);
+      channel.BasicPublish(string.Empty, props?.ReplyTo, replyProps, responseBytes);
+      
+      // Process the message
+      channel.BasicAck(deliveryTag: e.DeliveryTag, multiple: false);
     }
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(ConsumerOnReceived));
     }
-    finally
-    {
-      var response = Encoding.UTF8.GetBytes("OK, I got it. This is my response.");
-      channel.BasicPublish(string.Empty, props?.ReplyTo, replyProps, response);
-      // Process the message
-      channel.BasicAck(deliveryTag: e.DeliveryTag, multiple: false);
-    }
-    
-    /*_logger.LogDebug("Received message: {message}", message);
+  }
 
-    await Task.Run(() =>
+  private async Task<CommandResponse> HandleMessageRequestAsync(byte[] bodyContent)
+  {
+    try
     {
-      var commandPayload = JsonConvert.DeserializeObject<CommandPayload>(message);
+      var message = Encoding.UTF8.GetString(bodyContent);
       
-      _howbotService.ProcessCommand(commandPayload);
-    });*/
+      if (string.IsNullOrWhiteSpace(message))
+      {
+        return new CommandResponse();
+      }
+
+      return await howbotService.HandleCommandAsync(message);
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(HandleMessageRequestAsync));
+      throw;
+    }
   }
 }

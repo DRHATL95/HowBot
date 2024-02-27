@@ -470,7 +470,7 @@ public class MusicModule(
         return;
       }
 
-      var commandResponse = musicService.GetGuildMusicQueueEmbed(player);
+      var commandResponse = musicService.GetMusicQueueForServer(player);
 
       if (!commandResponse.IsSuccessful)
       {

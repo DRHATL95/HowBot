@@ -13,6 +13,7 @@ using Howbot.Core.Entities;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Commands;
 using Howbot.Core.Models.Players;
 using Howbot.Core.Services;
 using Lavalink4NET;
@@ -32,7 +33,6 @@ namespace Howbot.Infrastructure.Services;
 
 public partial class MusicService(
   IEmbedService embedService,
-  IHowbotService howbotService,
   IAudioService audioService,
   IServiceProvider serviceProvider,
   ILoggerAdapter<MusicService> logger)
@@ -93,10 +93,10 @@ public partial class MusicService(
     
     if (result.IsSuccess)
     {
-      if (!howbotService.SessionIds.ContainsKey(guildId))
+      /*if (!howbotService.SessionIds.ContainsKey(guildId))
       {
         howbotService.SessionIds.TryAdd(guildId, result.Player.VoiceState.SessionId);
-      }
+      }*/
       
       return result.Player;
     }
@@ -123,12 +123,18 @@ public partial class MusicService(
     return null;
   }
 
-  public CommandResponse GetGuildMusicQueueEmbed(HowbotPlayer player)
+  public CommandResponse GetMusicQueueForServer(HowbotPlayer player)
   {
     try
     {
       if (player.Queue.Count == 0)
       {
+        if ((player.State is PlayerState.Paused or PlayerState.Playing) && player.CurrentTrack is not null)
+        {
+          // TODO
+          return CommandResponse.Create(true, "No additional songs in queue.", lavalinkTrack: player.CurrentTrack);
+        }
+
         return CommandResponse.Create(false, "No tracks in queue.");
       }
 
@@ -138,8 +144,30 @@ public partial class MusicService(
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(GetGuildMusicQueueEmbed));
+      Logger.LogError(exception, nameof(GetMusicQueueForServer));
       
+      return CommandResponse.Create(false, exception: exception);
+    }
+  }
+  
+  public async ValueTask<CommandResponse> JoinVoiceChannelAsync(ulong guildId, ulong voiceChannelId, CancellationToken cancellationToken = default)
+  {
+    try
+    {
+      // TODO: Look if VoiceStateBehavior is required, and what each option does for this command
+      PlayerRetrieveOptions retrieveOptions = new PlayerRetrieveOptions { ChannelBehavior = PlayerChannelBehavior.Join, VoiceStateBehavior = MemberVoiceStateBehavior.AlwaysRequired };
+      
+      // The player retrieve options will create a new player if needed. 
+      var playerResult = await audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
+        CreatePlayerAsync,
+        retrieveOptions: retrieveOptions, options: new OptionsWrapper<HowbotPlayerOptions>(new HowbotPlayerOptions()),
+        cancellationToken: cancellationToken);
+
+      return CommandResponse.Create(true, "Successfully joined voice channel.", player: playerResult.Player);
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, nameof(JoinVoiceChannelAsync));
       return CommandResponse.Create(false, exception: exception);
     }
   }
@@ -195,6 +223,11 @@ public partial class MusicService(
     }
 
     return tracks;
+  }
+
+  public async ValueTask<HowbotPlayer> GetPlayerByGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default)
+  {
+    return await audioService.Players.GetPlayerAsync(guildId, cancellationToken) as HowbotPlayer;
   }
   
   #region Music Module Commands

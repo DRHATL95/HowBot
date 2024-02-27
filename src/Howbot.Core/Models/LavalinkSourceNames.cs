@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Howbot.Core.Models.Players;
+namespace Howbot.Core.Models;
 
 public enum LavalinkSourceNames
 {

@@ -120,4 +120,25 @@ public abstract record Constants
     
     public const string RpcQueue = "rpc_queue";
   }
+
+  // TODO: Needs a better name, this will allow the web API to call the publisher and then the consumer will know what to do with the message.
+  public struct HowbotApi
+  {
+    public const string Session = "howbot.session";
+    
+    public struct Music
+    {
+      public const string Play = "music.play";
+      public const string Pause = "music.pause";
+      public const string Resume = "music.resume";
+      public const string Skip = "music.skip";
+      public const string Volume = "music.volume";
+      public const string NowPlaying = "music.nowplaying";
+      public const string Leave = "music.leave";
+      public const string Radio = "music.radio";
+      public const string Shuffle = "music.shuffle";
+      public const string Lyrics = "music.lyrics";
+      public const string Queue = "music.queue";
+    }
+  }
 }

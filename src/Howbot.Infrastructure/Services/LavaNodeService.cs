@@ -48,6 +48,13 @@ public class LavaNodeService(
 
     GC.SuppressFinalize(this);
   }
+  
+  public async Task<string> GetSessionIdForGuildAsync(ulong guildId)
+  {
+    var player = await audioService.Players.GetPlayerAsync<HowbotPlayer>(guildId);
+
+    return player?.VoiceState.SessionId;
+  }
 
   #region Events
 

@@ -62,6 +62,8 @@ public class MessageQueuePublisherService : IDisposable
 
   public void Dispose()
   {
+    GC.SuppressFinalize(this);
+    
     _channel.Close();
     _connection.Close();
   }
