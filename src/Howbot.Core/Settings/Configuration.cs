@@ -17,6 +17,8 @@ public static class Configuration
 {
   // The names of the environment variable
   private const string DiscordApiToken = "DiscordToken";
+  private const string DiscordOAuthClientIdKey = "DiscordOAuthClientId";
+  private const string DiscordOAuthClientSecretKey = "DiscordOAuthClientSecret";
   // private const string YouTube = "YoutubeToken";
   private const string Postgres = "HowbotPostgres";
   private const string Lavalink = "DiscordLavalinkServerPassword";
@@ -29,6 +31,10 @@ public static class Configuration
   private const string RabbitMqPasswordKey = "RabbitMQPassword";
 
   public static string DiscordToken => GetTokenByName(DiscordApiToken);
+  
+  public static string DiscordOAuthClientId => GetTokenByName(DiscordOAuthClientIdKey);
+  
+  public static string DiscordOAuthClientSecret => GetTokenByName(DiscordOAuthClientSecretKey);
 
   // public static string YouTubeToken => GetTokenByName(YouTube);
 

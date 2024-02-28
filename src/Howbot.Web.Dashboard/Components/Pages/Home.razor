@@ -1,29 +1,83 @@
-﻿@using Newtonsoft.Json
+﻿@page "/"
+
+@using Howbot.Core.Models
+@using System.Security.Claims
 @inherits ComponentBase
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject HttpClient HttpClient
 
-@page "/"
+@rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="d-flex align-items-center vh-100 text-center">
+    <div class="container">
+        <h1 class="display-4">Welcome to HowBot Dashboard!</h1>
+        <p class="lead">Manage your Discord bot in an easy and efficient way.</p>
+        <NavLink class="btn btn-light btn-lg" href="/settings">Configure Bot</NavLink>
+    </div>
+</div>
 
-@if (!string.IsNullOrEmpty(Message))
-{
-    <p>@Message</p>
-}
-else
-{
-    <p>Nothing in Queue!</p>
-}
+<h2 class="text-center mt-2" style="color: var(--nord4);">Music For Guild</h2>
+<div class="container mt-4">
+    <div class="row">
+        @foreach (var guild in _userGuilds)
+        {
+            <div class="col-md-4">
+                <div class="card mb-4" style="background-color: var(--nord1); color: var(--nord4);">
+                    @if (guild.Icon != null)
+                    {
+                        <img class="card-img-top" src="@guild.Icon" alt="@guild.Name">
+                    }
+                    <div class="card-body text-center">
+                        <h5 class="card-title">@guild.Name</h5>
+                        <button class="btn btn-primary" style="background-color: var(--nord7); border-color: var(--nord7);" @onclick="() => NavigateToMusicQueue(guild.Id)">Select</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
 
 @code {
+    private List<GuildDto> _userGuilds = [];
 
-    private string? Message { get; set; }
-    
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
+
+        // Fetch the guilds that the user is a part of
+        _userGuilds = await FetchUserGuildsAsync();
     }
 
+    private async Task<List<GuildDto>> FetchUserGuildsAsync()
+    {
+        var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authenticationState.User;
+
+        ulong userId = 0;
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            var x = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(x))
+            {
+                ulong.TryParse(x, out userId);
+            }
+        }
+
+        using var response = await HttpClient.GetAsync($"api/Discord/user/{userId}/guilds");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return new List<GuildDto>();
+        }
+
+        return await response.Content.ReadFromJsonAsync<List<GuildDto>>() ?? new List<GuildDto>();
+    }
+
+    private void NavigateToMusicQueue(ulong guildId)
+    {
+        NavigationManager.NavigateTo($"/music/{guildId}");
+    }
 }

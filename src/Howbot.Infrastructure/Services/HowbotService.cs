@@ -18,9 +18,7 @@ namespace Howbot.Infrastructure.Services;
 
 public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClientService discordClientService, IMusicService musicService, IServiceProvider serviceProvider, ILoggerAdapter<HowbotService> logger) : ServiceBase<HowbotService>(logger), IHowbotService, IDisposable
 {
-  // TODO: This will be used to store the session IDs of the guilds that the bot is connected to
-  // IMPORTANT: The music functionality requires session IDs to get the player for the guild
-  public ConcurrentDictionary<ulong, string> SessionIds { get; set; } = new();
+  #region Background Service Methods
 
   public async Task StartWorkerServiceAsync(CancellationToken cancellationToken = default)
   {
@@ -55,7 +53,11 @@ public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClie
       throw;
     }
   }
-  
+
+  #endregion Background Service Methods
+
+  #region Discord Bot Methods
+
   private async Task LoginBotToDiscordAsync(string discordToken, CancellationToken cancellationToken = default)
   {
     try
@@ -113,43 +115,21 @@ public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClie
     }
   }
 
-  public async Task<CommandResponse> HandleCommandAsync(string commandAsJson)
+  #endregion
+
+  #region Command Handling Methods
+
+  public async Task<CommandResponse> HandleCommandAsync(string commandAsJson, CancellationToken cancellationToken = default)
   {
     try
     {
+      cancellationToken.ThrowIfCancellationRequested();
+      
       Guard.Against.NullOrEmpty(commandAsJson, nameof(commandAsJson));
       
       var command = JsonSerializer.Deserialize<CommandRequest>(commandAsJson);
 
-      switch (command.CommandType)
-      {
-        case CommandTypes.SendMessage:
-          await HandleSendMessageCommandAsync(command);
-          break;
-        case CommandTypes.SendEmbed:
-          break;
-        case CommandTypes.JoinVoiceChannel:
-          await HandleJoinVoiceChannelCommandAsync(command);
-          break;
-        case CommandTypes.LeaveVoiceChannel:
-          break;
-        case CommandTypes.Play:
-          break;
-        case CommandTypes.Stop:
-          break;
-        case CommandTypes.Skip:
-          break;
-        case CommandTypes.Pause:
-          break;
-        case CommandTypes.Resume:
-          break;
-        case CommandTypes.Queue:
-          var response = await HandleGetQueueCommandAsync(command);
-          return response;
-        case CommandTypes.Unknown:
-        default:
-          break;
-      }
+      await HandleCommandExecuteAsync(command);
     }
     catch (Exception exception)
     {
@@ -160,6 +140,41 @@ public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClie
     return new CommandResponse();
   }
 
+  private async ValueTask<CommandResponse> HandleCommandExecuteAsync(CommandRequest command)
+  {
+    switch (command.CommandType)
+    {
+      case CommandTypes.SendMessage:
+        await HandleSendMessageCommandAsync(command);
+        break;
+      case CommandTypes.SendEmbed:
+        break;
+      case CommandTypes.JoinVoiceChannel:
+        await HandleJoinVoiceChannelCommandAsync(command);
+        break;
+      case CommandTypes.LeaveVoiceChannel:
+        break;
+      case CommandTypes.Play:
+        break;
+      case CommandTypes.Stop:
+        break;
+      case CommandTypes.Skip:
+        break;
+      case CommandTypes.Pause:
+        break;
+      case CommandTypes.Resume:
+        break;
+      case CommandTypes.Queue:
+        var response = await HandleGetQueueCommandAsync(command);
+        return response;
+      case CommandTypes.Unknown:
+      default:
+        break;
+    }
+    
+    return new CommandResponse();
+  }
+  
   private async Task<CommandResponse> HandleGetQueueCommandAsync(CommandRequest command)
   {
     try
@@ -259,17 +274,28 @@ public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClie
       throw;
     }
   }
+  
+  #endregion
+
+  #region Helper Methods
 
   private IVoiceChannel GetVoiceChannel(ulong channelId)
   {
     return discordSocketClient.GetChannel(channelId) as IVoiceChannel;
   }
 
+  /// <summary>
+  /// Gets the voice channel the bot is currently connected to in the specified guild.
+  /// </summary>
+  /// <param name="guild"></param>
+  /// <returns>The voice channel or null</returns>
   private SocketVoiceChannel GetVoiceChannel(IGuild guild)
   {
     var socketGuild = guild as SocketGuild;
     return socketGuild?.VoiceChannels.FirstOrDefault(x => x.Users.Any(u => u.Id == discordSocketClient.CurrentUser.Id));
   }
+
+  #endregion
   
   public void Dispose()
   {

@@ -17,4 +17,8 @@
       <ProjectReference Include="..\Howbot.Core\Howbot.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="AspNet.Security.OAuth.Discord" />
+    </ItemGroup>
+
 </Project>

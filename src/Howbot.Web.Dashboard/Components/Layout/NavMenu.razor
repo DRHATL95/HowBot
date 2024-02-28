@@ -1,21 +1,76 @@
-﻿<nav class="navbar navbar-expand-lg navbar-custom">
+﻿@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+
+<nav class="navbar navbar-expand-lg navbar-custom mt-2">
     <div class="container-fluid justify-content-center justify-content-lg-between">
-        <a class="navbar-brand" href="#">MusicBot Dashboard</a>
+        <a class="navbar-brand" href="/">Howbot Dashboard (Beta)</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNavDropdown">
             <ul class="navbar-nav mx-auto">
-                <li class="nav-item">
+                @* <li class="nav-item">
                     <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Home</NavLink>
                 </li>
                 <li class="nav-item">
-                    <NavLink class="nav-link" href="/music-queue">Music Queue</NavLink>
-                </li>
+                    <NavLink class="nav-link" href="/music">Music</NavLink>
+                 </li>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/settings">Settings</NavLink>
-                </li>
+                </li> *@
             </ul>
+            <div class="navbar-nav">
+                @if (_isAuthenticated)
+                {
+                    <span class="navbar-text me-3">Welcome, @_userName</span>
+                    <button class="btn btn-outline-danger" @onclick="Logout">Logout</button>
+                }
+                else
+                {
+                    <NavLink class="btn btn-outline-light discord-login-btn" href="/authentication/login/discord">
+                        <img src="/img/discord-mark-white.svg" alt="Discord logo" width="20" class="me-1"> Sign In With Discord
+                    </NavLink>
+                }
+            </div>
         </div>
     </div>
 </nav>
+
+<style>
+    .discord-login-btn {
+        border-color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.5)
+    }
+
+    .discord-login-btn:hover {
+        background-color: #5865F2;
+        color: white
+    }
+</style>
+
+@code {
+    private bool _isAuthenticated;
+    private string? _userName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null)
+        {
+            _isAuthenticated = user.Identity.IsAuthenticated;
+
+            if (_isAuthenticated)
+            {
+                _userName = user.Identity.Name; // Or any other property you need
+            }
+        }
+    }
+
+    private void Logout()
+    {
+        NavigationManager.NavigateTo("/authentication/logout", forceLoad: true);
+    }
+}

@@ -67,7 +67,7 @@ public class MessageQueueConsumerService(
     }
   }
 
-  private async Task<CommandResponse> HandleMessageRequestAsync(byte[] bodyContent)
+  private async Task<CommandResponse> HandleMessageRequestAsync(byte[] bodyContent, CancellationToken cancellationToken = default)
   {
     try
     {
@@ -78,12 +78,12 @@ public class MessageQueueConsumerService(
         return new CommandResponse();
       }
 
-      return await howbotService.HandleCommandAsync(message);
+      return await howbotService.HandleCommandAsync(message, cancellationToken);
     }
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(HandleMessageRequestAsync));
-      throw;
+      return CommandResponse.Create(false, exception.Message);
     }
   }
 }

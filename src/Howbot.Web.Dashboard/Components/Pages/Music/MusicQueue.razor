@@ -1,11 +1,16 @@
-﻿@page "/music-queue"
+﻿@page "/music/{GuildId:long}"
+@attribute [Authorize]
+@inherits ComponentBase
+@inject HttpClient HttpClient
 @rendermode InteractiveServer
 
 <PageTitle>Music Queue</PageTitle>
 
 @using Lavalink4NET.Tracks
+@using Microsoft.AspNetCore.Authorization
+@using Howbot.Core.Models
 
-<h3 class="text-center mb-5">Music Queue</h3>
+<h2 class="text-center mb-5">Music Queue For @SelectedGuild?.Name</h2>
 
 <div class="input-group mb-3">
     <input type="text" class="form-control" placeholder="Search songs..." @bind="_searchQuery">
@@ -20,7 +25,7 @@
             <h5 class="card-title">Now Playing</h5>
             <p class="card-text">@_currentTrack.Title by @_currentTrack.Author</p>
         </div>
-    </div>   
+    </div>
 }
 
 @if (_musicQueue.Any())
@@ -43,21 +48,51 @@ else
     private string? _searchQuery;
     private LavalinkTrack? _currentTrack; // Assuming you have a Track model
     private readonly List<LavalinkTrack> _musicQueue = []; // This would be populated from your backend
-    
+
+    private GuildDto? SelectedGuild { get; set; }
+
+    [Parameter]
+    public long GuildId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await LoadInitialDataAsync()
+            .ConfigureAwait(false);
+    }
+
+    private async Task LoadInitialDataAsync()
+    {
+        try
+        {
+            var response = await HttpClient.GetAsync($"/api/Discord/guild/{(ulong)GuildId}");
+            if (response.IsSuccessStatusCode)
+            {
+                SelectedGuild = await response.Content.ReadFromJsonAsync<GuildDto>() ?? new GuildDto();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
     private void SearchSongs()
     {
         if (string.IsNullOrWhiteSpace(_searchQuery))
         {
             return;
         }
-        
+
         var track = new LavalinkTrack
-        {
-            Title = "The Best Song",
-            Identifier = "123",
-            Author = "The Best Artist",
-        };
-        
+            {
+                Title = "The Best Song",
+                Identifier = "123",
+                Author = "The Best Artist",
+            };
+
         if (_currentTrack != null)
         {
             _musicQueue.Add(track);
