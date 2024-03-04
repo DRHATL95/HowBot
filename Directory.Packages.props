@@ -34,7 +34,7 @@
     <PackageVersion Include="Lavalink4NET.Discord.NET" Version="4.0.11" />
     <PackageVersion Include="Lavalink4NET.Integrations.ExtraFilters" Version="4.0.0-beta.3-2" />
     <PackageVersion Include="Lavalink4NET.Integrations.Lavasearch" Version="4.0.11" />
-    <PackageVersion Include="Lavalink4NET.Integrations.Lavasrc" Version="4.0.11" />
+    <PackageVersion Include="Lavalink4NET.Integrations.Lavasrc" Version="4.0.13" />
     <PackageVersion Include="Lavalink4NET.Integrations.SponsorBlock" Version="4.0.0-beta.3-2" />
     <PackageVersion Include="Lavalink4NET.Integrations.TextToSpeech" Version="4.0.0-beta.3-2" />
     <PackageVersion Include="Lavalink4NET.InactivityTracking" Version="4.0.11" />
