@@ -1,13 +1,13 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu/>
-    </div>
+<div class="d-flex flex-column min-vh-100">
+    <NavMenu/>
 
-    <main>
-        <article class="content px-4">
+    <main role="main" class="flex-grow-1">
+        <div class="container py-3">
             @Body
-        </article>
+        </div>
     </main>
+
+    <Footer></Footer>
 </div>

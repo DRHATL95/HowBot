@@ -1,13 +1,10 @@
-using Discord;
+﻿using Discord;
 using Discord.Rest;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
 using Howbot.Infrastructure.Services;
-using Lavalink4NET;
-using Lavalink4NET.Extensions;
 using Lavalink4NET.Rest;
-using Lavalink4NET.Socket;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);

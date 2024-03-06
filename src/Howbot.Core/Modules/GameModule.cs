@@ -10,7 +10,6 @@ namespace Howbot.Core.Modules;
 public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
-  
   [SlashCommand(Constants.Commands.RollCommandName, Constants.Commands.RollCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   public async Task RollCommandAsync([Summary("totalDice", "Amount of dice to roll. Max is 10.")] int amountOfDice = 1)
@@ -29,26 +28,27 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
           await ModifyOriginalResponseAsync(properties =>
             properties.Content = "You can't roll more than 10 dice at once!");
           return;
+
         case > 1:
-        {
-          var rolls = new int[amountOfDice];
-
-          for (var i = 0; i < amountOfDice; i++)
           {
-            rolls[i] = random.Next(1, 7);
+            var rolls = new int[amountOfDice];
+
+            for (var i = 0; i < amountOfDice; i++)
+            {
+              rolls[i] = random.Next(1, 7);
+            }
+
+            await ModifyOriginalResponseAsync(
+              properties => properties.Content = $"You rolled {string.Join(", ", rolls)}!");
+            return;
           }
-
-          await ModifyOriginalResponseAsync(
-            properties => properties.Content = $"You rolled {string.Join(", ", rolls)}!");
-          return;
-        }
         default:
-        {
-          var roll = random.Next(1, 7);
+          {
+            var roll = random.Next(1, 7);
 
-          await ModifyOriginalResponseAsync(properties => properties.Content = $"You rolled a {roll}!");
-          break;
-        }
+            await ModifyOriginalResponseAsync(properties => properties.Content = $"You rolled a {roll}!");
+            break;
+          }
       }
     }
     catch (Exception exception)
@@ -110,7 +110,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
       throw;
     }
   }
-  
+
   [SlashCommand("eft", "Search for EFT items on the flea market.", true, RunMode.Async)]
   public async Task EftCommandAsync([Summary("itemName", "The name of the item to search for.")] string itemName)
   {
@@ -119,13 +119,13 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     try
     {
       var priceTuple = await httpService.GetTarkovMarketPriceByItemNameAsync(itemName);
-      
+
       if (priceTuple is null)
       {
         await ModifyOriginalResponseAsync(properties => properties.Content = "Failed to get Tarkov market price.");
         return;
       }
-      
+
       await ModifyOriginalResponseAsync(properties => properties.Content = $"The item **{priceTuple.Item1}** is being bought by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
     }
     catch (Exception exception)

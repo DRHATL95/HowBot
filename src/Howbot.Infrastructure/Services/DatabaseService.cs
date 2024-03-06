@@ -17,7 +17,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     try
     {
       Guard.Against.Null(guild, nameof(guild));
-      
+
       repository.Add(guild);
     }
     catch (ArgumentNullException)
@@ -59,7 +59,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     try
     {
       Guard.Against.NegativeOrZero((long)guildId, nameof(guildId));
-      
+
       var guildEntity = repository.GetById<Guild>(guildId);
       if (guildEntity is not null)
       {
@@ -125,16 +125,16 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       {
         throw new ArgumentException("Invalid guild id");
       }
-      
+
       var guildEntity = repository.GetById<Guild>(guildId);
       if (guildEntity is null)
       {
         Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
         return;
       }
-      
+
       guildEntity.SearchProvider = searchProviderType;
-      
+
       await repository.UpdateAsync(guildEntity);
     }
     catch (Exception exception)

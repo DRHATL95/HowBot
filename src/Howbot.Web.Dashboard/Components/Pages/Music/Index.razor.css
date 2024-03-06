@@ -1,0 +1,11 @@
+﻿.bg-nord1 {
+    background-color: var(--nord1);
+}
+
+.bg-nord2 {
+    background-color: var(--nord2);
+}
+
+.text-nord4 {
+    color: var(--nord4);
+}

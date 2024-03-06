@@ -5,7 +5,6 @@ public enum CommandTypes
   Unknown = 0,
   SendMessage = 1,
   SendEmbed = 2,
-  // Music Commands
   JoinVoiceChannel = 3,
   LeaveVoiceChannel = 4,
   Play = 5,
@@ -14,4 +13,8 @@ public enum CommandTypes
   Pause = 8,
   Resume = 9,
   Queue = 10,
+  IsPlaying = 11,
+  Session = 12,
+  Guild = 13,
+  Guilds = 14
 }

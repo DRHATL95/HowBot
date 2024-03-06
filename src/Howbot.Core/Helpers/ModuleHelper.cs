@@ -30,14 +30,14 @@ public static class ModuleHelper
     { Constants.Commands.ShuffleCommandName, "/shuffle" },
     { Constants.Commands.NowPlayingCommandName, "/nowplaying" }
   };
-  
+
   public static void HandleCommandFailed(CommandResponse commandResponse)
   {
     ArgumentNullException.ThrowIfNull(commandResponse, nameof(commandResponse));
 
     if (commandResponse.Exception != null)
     {
-      throw new CommandException(commandResponse.Exception.Message, commandResponse.Exception.InnerException);
+      throw new CommandException(commandResponse.Exception.Message, commandResponse.Exception?.InnerException ?? new Exception());
     }
 
     if (!string.IsNullOrEmpty(commandResponse.Message))
@@ -46,7 +46,7 @@ public static class ModuleHelper
       Log.Logger.Error(commandResponse.Message);
     }
   }
-  
+
   public static bool CheckValidCommandParameter(params object[] args)
   {
     foreach (var arg in args)
@@ -67,7 +67,7 @@ public static class ModuleHelper
 
     return false;
   }
-  
+
   public static TimeSpan ConvertToTimeSpan(int hours, int minutes, int seconds)
   {
     if (hours == 0 && minutes == 0 && seconds == 0)
@@ -110,7 +110,7 @@ public static class ModuleHelper
     {
       if (response.Exception != null)
       {
-        throw new CommandException(response.Exception.Message, response.Exception.InnerException);
+        throw new CommandException(response.Exception.Message, response.Exception?.InnerException ?? new Exception());
       }
 
       if (!string.IsNullOrEmpty(response.Message))

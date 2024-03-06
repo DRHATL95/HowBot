@@ -76,7 +76,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
   [RequireUserPermission(GuildPermission.Administrator | GuildPermission.BanMembers |
                          GuildPermission.UseApplicationCommands)]
   [RequireBotPermission(GuildPermission.Administrator | GuildPermission.BanMembers)]
-  public async Task BanUserCommandAsync(string username, string reason = null)
+  public async Task BanUserCommandAsync(string username, string? reason = null)
   {
     await DeferAsync();
 
@@ -107,7 +107,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
   [RequireUserPermission(GuildPermission.Administrator | GuildPermission.BanMembers |
                          GuildPermission.UseApplicationCommands)]
   [RequireBotPermission(GuildPermission.Administrator | GuildPermission.BanMembers)]
-  public async Task UnbanUserCommandAsync(string username, string reason = null)
+  public async Task UnbanUserCommandAsync(string username)
   {
     await DeferAsync();
 

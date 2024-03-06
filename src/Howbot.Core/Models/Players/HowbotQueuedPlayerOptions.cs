@@ -11,6 +11,6 @@ public sealed record HowbotPlayerOptions() : QueuedLavalinkPlayerOptions
     LastRequestedBy = lastRequestedBy;
   }
 
-  public ITextChannel TextChannel { get; }
-  public IUser LastRequestedBy { get; }
+  public ITextChannel? TextChannel { get; }
+  public IUser? LastRequestedBy { get; }
 }

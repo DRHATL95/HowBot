@@ -1,0 +1,44 @@
+﻿@page "/music/{GuildId:long}"
+@attribute [Authorize]
+@inherits ComponentBase
+@inject HttpClient HttpClient
+@rendermode InteractiveServer
+
+<PageTitle>Music - @(Constants.Discord.BotName)</PageTitle>
+
+@using Microsoft.AspNetCore.Authorization
+@using Howbot.Core.Models
+
+<h2 class="text-center mb-5 text-nord4">Music Queue for @SelectedGuild?.Name</h2>
+
+<div class="input-group mb-3">
+    <input type="text" class="form-control me-1" placeholder="Search songs..." @bind="SearchQuery">
+    <button class="btn btn-nord" type="button" @onclick="SearchSongs">Search</button>
+</div>
+
+
+@if (CurrentTrack != null)
+{
+    <div class="card mb-3 bg-nord1">
+        <div class="card-body">
+            <h5 class="card-title text-nord4">Now Playing</h5>
+            <p class="card-text text-nord4">@CurrentTrack.Title by @CurrentTrack.Author</p>
+        </div>
+    </div>
+}
+
+@if (Queue.Any())
+{
+    <ul class="list-group">
+        @foreach (var track in Queue)
+        {
+            <li class="list-group-item bg-nord2 text-nord4">
+                @track.Title by @track.Author
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p class="text-nord4">No tracks in queue.</p>
+}

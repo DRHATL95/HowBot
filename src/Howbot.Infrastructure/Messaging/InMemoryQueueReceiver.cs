@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using Howbot.Core.Interfaces;
@@ -16,7 +15,7 @@ public class InMemoryQueueReceiver : IQueueReceiver
   /// </summary>
   /// /
   public static readonly Queue<string> MessageQueue = new();
-  
+
   /// <summary>
   ///   Retrieves a message from the message queue asynchronously.
   /// </summary>
@@ -28,7 +27,7 @@ public class InMemoryQueueReceiver : IQueueReceiver
     Guard.Against.NullOrWhiteSpace(queueName, nameof(queueName));
 
     await Task.CompletedTask;
-    
+
     return MessageQueue.Count > 0 ? MessageQueue.Dequeue() : string.Empty;
 
     /*return await Task.Run(() =>

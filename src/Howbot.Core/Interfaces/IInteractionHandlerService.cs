@@ -1,6 +1,8 @@
-﻿namespace Howbot.Core.Interfaces;
+﻿using System.Threading.Tasks;
+
+namespace Howbot.Core.Interfaces;
 
 public interface IInteractionHandlerService
 {
-  void Initialize();
+  Task InitializeAsync();
 }

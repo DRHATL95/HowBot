@@ -9,7 +9,6 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Exceptions;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Permissions.Bot;
@@ -127,7 +126,7 @@ public class GeneralModule(
                          GuildPermission.ViewChannel)]
   public async Task HelpCommandAsync(
     [Summary("command", "The name of the command to get help for.")]
-    string commandName = null)
+    string? commandName = null)
   {
     try
     {
@@ -177,7 +176,8 @@ public class GeneralModule(
             {
               continuationFields.Add(new EmbedFieldBuilder
               {
-                Name = $"{moduleName} (cont.)", Value = string.Join("\n", commandList)
+                Name = $"{moduleName} (cont.)",
+                Value = string.Join("\n", commandList)
               });
               commandList.Clear();
             }

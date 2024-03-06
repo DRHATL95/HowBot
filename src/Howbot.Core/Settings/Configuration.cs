@@ -17,23 +17,26 @@ public static class Configuration
 {
   // The names of the environment variable
   private const string DiscordApiToken = "DiscordToken";
+
   private const string DiscordOAuthClientIdKey = "DiscordOAuthClientId";
   private const string DiscordOAuthClientSecretKey = "DiscordOAuthClientSecret";
+
   // private const string YouTube = "YoutubeToken";
   private const string Postgres = "HowbotPostgres";
+
   private const string Lavalink = "DiscordLavalinkServerPassword";
   private const string LavalinkAddress = "DiscordLavalinkServerAddress";
   private const string WatchTogetherKey = "Watch2GetherKey";
-  
+
   private const string RabbitMqHostNameKey = "RabbitMQHost";
   private const string RabbitMqPortKey = "RabbitMQPort";
   private const string RabbitMqUserNameKey = "RabbitMQUser";
   private const string RabbitMqPasswordKey = "RabbitMQPassword";
 
   public static string DiscordToken => GetTokenByName(DiscordApiToken);
-  
+
   public static string DiscordOAuthClientId => GetTokenByName(DiscordOAuthClientIdKey);
-  
+
   public static string DiscordOAuthClientSecret => GetTokenByName(DiscordOAuthClientSecretKey);
 
   // public static string YouTubeToken => GetTokenByName(YouTube);
@@ -45,13 +48,13 @@ public static class Configuration
   private static string LavaNodePassword => GetTokenByName(Lavalink);
 
   private static string LavaNodeAddress => GetTokenByName(LavalinkAddress);
-  
+
   private static string RabbitMqHostName => GetTokenByName(RabbitMqHostNameKey);
-  
+
   private static string RabbitMqPort => GetTokenByName(RabbitMqPortKey);
-  
+
   private static string RabbitMqUserName => GetTokenByName(RabbitMqUserNameKey);
-  
+
   private static string RabbitMqPassword => GetTokenByName(RabbitMqPasswordKey);
 
   /// <summary>
@@ -77,7 +80,9 @@ public static class Configuration
   /// </summary>
   public static AudioServiceOptions AudioServiceOptions => new()
   {
-    Passphrase = LavaNodePassword, BaseAddress = LavalinkUrl, HttpClientName = Constants.Discord.BotName
+    Passphrase = LavaNodePassword,
+    BaseAddress = LavalinkUri,
+    HttpClientName = Constants.Discord.BotName
   };
 
   /// <summary>
@@ -86,7 +91,7 @@ public static class Configuration
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
-  public static Uri LavalinkUrl { get; } = new(LavaNodeAddress);
+  public static Uri LavalinkUri { get; } = new(LavaNodeAddress);
 
   /// <summary>
   ///   Determines if the application is running in debug mode
@@ -100,7 +105,7 @@ public static class Configuration
       return false;
 #endif
   }
-  
+
   public static ConnectionFactory RabbitMqConnectionFactory => new()
   {
     HostName = RabbitMqHostName,
@@ -129,7 +134,7 @@ public static class Configuration
     if (string.IsNullOrEmpty(token))
     {
       // 9/27/23 - Add support for secrets.json
-      token = ConfigurationHelper.HostConfiguration[tokenName];
+      token = ConfigurationHelper.HostConfiguration?[tokenName];
     }
 
     return token ?? string.Empty;

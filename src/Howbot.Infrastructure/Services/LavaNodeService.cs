@@ -34,7 +34,7 @@ public class LavaNodeService(
     audioService.DiscordClient.VoiceServerUpdated += DiscordClientOnVoiceServerUpdated;
     audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
   }
-  
+
   public async ValueTask DisposeAsync()
   {
     await audioService.DisposeAsync();
@@ -48,7 +48,7 @@ public class LavaNodeService(
 
     GC.SuppressFinalize(this);
   }
-  
+
   public async Task<string> GetSessionIdForGuildAsync(ulong guildId)
   {
     var player = await audioService.Players.GetPlayerAsync<HowbotPlayer>(guildId);

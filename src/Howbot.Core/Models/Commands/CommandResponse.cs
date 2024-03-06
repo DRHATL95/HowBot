@@ -1,5 +1,4 @@
-﻿#nullable enable
-using System;
+﻿using System;
 using Discord;
 using Howbot.Core.Models.Players;
 using Lavalink4NET.Tracks;
@@ -30,7 +29,7 @@ public class CommandResponse
       Metadata = metadata
     };
   }
-  
+
   public static CommandResponse Create(CreateCommandResponseParameters parameters)
   {
     return new CommandResponse
@@ -47,8 +46,8 @@ public class CommandResponse
 
   public override string ToString()
   {
-    return !string.IsNullOrEmpty(this.Message) 
-      ? this.Message 
+    return !string.IsNullOrEmpty(this.Message)
+      ? this.Message
       : this.Embed?.ToString() ?? string.Empty;
   }
 }

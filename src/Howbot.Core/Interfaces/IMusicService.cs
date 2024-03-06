@@ -16,6 +16,8 @@ public interface IMusicService
 {
   void Initialize();
 
+  ValueTask<string> GetSessionIdForGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default);
+
   ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player,
     SearchProviderTypes searchProviderType, string searchRequest, IGuildUser user,
     IVoiceState voiceState, ITextChannel textChannel);
@@ -46,8 +48,8 @@ public interface IMusicService
 
   ValueTask<CommandResponse> JoinVoiceChannelAsync(ulong guildId, ulong voiceChannelId,
     CancellationToken cancellationToken = default);
-  
+
   CommandResponse GetMusicQueueForServer(HowbotPlayer player);
-  
+
   ValueTask<HowbotPlayer> GetPlayerByGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default);
 }

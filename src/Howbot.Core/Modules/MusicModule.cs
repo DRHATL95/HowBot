@@ -54,7 +54,7 @@ public class MusicModule(
         var user = Context.User as IGuildUser ?? throw new ArgumentNullException(nameof(Context.User));
         var voiceState = Context.User as IVoiceState ?? throw new ArgumentNullException(nameof(Context.User));
         var channel = Context.Channel as ITextChannel ?? throw new ArgumentNullException(nameof(Context.Channel));
-        
+
         int tracksBeforePlay = player.Queue.Count;
 
         var response =
@@ -77,10 +77,17 @@ public class MusicModule(
           }
           else
           {
-            var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
-              user);
+            if (response.LavalinkTrack is null)
+            {
+              await FollowupAsync("🎵 Added track to the queue.");
+            }
+            else
+            {
+              var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
+                               user);
 
-            await FollowupAsync(embed: embed as Embed); 
+              await FollowupAsync(embed: embed as Embed);
+            }
           }
         }
         else
@@ -418,7 +425,7 @@ public class MusicModule(
         await FollowupAsync("😖 No lyrics found.");
         return;
       }
-      
+
       // Filter out the french at the beginning (Paroles de la chanson <title> par <artist>)
       var index = lyrics.IndexOf("\r\n", StringComparison.Ordinal);
       lyrics = lyrics.Remove(0, index + 2);
@@ -433,7 +440,7 @@ public class MusicModule(
         for (int i = 0; i < lyrics.Length; i += 2000)
         {
           await DeleteOriginalResponseAsync();
-          
+
           await Context.Channel.SendMessageAsync(lyrics.Substring(i, Math.Min(2000, lyrics.Length - i)));
         }
       }

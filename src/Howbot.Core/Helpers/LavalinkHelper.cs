@@ -1,6 +1,5 @@
 ﻿using Howbot.Core.Extensions;
 using Howbot.Core.Models;
-using Howbot.Core.Models.Players;
 using Lavalink4NET.Rest.Entities.Tracks;
 
 namespace Howbot.Core.Helpers;
@@ -22,7 +21,7 @@ public static class LavalinkHelper
     };
   }
 
-  public static string GetSourceAsString(string sourceName)
+  public static string GetSourceAsString(string? sourceName)
   {
     if (string.IsNullOrWhiteSpace(sourceName)) { return "Unknown"; }
 

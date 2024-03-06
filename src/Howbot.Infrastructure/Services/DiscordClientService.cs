@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using Discord;
@@ -11,7 +10,6 @@ using Howbot.Core.Models;
 using Howbot.Core.Models.Exceptions;
 using Howbot.Core.Services;
 using Howbot.Core.Settings;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Messages.Debug;
 using static Howbot.Core.Models.Messages.Errors;
@@ -20,7 +18,8 @@ namespace Howbot.Infrastructure.Services;
 
 public class DiscordClientService(
   DiscordSocketClient discordSocketClient,
-  IInteractionService interactionService,
+  ICommandHandlerService commandHandlerService,
+  InteractionService interactionService,
   ILoggerAdapter<DiscordClientService> logger)
   : ServiceBase<DiscordClientService>(logger), IDiscordClientService, IDisposable
 {
@@ -41,7 +40,7 @@ public class DiscordClientService(
   public override void Initialize()
   {
     base.Initialize();
-    
+
     SubscribeToDiscordSocketEvents();
   }
 
@@ -84,7 +83,7 @@ public class DiscordClientService(
       throw;
     }
   }
-  
+
   public void Dispose()
   {
     UnsubscribeFromDiscordSocketEvents();
@@ -148,11 +147,11 @@ public class DiscordClientService(
   private Task DiscordSocketClientOnLog(LogMessage arg)
   {
     var severity = MapLogSeverity(arg.Severity);
-    
+
     var message = arg.Message ?? arg.Exception?.Message ?? "No message provided";
 
     Logger.Log(severity, message);
-    
+
     return Task.CompletedTask;
   }
 
@@ -250,7 +249,7 @@ public class DiscordClientService(
     if (user.IsBot && user.Id == discordSocketClient.CurrentUser.Id)
     {
       Logger.LogDebug("Voice state update ignored for bot user [{0}].", user.Username);
-      
+
       return Task.CompletedTask;
     }
 
@@ -267,7 +266,7 @@ public class DiscordClientService(
     }
 
     var guildTag = $"{socketVoiceServer.Guild.Value.Name} - {socketVoiceServer.Guild.Value.Id}";
-      
+
     Logger.LogDebug("[{0}] has connected to server [{1}]", LoggedInUsername, guildTag);
 
     return Task.CompletedTask;
@@ -278,28 +277,12 @@ public class DiscordClientService(
     try
     {
       var context = new SocketInteractionContext(discordSocketClient, socketInteraction);
-      var result = await interactionService.ExecuteCommandAsync(context);
 
-      // Due to async nature of InteractionFramework, the result here may always be success.
-      // That's why we also need to handle the InteractionExecuted event.
-      if (!result.IsSuccess)
-      {
-        await DiscordHelper.HandleSocketInteractionErrorAsync(socketInteraction, result, Logger);
-      }
+      await commandHandlerService.HandleCommandRequestAsync(context);
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, "An exception has been thrown while running interaction command");
-
-      if (socketInteraction.Type is InteractionType.ApplicationCommand)
-      {
-        Logger.LogInformation("Attempting to delete the failed command");
-
-        // If exception is thrown, acknowledgement will still be there. This will clean-up.
-        await socketInteraction.DeleteOriginalResponseAsync();
-
-        Logger.LogInformation("Successfully deleted the failed command");
-      }
+      Logger.LogError(exception, nameof(DiscordSocketClientOnInteractionCreated));
     }
   }
 

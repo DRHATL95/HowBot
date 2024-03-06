@@ -17,9 +17,9 @@ public class InMemoryQueueSender : IQueueSender
   public async Task SendMessageToQueueAsync(string message, string queueName)
   {
     await Task.CompletedTask;
-    
+
     InMemoryQueueReceiver.MessageQueue.Enqueue(message);
-    
+
     /*await Task.Run(() =>
     {
       lock (InMemoryQueueReceiver.MessageQueue)

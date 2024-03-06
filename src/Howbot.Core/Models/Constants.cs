@@ -9,27 +9,27 @@ public abstract record Constants
   // public const int ApplicationTimeoutInMs = 3000;
   public const int MaximumMessageCount = 10000;
   public const string DefaultPrefix = "!~";
-  
+
   public static readonly Color ThemeColor = Color.DarkPurple;
 
   public static class Discord
   {
     // Discord Development Server (DevTest2)
     public const ulong DiscordDevelopmentGuildId = 656305202185633810;
-    public const string BotName = "Howbot"; 
+    public const string BotName = "Howbot";
   }
 
   // TODO: Revisit this later
   /*public static class YouTube
   {
     public const string YouTubeBaseShortUrl = "https://youtu.be/";
-    public const string YouTubeBaseLongUrl = "https://www.youtube.com/watch?v="; 
+    public const string YouTubeBaseLongUrl = "https://www.youtube.com/watch?v=";
     public const string YoutubePlaylistRegexPattern = @"^(?:http(?:s)?:\/\/)?(?:www\.)?(?:music\.)?youtube\.com\/playlist\?list=(?<id>[a-zA-Z0-9-_]+)$";
   }*/
 
   public static class RegexPatterns
   {
-    public const string UrlPattern = @"^(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?$"; 
+    public const string UrlPattern = @"^(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?$";
     // public const string PlaylistRegexPattern = @"playlist\s\w+";
   }
 
@@ -37,7 +37,7 @@ public abstract record Constants
   {
     public const string EftApiBaseUrl = "https://api.tarkov.dev/graphql";
   }
-  
+
   public struct Commands
   {
     public const string JoinCommandName = "join";
@@ -102,7 +102,7 @@ public abstract record Constants
 
     public const string BanCommandName = "ban";
     public const string BanCommandDescription = "Permanently ban a user from the server.";
-    
+
     public const string UnbanCommandName = "unban";
     public const string UnbanCommandDescription = "Unban a user from the server.";
 
@@ -117,7 +117,7 @@ public abstract record Constants
   {
     public static TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
     public static TimeSpan DefaultMessageQueueTimeout = TimeSpan.FromMinutes(5);
-    
+
     public const string RpcQueue = "rpc_queue";
   }
 
@@ -125,7 +125,7 @@ public abstract record Constants
   public struct HowbotApi
   {
     public const string Session = "howbot.session";
-    
+
     public struct Music
     {
       public const string Play = "music.play";

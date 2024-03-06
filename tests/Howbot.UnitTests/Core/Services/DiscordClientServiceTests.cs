@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Infrastructure.Services;
@@ -10,16 +11,17 @@ namespace Howbot.UnitTests.Core.Services;
 
 public class DiscordClientServiceTests
 {
-  private static (DiscordClientService, Mock<DiscordSocketClient>, Mock<IInteractionService>, Mock<IServiceProvider>,
+  private static (DiscordClientService, Mock<DiscordSocketClient>, Mock<InteractionService>, Mock<IServiceProvider>,
     Mock<ILoggerAdapter<DiscordClientService>>) Factory()
   {
     var discordSocketClient = new Mock<DiscordSocketClient>();
     var serviceProvider = new Mock<IServiceProvider>();
-    var interactionService = new Mock<IInteractionService>();
+    var interactionService = new Mock<InteractionService>();
+    var commandHandlerService = new Mock<ICommandHandlerService>();
     var logger = new Mock<ILoggerAdapter<DiscordClientService>>();
 
     var discordClientService = new DiscordClientService(discordSocketClient.Object,
-      interactionService.Object, logger.Object);
+      commandHandlerService.Object, interactionService.Object, logger.Object);
 
     return (discordClientService, discordSocketClient, interactionService, serviceProvider, logger);
   }

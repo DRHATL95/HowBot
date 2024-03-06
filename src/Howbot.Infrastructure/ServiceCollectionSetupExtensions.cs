@@ -1,4 +1,5 @@
 ﻿using System;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
@@ -52,34 +53,25 @@ public static class ServiceCollectionSetupExtensions
   {
     // Discord related services
     services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
-    services.AddSingleton(x =>
-      new InteractionService(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<IServiceProvider>(),
-        x.GetRequiredService<ILoggerAdapter<InteractionService>>(), Configuration.InteractionServiceConfig));
 
     // Howbot related services
     services.AddSingleton<IHowbotService, HowbotService>();
-    services.AddSingleton<IVoiceService, VoiceService>();
+    services.AddSingleton<ICommandHandlerService, CommandHandlerService>();
+    services.AddSingleton<IVoiceService, VoiceService>(); // TODO: Remove this service, and add functions to music service or lava node service
     services.AddSingleton<IMusicService, MusicService>();
     services.AddSingleton<IEmbedService, EmbedService>();
     services.AddSingleton<IDiscordClientService, DiscordClientService>();
-    services.AddSingleton<IInteractionService, InteractionService>();
     services.AddSingleton<ILavaNodeService, LavaNodeService>();
+    services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
-    
-    services.AddScoped<IDatabaseService, DatabaseService>();
 
-    // TODO: Revisit this
-    // YouTube related service
-    /*services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
-    {
-      ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.Discord.BotName
-    }));*/
+    services.AddScoped<IDatabaseService, DatabaseService>();
 
     // Lavalink4NET related services
     services.AddLavalink();
     services.ConfigureLavalink(x =>
     {
-      x.BaseAddress = Configuration.LavalinkUrl;
+      x.BaseAddress = Configuration.LavalinkUri;
       x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
     });
     services.AddLyrics();

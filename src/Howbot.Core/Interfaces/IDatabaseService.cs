@@ -17,6 +17,6 @@ public interface IDatabaseService
   Task UpdatePlayerVolumeLevel(ulong playerGuildId, float newVolume);
 
   Task UpdateSearchProviderAsync(ulong guildId, SearchProviderTypes searchProviderType);
-  
+
   bool DoesGuildExist(ulong guildId);
 }

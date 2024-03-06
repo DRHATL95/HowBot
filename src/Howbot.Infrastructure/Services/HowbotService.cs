@@ -1,33 +1,25 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Ardalis.GuardClauses;
-using Discord;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models.Commands;
 using Howbot.Core.Models.Exceptions;
 using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Howbot.Infrastructure.Services;
 
-public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClientService discordClientService, IMusicService musicService, IServiceProvider serviceProvider, ILoggerAdapter<HowbotService> logger) : ServiceBase<HowbotService>(logger), IHowbotService, IDisposable
+public class HowbotService(DiscordSocketClient discordClient, IDiscordClientService discordClientService, IServiceProvider serviceProvider, ILoggerAdapter<HowbotService> logger) : ServiceBase<HowbotService>(logger), IHowbotService, IDisposable
 {
-  #region Background Service Methods
-
   public async Task StartWorkerServiceAsync(CancellationToken cancellationToken = default)
   {
     try
     {
       cancellationToken.ThrowIfCancellationRequested();
-      
-      InitializeHowbotServices(cancellationToken);
 
+      await InitializeHowbotServicesAsync();
+      
       await LoginBotToDiscordAsync(Configuration.DiscordToken, cancellationToken);
 
       await StartDiscordBotAsync(cancellationToken);
@@ -45,7 +37,7 @@ public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClie
     {
       cancellationToken.ThrowIfCancellationRequested();
 
-      await discordSocketClient.StopAsync();
+      await discordClient.StopAsync();
     }
     catch (Exception exception)
     {
@@ -53,10 +45,6 @@ public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClie
       throw;
     }
   }
-
-  #endregion Background Service Methods
-
-  #region Discord Bot Methods
 
   private async Task LoginBotToDiscordAsync(string discordToken, CancellationToken cancellationToken = default)
   {
@@ -82,6 +70,8 @@ public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClie
   {
     try
     {
+      cancellationToken.ThrowIfCancellationRequested();
+      
       await discordClientService.StartDiscordBotAsync();
     }
     catch (Exception exception)
@@ -90,217 +80,40 @@ public class HowbotService(DiscordSocketClient discordSocketClient, IDiscordClie
       throw;
     }
   }
-  
-  private void InitializeHowbotServices(CancellationToken cancellationToken = default)
+
+  private async Task InitializeHowbotServicesAsync()
   {
     try
     {
-      cancellationToken.ThrowIfCancellationRequested();
+      await Task.Run(async () =>
+      {
+        serviceProvider.GetRequiredService<IHowbotService>()?.Initialize();
+        serviceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
+        serviceProvider.GetRequiredService<ILavaNodeService>()?.Initialize();
+        serviceProvider.GetRequiredService<IEmbedService>()?.Initialize();
+        serviceProvider.GetRequiredService<IMusicService>()?.Initialize();
+        
+        var interactionHandlerService = serviceProvider.GetRequiredService<IInteractionHandlerService>();
+        if (interactionHandlerService != null)
+        {
+          await interactionHandlerService.InitializeAsync();
+        }
 
-      serviceProvider.GetRequiredService<IHowbotService>()?.Initialize();
-      serviceProvider.GetRequiredService<IDiscordClientService>()?.Initialize();
-      serviceProvider.GetRequiredService<ILavaNodeService>()?.Initialize();
-      serviceProvider.GetRequiredService<IInteractionHandlerService>()?.Initialize();
-      serviceProvider.GetRequiredService<IEmbedService>()?.Initialize();
-      serviceProvider.GetRequiredService<IMusicService>()?.Initialize();
-      serviceProvider.GetRequiredService<IInteractionService>()?.Initialize();
-
-      using var scope = serviceProvider.CreateScope();
-      scope.ServiceProvider.GetRequiredService<IDatabaseService>()?.Initialize();
+        using var scope = serviceProvider.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IDatabaseService>()?.Initialize();
+      });
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(InitializeHowbotServices));
+      Logger.LogError(exception, nameof(InitializeHowbotServicesAsync));
       throw;
     }
   }
 
-  #endregion
-
-  #region Command Handling Methods
-
-  public async Task<CommandResponse> HandleCommandAsync(string commandAsJson, CancellationToken cancellationToken = default)
-  {
-    try
-    {
-      cancellationToken.ThrowIfCancellationRequested();
-      
-      Guard.Against.NullOrEmpty(commandAsJson, nameof(commandAsJson));
-      
-      var command = JsonSerializer.Deserialize<CommandRequest>(commandAsJson);
-
-      await HandleCommandExecuteAsync(command);
-    }
-    catch (Exception exception)
-    {
-      Logger.LogError(exception, nameof(HandleCommandAsync));
-      throw; // TODO: Re-evaluate this
-    }
-    
-    return new CommandResponse();
-  }
-
-  private async ValueTask<CommandResponse> HandleCommandExecuteAsync(CommandRequest command)
-  {
-    switch (command.CommandType)
-    {
-      case CommandTypes.SendMessage:
-        await HandleSendMessageCommandAsync(command);
-        break;
-      case CommandTypes.SendEmbed:
-        break;
-      case CommandTypes.JoinVoiceChannel:
-        await HandleJoinVoiceChannelCommandAsync(command);
-        break;
-      case CommandTypes.LeaveVoiceChannel:
-        break;
-      case CommandTypes.Play:
-        break;
-      case CommandTypes.Stop:
-        break;
-      case CommandTypes.Skip:
-        break;
-      case CommandTypes.Pause:
-        break;
-      case CommandTypes.Resume:
-        break;
-      case CommandTypes.Queue:
-        var response = await HandleGetQueueCommandAsync(command);
-        return response;
-      case CommandTypes.Unknown:
-      default:
-        break;
-    }
-    
-    return new CommandResponse();
-  }
-  
-  private async Task<CommandResponse> HandleGetQueueCommandAsync(CommandRequest command)
-  {
-    try
-    {
-      Guard.Against.Null(command, nameof(command));
-
-      var guild = discordSocketClient.GetGuild(command.GuildId);
-      if (guild is null)
-      {
-        throw new CommandException("Guild not found.");
-      }
-
-      var voiceChannelId = GetVoiceChannel(guild);
-      if (voiceChannelId is null)
-      {
-        throw new CommandException("Bot is not connected to a voice channel in this guild.");
-      }
-
-      var player = await musicService.GetPlayerByGuildIdAsync(guild.Id);
-      if (player is null)
-      {
-        throw new CommandException("Player not found.");
-      }
-
-      return musicService.GetMusicQueueForServer(player);
-    }
-    catch (Exception exception)
-    {
-      Logger.LogError(exception, nameof(HandleGetQueueCommandAsync));
-    }
-
-    return new CommandResponse();
-  }
-
-  private async Task HandleSendMessageCommandAsync(CommandRequest command)
-  {
-    try
-    {
-      Guard.Against.Null(command, nameof(command));
-      
-      if (!command.Arguments.TryGetValue("channelId", out var channelIdObj) ||
-          !command.Arguments.TryGetValue("message", out var messageObj))
-      {
-        Console.WriteLine("Missing parameters for SendMessage command.");
-        return;
-      }
-      
-      if (channelIdObj is not { } channelId || messageObj is not { } message)
-      {
-        Console.WriteLine("Invalid parameter types for SendMessage command.");
-        return;
-      }
-
-      if (discordSocketClient.GetChannel(ulong.Parse(channelId)) is ISocketMessageChannel channel)
-      {
-        await channel.SendMessageAsync(message);
-        Console.WriteLine($"Message sent to channel {channelId}: {message}");
-      }
-      else
-      {
-        Console.WriteLine($"Channel {channelId} not found.");
-      }
-    }
-    catch (Exception exception)
-    {
-      Logger.LogError(exception, nameof(HandleSendMessageCommandAsync));
-      throw; // TODO: Re-evaluate this
-    }
-  }
-
-  private async Task HandleJoinVoiceChannelCommandAsync(CommandRequest command)
-  {
-    try
-    {
-      Guard.Against.Null(command, nameof(command));
-
-      if (!command.Arguments.TryGetValue("channelId", out var channelIdAsString))
-      {
-        throw new CommandException("Missing parameters for JoinVoiceChannel command.");
-      }
-
-      if (!ulong.TryParse(channelIdAsString, out ulong channelId))
-      {
-        throw new CommandException("Invalid parameter types for JoinVoiceChannel command.");
-      }
-      
-      var voiceChannel = GetVoiceChannel(channelId);
-      
-      // Ensure voice channel isn't null
-      Guard.Against.Null(voiceChannel, nameof(voiceChannel));
-      
-      await musicService.JoinVoiceChannelAsync(voiceChannel.GuildId, voiceChannel.Id);
-    }
-    catch (Exception exception)
-    {
-      Logger.LogError(exception, nameof(HandleJoinVoiceChannelCommandAsync));
-      throw;
-    }
-  }
-  
-  #endregion
-
-  #region Helper Methods
-
-  private IVoiceChannel GetVoiceChannel(ulong channelId)
-  {
-    return discordSocketClient.GetChannel(channelId) as IVoiceChannel;
-  }
-
-  /// <summary>
-  /// Gets the voice channel the bot is currently connected to in the specified guild.
-  /// </summary>
-  /// <param name="guild"></param>
-  /// <returns>The voice channel or null</returns>
-  private SocketVoiceChannel GetVoiceChannel(IGuild guild)
-  {
-    var socketGuild = guild as SocketGuild;
-    return socketGuild?.VoiceChannels.FirstOrDefault(x => x.Users.Any(u => u.Id == discordSocketClient.CurrentUser.Id));
-  }
-
-  #endregion
-  
   public void Dispose()
   {
+    discordClient?.Dispose();
+
     GC.SuppressFinalize(this);
-    
-    discordSocketClient?.Dispose();
   }
 }

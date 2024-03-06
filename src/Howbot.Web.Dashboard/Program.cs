@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authentication.OAuth;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add HttpClientFactory to web api
-builder.Services.AddScoped(sp => new HttpClient{ BaseAddress = new Uri("http://localhost:5284") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5284") });
 
 builder.Services.AddAuthentication(options =>
   {
@@ -45,6 +45,8 @@ builder.Services.AddAuthentication(options =>
       }
     };
   });
+
+builder.Services.AddMemoryCache();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

@@ -1,4 +1,5 @@
-﻿using Howbot.Core.Interfaces;
+﻿using System;
+using Howbot.Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Howbot.Core.Services;
@@ -11,11 +12,16 @@ namespace Howbot.Core.Services;
 /// <see cref="https://stackoverflow.com/a/53509491/54288" />
 public sealed class ServiceScopeFactoryLocator(IServiceScopeFactory factory) : IServiceLocator
 {
-  private IServiceScope _scope;
+  private IServiceScope? _scope;
 
-  public T Get<T>()
+  public T? Get<T>()
   {
     CreateScope();
+
+    if (_scope is null)
+    {
+      throw new InvalidOperationException("Service scope is null");
+    }
 
     return _scope.ServiceProvider.GetService<T>();
   }

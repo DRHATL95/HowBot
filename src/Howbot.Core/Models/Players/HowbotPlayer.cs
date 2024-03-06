@@ -14,7 +14,7 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
   : QueuedLavalinkPlayer(properties), IInactivityPlayerListener
 {
   private readonly ILogger<HowbotPlayer> _logger = properties.Logger;
-  public ITextChannel TextChannel { get; } = properties.Options.Value.TextChannel;
+  public ITextChannel? TextChannel { get; } = properties.Options.Value.TextChannel;
 
   #region Inactivity Tracking Events
 
@@ -54,5 +54,5 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
     }
   }
 
-  #endregion
+  #endregion Inactivity Tracking Events
 }

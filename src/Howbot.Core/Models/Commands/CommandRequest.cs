@@ -1,43 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Howbot.Core.Models.Commands;
 
-public class CommandRequest
+/// <summary>
+/// Command requests that come from internally, executed in discord text channels.
+/// </summary>
+public class CommandRequest : CommandRequestBase
 {
-  public CommandTypes CommandType { get; init; }
-  public IReadOnlyDictionary<string, string> Arguments { get; init; }
-  public ulong GuildId { get; init; }
-  public ulong ChannelId { get; init; }
-  public CommandRequestMetadata Metadata { get; init; }
   
-  public static CommandRequest Create(CreateCommandRequestParameters parameters)
+  /// <summary>
+  /// The channel where the command was executed from, will be a Discord TextChannel id.
+  /// </summary>
+  public ulong ChannelId { get; init; }
+
+  /// <summary>
+  /// TODO
+  /// </summary>
+  /// <param name="commandType">The command request type. Will always be</param>
+  /// <param name="guildId">The guild where the command was executed</param>
+  /// <param name="channelId">The text channel id where the command was executed</param>
+  /// <param name="userId">The user id of the person who submitted the command request</param>
+  /// <returns>A new command request</returns>
+  public static CommandRequest Create(CommandTypes commandType, ulong guildId, ulong channelId, ulong userId)
   {
-    return new CommandRequest
+    return new CommandRequest()
     {
-      CommandType = parameters.CommandType,
-      Arguments = parameters.Arguments,
-      GuildId = parameters.GuildId,
-      ChannelId = parameters.ChannelId,
-      Metadata = parameters.Metadata
+      CommandType = commandType,
+      GuildId = guildId,
+      ChannelId = channelId,
+      Metadata = new CommandRequestMetadata()
+      {
+        Source = CommandSource.Discord,
+        RequestedById = userId,
+        RequestDateTime = DateTime.UtcNow
+      }
     };
   }
-}
-
-public struct CommandRequestMetadata
-{
-  public CommandSource Source { get; set; }
-  
-  public ulong RequestedById { get; set; }
-  
-  public DateTime RequestDateTime { get; set; }
-}
-
-public struct CreateCommandRequestParameters
-{
-  public CommandTypes CommandType { get; set; }
-  public IReadOnlyDictionary<string, string> Arguments { get; set; }
-  public ulong GuildId { get; set; }
-  public ulong ChannelId { get; set; }
-  public CommandRequestMetadata Metadata { get; set; }
 }

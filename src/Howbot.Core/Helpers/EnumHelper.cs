@@ -1,11 +1,10 @@
 ﻿using System;
-using System.ComponentModel;
 
 namespace Howbot.Core.Helpers;
 
 public static class EnumHelper
 {
-  public static T GetValueFromDescription<T>(string description) where T : Enum
+  /*public static T? GetValueFromDescription<T>(string description) where T : Enum
   {
     foreach (var field in typeof(T).GetFields())
     {
@@ -27,13 +26,18 @@ public static class EnumHelper
     }
 
     throw new ArgumentException("Not found.", nameof(description));
-  }
+  }*/
 
-  public static TEnum ConvertToEnum<TEnum>(string value)
+  public static TEnum ConvertToEnum<TEnum>(string? value)
   {
     try
     {
-      return (TEnum)Enum.Parse(typeof(TEnum), value, true);
+      if (value != null)
+      {
+        return (TEnum)Enum.Parse(typeof(TEnum), value, true);
+      }
+
+      throw new Exception();
     }
     catch
     {

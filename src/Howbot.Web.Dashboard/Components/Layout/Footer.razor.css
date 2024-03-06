@@ -1,0 +1,17 @@
+﻿.footer-bg {
+    background-color: var(--nord0);
+}
+
+.footer-content {
+    background-color: #000000;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: var(--nord4);
+}
+
+.link-dark {
+    color: var(--nord9);
+}
+
+    .link-dark:hover {
+        color: var(--nord10);
+    }

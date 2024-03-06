@@ -16,74 +16,87 @@ namespace Howbot.Worker;
 
 public static class Program
 {
-  private static async Task<int> Main(string[] args)
-  {
-    try
+  
+    /// <summary>
+    /// The main entry point for the application.
+    /// </summary>
+    /// <param name="args">The command-line arguments.</param>
+    /// <returns>The exit code that is given to the operating system after the app ends.</returns>
+    private static async Task<int> Main(string[] args)
     {
-      // Create host builder that will be used to handle application (console) life-cycle.
-      var hostBuilder = CreateHostBuilder(args);
+        try
+        {
+            // Create host builder that will be used to handle application (console) life-cycle.
+            var hostBuilder = CreateHostBuilder(args);
+            
+            Log.Logger.Information("Starting worker application...");
 
-      if (Log.Logger.IsEnabled(LogEventLevel.Information))
-      {
-        Log.Logger.Information("Starting application..");
-      }
-      else
-      {
-        Console.WriteLine("Starting application..");
-      }
+            // Will run indefinitely until canceled w/ cancellation token or process is stopped.
+            await hostBuilder.RunConsoleAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.Logger.Fatal(exception, nameof(Main));
+          
+            if (Log.IsEnabled(LogEventLevel.Fatal))
+            {
+                Log.Fatal(exception, "A fatal exception has been thrown while running the application");
+            }
+            else
+            {
+                Console.WriteLine(exception);
+            }
+        }
 
-      // Will run indefinitely until canceled w/ cancellation token or process is stopped.
-      await hostBuilder.RunConsoleAsync();
+        // Return exit code to terminal once application has been terminated.
+        return Environment.ExitCode;
     }
-    catch (Exception exception)
+
+  
+    /// <summary>
+    /// Creates a host builder that configures the services for the application.
+    /// </summary>
+    /// <param name="args">The command-line arguments.</param>
+    /// <returns>A configured IHostBuilder.</returns>
+    private static IHostBuilder CreateHostBuilder(string[] args)
     {
-      if (Log.IsEnabled(LogEventLevel.Fatal))
-      {
-        Log.Fatal(exception, "A fatal exception has been thrown while running the application");
-      }
-      else
-      {
-        Console.WriteLine(exception);
-      }
+        return Host.CreateDefaultBuilder(args)
+          .UseSerilog((context, configuration) =>
+          {
+              context.Configuration["ConnectionStrings:DefaultConnection"] = Configuration.PostgresConnectionString;
+              configuration
+                .ReadFrom.Configuration(context.Configuration);
+          })
+          .ConfigureServices((hostContext, services) =>
+          {
+              services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
+              services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
+
+              services.AddHowbotServices();
+
+              // Add in-memory cache
+              services.AddMemoryCache();
+
+              // Add static host configuration for access globally
+              ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);
+
+              // Infrastructure.ContainerSetup
+              if (ConfigurationHelper.HostConfiguration is not null)
+              {
+                  services.AddDbContext(ConfigurationHelper.HostConfiguration);
+              }
+              services.AddRepositories();
+
+              services.AddSingleton(x => new MessageQueuePublisherService(Configuration.RabbitMqConnectionFactory,
+                x.GetRequiredService<ILoggerAdapter<MessageQueuePublisherService>>()));
+
+              var workerSettings = new WorkerSettings();
+              hostContext.Configuration.Bind(nameof(WorkerSettings), workerSettings);
+              services.AddSingleton(workerSettings);
+
+              services.AddHostedService<Worker>();
+              services.AddHostedService(sp => new MessageQueueConsumerService(Configuration.RabbitMqConnectionFactory, sp.GetRequiredService<ICommandHandlerService>(),
+                sp.GetRequiredService<ILoggerAdapter<MessageQueueConsumerService>>()));
+          });
     }
-
-    // Return exit code to terminal once application has been terminated.
-    return Environment.ExitCode;
-  }
-
-  private static IHostBuilder CreateHostBuilder(string[] args)
-  {
-    return Host.CreateDefaultBuilder(args)
-      .UseSerilog((context, configuration) =>
-      {
-        context.Configuration["ConnectionStrings:DefaultConnection"] = Configuration.PostgresConnectionString;
-        configuration
-          .ReadFrom.Configuration(context.Configuration);
-      })
-      .ConfigureServices((hostContext, services) =>
-      {
-        services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
-        services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
-        
-        services.AddHowbotServices();
-
-        // Add in-memory cache
-        services.AddMemoryCache();
-
-        // Add static host configuration for access globally
-        ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);
-
-        // Infrastructure.ContainerSetup
-        services.AddDbContext(ConfigurationHelper.HostConfiguration);
-        services.AddRepositories();
-
-        var workerSettings = new WorkerSettings();
-        hostContext.Configuration.Bind(nameof(WorkerSettings), workerSettings);
-        services.AddSingleton(workerSettings);
-
-        services.AddHostedService<Worker>();
-        services.AddHostedService(sp => new MessageQueueConsumerService(Configuration.RabbitMqConnectionFactory, sp.GetRequiredService<IHowbotService>(),
-          sp.GetRequiredService<ILoggerAdapter<MessageQueueConsumerService>>()));
-      });
-  }
 }
