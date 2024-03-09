@@ -30,8 +30,11 @@ public class BotController(MessageQueuePublisherService messageQueuePublisherSer
     {
       return BadRequest("Unable to respond to request");
     }
-    
-    var commandResponse = JsonConvert.DeserializeObject<ApiCommandResponse>(commandResultJson);
+
+    var settings = new JsonSerializerSettings();
+    settings.Converters.Add(new ApiCommandResponseConverter());
+
+    var commandResponse = JsonConvert.DeserializeObject<ApiCommandResponse>(commandResultJson, settings);
     if (commandResponse == null)
     {
       return BadRequest("Response unable to be deserialized");
@@ -45,14 +48,13 @@ public class BotController(MessageQueuePublisherService messageQueuePublisherSer
     return BadRequest("Failed to send");
   }
 
-  [HttpGet("guilds")]
-  public async Task<IActionResult> GetGuildsForUserId()
+  [HttpGet("guilds/{userId}")]
+  public async Task<IActionResult> GetGuildsForUserId(ulong userId)
   {
     var commandParams = new CreateApiCommandRequestParameters()
     {
       CommandType = CommandTypes.Guilds, 
-      UserId = 213133997520191489,
-      GuildId = 656305202185633810,
+      UserId = userId
     };
     
     var commandRequest = ApiCommandRequest.Create(commandParams);

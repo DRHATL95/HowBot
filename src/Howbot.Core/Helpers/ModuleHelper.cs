@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Howbot.Core.Models;
@@ -33,18 +34,18 @@ public static class ModuleHelper
 
   public static void HandleCommandFailed(CommandResponse commandResponse)
   {
-    ArgumentNullException.ThrowIfNull(commandResponse, nameof(commandResponse));
+    Guard.Against.Null(commandResponse, nameof(commandResponse));
 
-    if (commandResponse.Exception != null)
+    if (commandResponse.Exception == null)
     {
-      throw new CommandException(commandResponse.Exception.Message, commandResponse.Exception?.InnerException ?? new Exception());
+      return;
     }
 
-    if (!string.IsNullOrEmpty(commandResponse.Message))
+    if (commandResponse.Exception.InnerException != null)
     {
-      // TODO: Needs a compile-time constant for logging message
-      Log.Logger.Error(commandResponse.Message);
+      throw new CommandException(commandResponse.Exception.Message, commandResponse.Exception.InnerException);
     }
+    throw new CommandException(commandResponse.Exception.Message);
   }
 
   public static bool CheckValidCommandParameter(params object[] args)

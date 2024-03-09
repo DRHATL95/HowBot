@@ -26,6 +26,7 @@ using Lavalink4NET.Players.Preconditions;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
 using Lavalink4NET.Tracks;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -41,6 +42,9 @@ public partial class MusicService(
 {
   [GeneratedRegex(Constants.RegexPatterns.UrlPattern)]
   private static partial Regex UrlRegex();
+  
+  // TODO: Maybe create cache object instead?
+  public HowbotPlayer CurrentPlayer { get; set; }
 
   public async ValueTask<string> GetSessionIdForGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default)
   {
@@ -55,6 +59,11 @@ public partial class MusicService(
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
+    
+    if (CurrentPlayer != null)
+    {
+      return CurrentPlayer;
+    }
 
     // Can't execute function without socket context
     ArgumentNullException.ThrowIfNull(context, nameof(context));
@@ -105,6 +114,8 @@ public partial class MusicService(
         howbotService.SessionIds.TryAdd(guildId, result.Player.VoiceState.SessionId);
       }*/
 
+      CurrentPlayer = result.Player;
+      
       return result.Player;
     }
 

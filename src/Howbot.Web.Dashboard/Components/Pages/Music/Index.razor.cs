@@ -32,6 +32,11 @@ public partial class Index
       if (response.IsSuccessStatusCode)
       {
         var result = await response.Content.ReadFromJsonAsync<ApiCommandResponse>();
+
+        if (result != null)
+        {
+          SelectedGuild = JsonConvert.DeserializeObject<GuildDto>((result.Value as string) ?? string.Empty);
+        }
       }
     }
     catch (Exception e)

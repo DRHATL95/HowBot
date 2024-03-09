@@ -119,7 +119,7 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
           response = HandleGetGuildById(command);
           break;
         case CommandTypes.Guilds:
-          response = await HandleGetGuildsForUserAsync(command);
+          response = HandleGetGuildsForUser(command);
           break;
 
         case CommandTypes.Queue:
@@ -223,10 +223,9 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
     return ApiCommandResponse.Create(true, value: guildDto);
   }
   
-  private async Task<ApiCommandResponse> HandleGetGuildsForUserAsync(ApiCommandRequest command)
+  private ApiCommandResponse HandleGetGuildsForUser(ApiCommandRequest command)
   {
-    await Task.CompletedTask;
-    
+    // Get the guild user 
     var user = discordSocketClient.GetUser(command.Metadata.RequestedById);
 
     if (user is null)

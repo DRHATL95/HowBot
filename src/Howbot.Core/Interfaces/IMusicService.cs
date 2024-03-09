@@ -14,6 +14,8 @@ namespace Howbot.Core.Interfaces;
 
 public interface IMusicService
 {
+  public HowbotPlayer? CurrentPlayer { get; set; }
+  
   void Initialize();
 
   ValueTask<string> GetSessionIdForGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default);
@@ -41,7 +43,7 @@ public interface IMusicService
 
   CommandResponse ToggleShuffle(HowbotPlayer player);
 
-  ValueTask<HowbotPlayer> GetPlayerByContextAsync(
+  ValueTask<HowbotPlayer?> GetPlayerByContextAsync(
     SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true,
     ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false, int initialVolume = 100,
     CancellationToken cancellationToken = default);
