@@ -10,21 +10,24 @@ public static class EnumExtensions
   public static string GetDisplayName(this Enum enumValue)
   {
     var type = enumValue.GetType();
-    var enumName = enumValue.ToString(); // Convert to lowercase
+    var enumName = enumValue.ToString();
 
-    var memberInfo = type.GetMember(enumName).FirstOrDefault();
-    if (memberInfo != null)
+    if (string.IsNullOrEmpty(enumName))
     {
-      var displayNameAttribute = memberInfo
-        .GetCustomAttribute<DisplayNameAttribute>();
-
-      if (displayNameAttribute != null)
-      {
-        return displayNameAttribute.DisplayName;
-      }
+      return string.Empty;
     }
 
-    // If DisplayNameAttribute is not found, return the enum name itself
-    return enumName;
+    var memberInfo = type.GetMember(enumName).FirstOrDefault();
+    if (memberInfo == null)
+    {
+      return enumName;
+    }
+
+    var displayNameAttribute = memberInfo
+      .GetCustomAttribute<DisplayNameAttribute>();
+
+    return displayNameAttribute != null ? displayNameAttribute.DisplayName :
+      // If DisplayNameAttribute is not found, return the enum name itself
+      enumName;
   }
 }

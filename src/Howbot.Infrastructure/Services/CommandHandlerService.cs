@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +17,12 @@ using Newtonsoft.Json;
 namespace Howbot.Infrastructure.Services;
 public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSocketClient discordSocketClient, InteractionService interactionService, IMusicService musicService, ILoggerAdapter<CommandHandlerService> logger) : ServiceBase<CommandHandlerService>(logger), ICommandHandlerService
 {
+  /// <summary>
+  /// This will be called internally when using the bot. This will handle the command request and execute the command.
+  /// </summary>
+  /// <param name="socketInteractionContext"></param>
+  /// <param name="cancellationToken"></param>
+  /// <returns></returns>
   public async Task<CommandResponse> HandleCommandRequestAsync(SocketInteractionContext socketInteractionContext, CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -55,6 +60,13 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
     return CommandResponse.Create(false);
   }
 
+  /// <summary>
+  /// This will be called when using the API. The command will be sent through MQ, parsed and then executed.
+  /// Once executed, the response will be sent back to the API.
+  /// </summary>
+  /// <param name="commandJson"></param>
+  /// <param name="cancellationToken"></param>
+  /// <returns></returns>
   public async Task<ApiCommandResponse> HandleCommandRequestAsync(string commandJson, CancellationToken cancellationToken = default)
   {
     try
@@ -64,6 +76,10 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
       Guard.Against.NullOrEmpty(commandJson, nameof(commandJson));
 
       var command = JsonConvert.DeserializeObject<ApiCommandRequest>(commandJson);
+      if (command == null)
+      {
+        return ApiCommandResponse.Create(false, new ApiCommandRequestException("Invalid command"));
+      }
 
       var response = await HandleCommandExecuteAsync(command, cancellationToken);
 
@@ -80,7 +96,7 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
   {
     cancellationToken.ThrowIfCancellationRequested();
 
-    ApiCommandResponse response = null;
+    ApiCommandResponse? response = null;
 
     try
     {
@@ -133,7 +149,7 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
           throw new ArgumentOutOfRangeException();
       }
 
-      return response;
+      return response ?? ApiCommandResponse.Create(false, new ApiCommandRequestException("Command not handled"));
     }
     catch (Exception exception)
     {

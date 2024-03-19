@@ -42,9 +42,6 @@ public partial class MusicService(
 {
   [GeneratedRegex(Constants.RegexPatterns.UrlPattern)]
   private static partial Regex UrlRegex();
-  
-  // TODO: Maybe create cache object instead?
-  public HowbotPlayer CurrentPlayer { get; set; }
 
   public async ValueTask<string> GetSessionIdForGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default)
   {
@@ -53,17 +50,12 @@ public partial class MusicService(
     return (await sessionProvider.GetSessionAsync(guildId, cancellationToken)).SessionId;
   }
 
-  public async ValueTask<HowbotPlayer> GetPlayerByContextAsync(SocketInteractionContext context,
+  public async ValueTask<HowbotPlayer?> GetPlayerByContextAsync(SocketInteractionContext context,
     bool allowConnect = false, bool requireChannel = true, ImmutableArray<IPlayerPrecondition> preconditions = default,
     bool isDeferred = false, int initialVolume = 100,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-    
-    if (CurrentPlayer != null)
-    {
-      return CurrentPlayer;
-    }
 
     // Can't execute function without socket context
     ArgumentNullException.ThrowIfNull(context, nameof(context));
@@ -92,7 +84,12 @@ public partial class MusicService(
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
     }
 
-    var playerOptions = new HowbotPlayerOptions(context.Channel as ITextChannel, guildUser)
+    if (context.Channel is not ITextChannel textChannel)
+    {
+      return null;
+    }
+
+    var playerOptions = new HowbotPlayerOptions(textChannel, guildUser)
     {
       DisconnectOnDestroy = true,
       DisconnectOnStop = true,
@@ -109,13 +106,6 @@ public partial class MusicService(
 
     if (result.IsSuccess)
     {
-      /*if (!howbotService.SessionIds.ContainsKey(guildId))
-      {
-        howbotService.SessionIds.TryAdd(guildId, result.Player.VoiceState.SessionId);
-      }*/
-
-      CurrentPlayer = result.Player;
-      
       return result.Player;
     }
 
@@ -207,9 +197,9 @@ public partial class MusicService(
 
     TrackLoadOptions trackLoadOptions = new(trackSearchMode, StrictSearchBehavior.Resolve);
     // LavaSearch categories to be returned (Tracks, Albums, Artists, Playlists, Text)
-    ImmutableArray<SearchCategory> searchCategories = ImmutableArray.Create(SearchCategory.Track, SearchCategory.Playlist);
+    ImmutableArray<SearchCategory> searchCategories = ImmutableArray.Create(SearchCategory.Track);
 
-    SearchResult searchResult;
+    SearchResult? searchResult;
 
     try
     {
@@ -243,7 +233,7 @@ public partial class MusicService(
     return tracks;
   }
 
-  public async ValueTask<HowbotPlayer> GetPlayerByGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default)
+  public async ValueTask<HowbotPlayer?> GetPlayerByGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default)
   {
     return await audioService.Players.GetPlayerAsync(guildId, cancellationToken) as HowbotPlayer;
   }

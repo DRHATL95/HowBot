@@ -47,7 +47,7 @@ public static class DiscordHelper
       Log.Error(exception, Messages.Errors.Exception);
     }
 
-    return guild == null ? string.Empty : $"[{guild.Name} - {guild.Id}]";
+    return string.Empty;
   }
 
   public static async Task HandleSocketInteractionErrorAsync<T>(SocketInteraction socketInteraction, IResult result,

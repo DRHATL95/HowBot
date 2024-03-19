@@ -10,7 +10,7 @@ public interface IDatabaseService
 
   void AddNewGuild(Guild guild);
 
-  Guild GetGuildById(ulong guildId);
+  Guild? GetGuildById(ulong guildId);
 
   float GetPlayerVolumeLevel(ulong guildId);
 

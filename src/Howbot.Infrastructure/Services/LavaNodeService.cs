@@ -53,7 +53,7 @@ public class LavaNodeService(
   {
     var player = await audioService.Players.GetPlayerAsync<HowbotPlayer>(guildId);
 
-    return player?.VoiceState.SessionId;
+    return player?.VoiceState.SessionId ?? string.Empty;
   }
 
   #region Events
@@ -95,8 +95,11 @@ public class LavaNodeService(
 
     Logger.LogDebug("Starting track [{TrackTitle}]", eventArgs.Track.Title);
 
-    await channel.SendMessageAsync(
-      embed: embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(track)) as Embed);
+    if (channel != null)
+    {
+      await channel.SendMessageAsync(
+        embed: embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(track)) as Embed); 
+    }
   }
 
   private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventArgs)

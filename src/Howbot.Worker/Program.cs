@@ -73,6 +73,7 @@ public static class Program
               services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
 
               services.AddHowbotServices();
+              services.AddLavalinkServices();
 
               // Add in-memory cache
               services.AddMemoryCache();
@@ -89,7 +90,7 @@ public static class Program
 
               services.AddSingleton(x => new MessageQueuePublisherService(Configuration.RabbitMqConnectionFactory,
                 x.GetRequiredService<ILoggerAdapter<MessageQueuePublisherService>>()));
-
+              
               var workerSettings = new WorkerSettings();
               hostContext.Configuration.Bind(nameof(WorkerSettings), workerSettings);
               services.AddSingleton(workerSettings);

@@ -70,7 +70,7 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
     }
   }
 
-  private async ValueTask<ILavalinkPlayer> GetPlayerAsync(GetPlayerParameters playerParams)
+  private async ValueTask<ILavalinkPlayer?> GetPlayerAsync(GetPlayerParameters playerParams)
   {
     ArgumentNullException.ThrowIfNull(playerParams);
 

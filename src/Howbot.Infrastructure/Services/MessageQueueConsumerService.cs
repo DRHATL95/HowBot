@@ -39,7 +39,7 @@ public class MessageQueueConsumerService(
     await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
   }
 
-  private async void ConsumerOnReceived(object sender, BasicDeliverEventArgs e)
+  private async void ConsumerOnReceived(object? sender, BasicDeliverEventArgs e)
   {
     if (sender is not EventingBasicConsumer consumer) return;
 

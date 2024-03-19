@@ -25,6 +25,8 @@ public class MessageQueuePublisherService : IDisposable
 
     _connection = connectionFactory.CreateConnection();
     _channel = _connection.CreateModel();
+    
+    _logger.LogDebug("Message queue is {0}", IsMessageQueueOnline() ? "Online" : "Offline");
 
     // declare a server-named queue
     _replyQueueName = _channel.QueueDeclare().QueueName;
@@ -60,11 +62,16 @@ public class MessageQueuePublisherService : IDisposable
     return tcs.Task;
   }
 
+  public bool IsMessageQueueOnline()
+  {
+    return _connection.IsOpen && _channel.IsOpen;
+  }
+
   public void Dispose()
   {
-    GC.SuppressFinalize(this);
-
     _channel.Close();
     _connection.Close();
+
+    GC.SuppressFinalize(this);
   }
 }

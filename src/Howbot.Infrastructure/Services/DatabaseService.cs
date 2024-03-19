@@ -34,7 +34,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     }
   }
 
-  public Guild GetGuildById(ulong guildId)
+  public Guild? GetGuildById(ulong guildId)
   {
     try
     {

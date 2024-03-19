@@ -2,7 +2,7 @@
 
 namespace Howbot.Core.Helpers;
 
-public class StringHelper
+public static class StringHelper
 {
   public static int CalculateLevenshteinDistance(string a, string b)
   {

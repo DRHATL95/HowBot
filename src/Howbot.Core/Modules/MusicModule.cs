@@ -8,7 +8,9 @@ using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Lavalink4NET;
 using Lavalink4NET.Integrations.Lavasrc;
+using Lavalink4NET.Integrations.LyricsJava.Extensions;
 using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
@@ -21,7 +23,7 @@ namespace Howbot.Core.Modules;
 public class MusicModule(
   IMusicService musicService,
   IEmbedService embedService,
-  ILyricsService lyricsService,
+  IAudioService audioService,
   ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
@@ -242,7 +244,7 @@ public class MusicModule(
     {
       await DeferAsync();
 
-      var player = await musicService.GetPlayerByContextAsync(Context, false, true, [PlayerPrecondition.Paused, PlayerPrecondition.Playing]);
+      var player = await musicService.GetPlayerByContextAsync(Context, false, true, [PlayerPrecondition.Playing]);
 
       if (player is null)
       {
@@ -282,7 +284,7 @@ public class MusicModule(
     {
       await DeferAsync();
 
-      var player = await musicService.GetPlayerByContextAsync(Context, false, true, [PlayerPrecondition.Playing, PlayerPrecondition.Paused]);
+      var player = await musicService.GetPlayerByContextAsync(Context, false, true, [PlayerPrecondition.Playing]);
 
       if (player is null)
       {
@@ -429,7 +431,7 @@ public class MusicModule(
       await DeferAsync();
 
       var player = await musicService.GetPlayerByContextAsync(Context,
-        preconditions: [PlayerPrecondition.Playing, PlayerPrecondition.Paused]);
+        preconditions: [PlayerPrecondition.Playing]);
 
       if (player is null)
       {
@@ -444,7 +446,7 @@ public class MusicModule(
         return;
       }
 
-      var lyrics = await lyricsService.GetLyricsAsync(track.Author, track.Title);
+      var lyrics = await audioService.Tracks.GetCurrentTrackLyricsAsync(player);
 
       if (lyrics is null)
       {
@@ -452,22 +454,18 @@ public class MusicModule(
         return;
       }
 
-      // Filter out the french at the beginning (Paroles de la chanson <title> par <artist>)
-      var index = lyrics.IndexOf("\r\n", StringComparison.Ordinal);
-      lyrics = lyrics.Remove(0, index + 2);
-
       // Check if lyrics length is less or equal to 2000 characters
-      if (lyrics.Length <= 2000)
+      if (lyrics.Text.Length <= 2000)
       {
-        await FollowupAsync($"📃 Lyrics for {track.Title} by {track.Author}:\n{lyrics}");
+        await FollowupAsync($"{lyrics.Text}");
       }
       else
       {
-        for (int i = 0; i < lyrics.Length; i += 2000)
+        for (int i = 0; i < lyrics.Text.Length; i += 2000)
         {
           await DeleteOriginalResponseAsync();
 
-          await Context.Channel.SendMessageAsync(lyrics.Substring(i, Math.Min(2000, lyrics.Length - i)));
+          await Context.Channel.SendMessageAsync(lyrics.Text.Substring(i, Math.Min(2000, lyrics.Text.Length - i)));
         }
       }
     }

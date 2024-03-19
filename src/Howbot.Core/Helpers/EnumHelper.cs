@@ -1,4 +1,5 @@
 ﻿using System;
+using Ardalis.GuardClauses;
 
 namespace Howbot.Core.Helpers;
 
@@ -30,19 +31,8 @@ public static class EnumHelper
 
   public static TEnum ConvertToEnum<TEnum>(string? value)
   {
-    try
-    {
-      if (value != null)
-      {
-        return (TEnum)Enum.Parse(typeof(TEnum), value, true);
-      }
-
-      throw new Exception();
-    }
-    catch
-    {
-      // Handle the case when the string does not represent a valid enum value
-      throw new ArgumentException($"'{value}' is not a valid {typeof(TEnum).Name} value");
-    }
+    Guard.Against.NullOrEmpty(value, nameof(value));
+    
+    return (TEnum)Enum.Parse(typeof(TEnum), value, true);
   }
 }

@@ -8,11 +8,13 @@ using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data;
 using Howbot.Infrastructure.Http;
 using Howbot.Infrastructure.Services;
+using Lavalink4NET;
 using Lavalink4NET.Extensions;
 using Lavalink4NET.InactivityTracking;
 using Lavalink4NET.InactivityTracking.Extensions;
 using Lavalink4NET.InactivityTracking.Trackers.Idle;
 using Lavalink4NET.InactivityTracking.Trackers.Users;
+using Lavalink4NET.Integrations.LyricsJava.Extensions;
 using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -53,6 +55,7 @@ public static class ServiceCollectionSetupExtensions
   {
     // Discord related services
     services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
+    services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
 
     // Howbot related services
     services.AddSingleton<IHowbotService, HowbotService>();
@@ -62,22 +65,24 @@ public static class ServiceCollectionSetupExtensions
     services.AddSingleton<IEmbedService, EmbedService>();
     services.AddSingleton<IDiscordClientService, DiscordClientService>();
     services.AddSingleton<ILavaNodeService, LavaNodeService>();
-    services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
 
     services.AddScoped<IDatabaseService, DatabaseService>();
 
-    // Lavalink4NET related services
-    services.AddLavalink();
-    services.ConfigureLavalink(x =>
+    // Transient Services
+    services.AddTransient<IHttpService, HttpService>();
+  }
+
+  public static void AddLavalinkServices(this IServiceCollection serviceCollection)
+  {
+    serviceCollection.AddLavalink();
+    serviceCollection.ConfigureLavalink(x =>
     {
       x.BaseAddress = Configuration.LavalinkUri;
       x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
     });
-    services.AddLyrics();
-    services.AddInactivityTracking();
-
-    services.ConfigureInactivityTracking(x =>
+    serviceCollection.AddInactivityTracking();
+    serviceCollection.ConfigureInactivityTracking(x =>
     {
       x.DefaultTimeout = TimeSpan.FromSeconds(30); // default
       x.DefaultPollInterval = TimeSpan.FromSeconds(10); // default is 5 seconds
@@ -86,18 +91,15 @@ public static class ServiceCollectionSetupExtensions
       x.UseDefaultTrackers = true; // default
       x.TimeoutBehavior = InactivityTrackingTimeoutBehavior.Lowest; // default
     });
-    services.Configure<IdleInactivityTrackerOptions>(x =>
+    serviceCollection.Configure<IdleInactivityTrackerOptions>(x =>
     {
       x.Timeout = TimeSpan.FromSeconds(10); // default
     });
-    services.Configure<UsersInactivityTrackerOptions>(x =>
+    serviceCollection.Configure<UsersInactivityTrackerOptions>(x =>
     {
       x.Threshold = 1; // default
       x.Timeout = TimeSpan.FromSeconds(30); // default is 10 seconds
       x.ExcludeBots = true; // default
     });
-
-    // Transient Services
-    services.AddTransient<IHttpService, HttpService>();
   }
 }
