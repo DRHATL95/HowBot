@@ -91,26 +91,20 @@ public class GeneralModule(
   [SlashCommand(PingCommandName, PingCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
-  [RequireUserPermission(GuildPermission.SendMessages | GuildPermission.UseApplicationCommands |
-                         GuildPermission.ViewChannel)]
+  [RequireUserPermission(GuildPermission.Administrator)]
   public async Task PingCommandAsync()
   {
     try
     {
-      logger.LogDebug("Ping command invoked");
-
       await Context.Interaction.RespondAsync("Ping?");
 
-      var client = Context.Client;
       var interactionMessage = await Context.Interaction.GetOriginalResponseAsync();
-      var latency = client.Latency;
-      var responseTime = interactionMessage.CreatedAt - Context.Interaction.CreatedAt;
-      var message = $"Pong! Response time: {Math.Round(responseTime.TotalSeconds, 2)}s, " +
-                    $"Latency: {latency}ms";
+      var responseTime = Math.Round((Context.Interaction.CreatedAt - interactionMessage.CreatedAt).TotalSeconds, 2);
+      
+      var message = $"Pong! API Latency: {responseTime}s. " +
+                    $"Bot Latency: {Context.Client.Latency}ms";
 
       await Context.Interaction.ModifyOriginalResponseAsync(properties => properties.Content = message);
-
-      logger.LogDebug("Ping command completed");
     }
     catch (Exception exception)
     {
@@ -208,8 +202,8 @@ public class GeneralModule(
     }
   }
 
-  [Group("settings", "Settings commands")]
-  public class SettingsGroup(/*IServiceProvider serviceProvider,*/ ILoggerAdapter<SettingsGroup> logger)
+  /*[Group("settings", "Settings commands")]
+  public class SettingsGroup(/*IServiceProvider serviceProvider,#1# ILoggerAdapter<SettingsGroup> logger)
     : InteractionModuleBase<SocketInteractionContext>
   {
     [SlashCommand("provider", "Sets the bot default music search provider")]
@@ -236,7 +230,7 @@ public class GeneralModule(
           throw new CommandException("Guild not found in database.");
         }
 
-        await databaseService.UpdateSearchProviderAsync(guild.Id, provider);*/
+        await databaseService.UpdateSearchProviderAsync(guild.Id, provider);#1#
       }
       catch (Exception exception)
       {
@@ -244,5 +238,5 @@ public class GeneralModule(
         throw;
       }
     }
-  }
+  }*/
 }

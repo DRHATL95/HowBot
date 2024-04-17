@@ -24,8 +24,8 @@ public static class Configuration
   // private const string YouTube = "YoutubeToken";
   private const string Postgres = "HowbotPostgres";
 
-  private const string Lavalink = "DiscordLavalinkServerPassword";
-  private const string LavalinkAddress = "DiscordLavalinkServerAddress";
+  private const string LavalinkPassword = "LavalinkNodePassword";
+  private const string LavalinkAddress = "LavalinkNodeAddress";
   private const string WatchTogetherKey = "Watch2GetherKey";
 
   private const string RabbitMqHostNameKey = "RabbitMQHost";
@@ -45,7 +45,7 @@ public static class Configuration
 
   public static string WatchTogetherApiKey => GetTokenByName(WatchTogetherKey);
 
-  private static string LavaNodePassword => GetTokenByName(Lavalink);
+  private static string LavaNodePassword => GetTokenByName(LavalinkPassword);
 
   private static string LavaNodeAddress => GetTokenByName(LavalinkAddress);
 
@@ -124,8 +124,10 @@ public static class Configuration
     // Should only be hit if empty, should never be null
     Guard.Against.NullOrEmpty(tokenName, nameof(tokenName));
 
+    var token = Environment.GetEnvironmentVariable(tokenName);
+
     // First attempt to get token, using hosted process
-    var token = Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Process);
+    token ??= Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Process);
     // Second attempt to get token, using user environment variables
     token ??= Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.User);
     // Third attempt to get token, using machine environment variables

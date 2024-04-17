@@ -9,6 +9,10 @@ public abstract record Constants
   // public const int ApplicationTimeoutInMs = 3000;
   public const int MaximumMessageCount = 10000;
   public const string DefaultPrefix = "!~";
+  
+  // Embeds
+  public const int MaximumEmbedDescriptionLength = 2048;
+  public const int MaximumFieldLength = 1024;
 
   public static readonly Color ThemeColor = Color.DarkPurple;
 
@@ -70,12 +74,6 @@ public abstract record Constants
     public const string NowPlayingCommandName = "nowplaying";
     public const string NowPlayingCommandDescription = "Gets an embed for the current playing/paused track.";
 
-    /*public const string GeniusCommandName = "genius";
-    public const string GeniusCommandDescription = "Gets lyrics for the current playing track using Genius lyrics.";*/
-
-    /*public const string OvhCommandName = "ovh";
-    public const string OvhCommandDescription = "Gets lyrics for the current playing track using Ovh lyrics.";*/
-
     public const string LeaveCommandName = "leave";
     public const string LeaveCommandDescription = "Leaves the current voice channel and removes any songs from the queue.";
 
@@ -85,8 +83,8 @@ public abstract record Constants
     public const string HelpCommandName = "help";
     public const string HelpCommandDescription = "See all available commands for the bot.";
 
-    public const string RadioCommandName = "radio";
-    public const string RadioCommandDescription = "Plays a radio station by a given genre or radio station name.";
+    /*public const string RadioCommandName = "radio";
+    public const string RadioCommandDescription = "Plays a radio station by a given genre or radio station name.";*/
 
     public const string ShuffleCommandName = "shuffle";
     public const string ShuffleCommandDescription = "Shuffles the current servers music queue.";
@@ -111,6 +109,12 @@ public abstract record Constants
 
     public const string FlipCommandName = "flip";
     public const string FlipCommandDescription = "Flips a coin.";
+    
+    public const string EftCommandName = "eft";
+    public const string EftCommandDescription = "Gets price information about Escape from Tarkov items.";
+    
+    public const string WatchTogetherCommandName = "w2g";
+    public const string WatchTogetherCommandDescription = "Creates a Watch2gether room with a given URL.";
   }
 
   public struct RabbitMq
@@ -119,26 +123,5 @@ public abstract record Constants
     public static TimeSpan DefaultMessageQueueTimeout = TimeSpan.FromMinutes(5);
 
     public const string RpcQueue = "rpc_queue";
-  }
-
-  // TODO: Needs a better name, this will allow the web API to call the publisher and then the consumer will know what to do with the message.
-  public struct HowbotApi
-  {
-    public const string Session = "howbot.session";
-
-    public struct Music
-    {
-      public const string Play = "music.play";
-      public const string Pause = "music.pause";
-      public const string Resume = "music.resume";
-      public const string Skip = "music.skip";
-      public const string Volume = "music.volume";
-      public const string NowPlaying = "music.nowplaying";
-      public const string Leave = "music.leave";
-      public const string Radio = "music.radio";
-      public const string Shuffle = "music.shuffle";
-      public const string Lyrics = "music.lyrics";
-      public const string Queue = "music.queue";
-    }
   }
 }

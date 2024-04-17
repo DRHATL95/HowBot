@@ -11,12 +11,12 @@ public static class LavalinkHelper
     return searchProviderType switch
     {
       SearchProviderTypes.Apple => TrackSearchMode.AppleMusic,
-      // SearchProviderTypes.Deezer => TrackSearchMode.Deezer,
+      SearchProviderTypes.Deezer => TrackSearchMode.Deezer,
       SearchProviderTypes.SoundCloud => TrackSearchMode.SoundCloud,
       SearchProviderTypes.Spotify => TrackSearchMode.Spotify,
-      // SearchProviderTypes.YouTube => TrackSearchMode.YouTube,
+      SearchProviderTypes.YouTube => TrackSearchMode.YouTube,
       SearchProviderTypes.YouTubeMusic => TrackSearchMode.YouTubeMusic,
-      // SearchProviderTypes.YandexMusic => TrackSearchMode.YandexMusic,
+      SearchProviderTypes.YandexMusic => TrackSearchMode.YandexMusic,
       _ => TrackSearchMode.YouTubeMusic
     };
   }

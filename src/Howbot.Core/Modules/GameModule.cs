@@ -81,7 +81,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
   }
 
-  [SlashCommand("test", "test", true, RunMode.Async)]
+  /*[SlashCommand("test", "test", true, RunMode.Async)]
   [RequireOwner]
   public async Task TestCommandAsync()
   {
@@ -109,9 +109,9 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
       logger.LogError(exception, nameof(TestCommandAsync));
       throw;
     }
-  }
+  }*/
 
-  [SlashCommand("eft", "Search for EFT items on the flea market.", true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.EftCommandName, Constants.Commands.EftCommandDescription, true, RunMode.Async)]
   public async Task EftCommandAsync([Summary("itemName", "The name of the item to search for.")] string itemName)
   {
     await DeferAsync();

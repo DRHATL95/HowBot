@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -8,10 +10,10 @@ using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Commands;
 using Lavalink4NET;
 using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Integrations.LyricsJava.Extensions;
-using Lavalink4NET.Lyrics;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
@@ -42,60 +44,49 @@ public class MusicModule(
     {
       await DeferAsync();
 
-      if (string.IsNullOrEmpty(searchRequest))
-      {
-        await ModifyOriginalResponseAsync(properties => properties.Content = "You must enter a search request!");
-        return;
-      }
-
       var player =
         await musicService.GetPlayerByContextAsync(Context, true);
 
       if (player is not null)
       {
-        var user = Context.User as IGuildUser ?? throw new ArgumentNullException(nameof(Context.User));
-        var voiceState = Context.User as IVoiceState ?? throw new ArgumentNullException(nameof(Context.User));
-        var channel = Context.Channel as ITextChannel ?? throw new ArgumentNullException(nameof(Context.Channel));
+        // Get the user, voice state, and channel
+        // This should never be null (because of the preconditions)
+        IGuildUser user = Context.User as IGuildUser ?? throw new InvalidOperationException("User is not a guild user.");
+        IVoiceState voiceState = Context.User as IVoiceState ?? throw new InvalidOperationException("User is not connected to a voice channel.");
+        ITextChannel channel = Context.Channel as ITextChannel ?? throw new InvalidOperationException("Channel is not a text channel.");
 
         int tracksBeforePlay = player.Queue.Count;
 
-        var response =
+        CommandResponse response =
           await musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
             channel);
 
         if (!response.IsSuccessful)
         {
-          ModuleHelper.HandleCommandFailed(response);
           await DeleteOriginalResponseAsync();
+          
+          ModuleHelper.HandleCommandFailed(response);
+
           return;
         }
 
-        if (player.Queue.Any())
+        if (player.Queue.Count > (tracksBeforePlay + 1))
         {
-          // Added more than one track to the queue
-          if (player.Queue.Count > (tracksBeforePlay + 1))
-          {
-            await FollowupAsync("🎵 Added multiple tracks to the queue.");
-          }
-          else
-          {
-            if (response.LavalinkTrack is null)
-            {
-              await FollowupAsync("🎵 Added track to the queue.");
-            }
-            else
-            {
-              var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
-                               user);
+          await FollowupAsync($"{Emojis.MusicalNote} Added multiple tracks to the queue.");
+          return;
+        }
+        
+        // Should only happen if the command response doesn't contain the Lavalink track
+        if (response.LavalinkTrack is null)
+        {
+          await FollowupAsync($"{Emojis.MusicalNote} Added track to the queue.");
+          return;
+        }
+        
+        var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
+          user);
 
-              await FollowupAsync(embed: embed as Embed);
-            }
-          }
-        }
-        else
-        {
-          await DeleteOriginalResponseAsync();
-        }
+        await FollowupAsync(embed: embed as Embed);
       }
     }
     catch (Exception exception)
@@ -453,20 +444,38 @@ public class MusicModule(
         await FollowupAsync("😖 No lyrics found.");
         return;
       }
-
-      // Check if lyrics length is less or equal to 2000 characters
-      if (lyrics.Text.Length <= 2000)
+      
+      string text = lyrics.Text;
+      int startIndex = 0;
+      string title = $"Lyrics for {track.Title}";
+      
+      // Loop that sends potentially multiple embeds
+      while (startIndex < text.Length)
       {
-        await FollowupAsync($"{lyrics.Text}");
-      }
-      else
-      {
-        for (int i = 0; i < lyrics.Text.Length; i += 2000)
+        EmbedBuilder embedBuilder = new EmbedBuilder()
         {
-          await DeleteOriginalResponseAsync();
+          Title = title,
+          Color = Constants.ThemeColor,
+        };
 
-          await Context.Channel.SendMessageAsync(lyrics.Text.Substring(i, Math.Min(2000, lyrics.Text.Length - i)));
+        int descriptionChars = Math.Min(Constants.MaximumEmbedDescriptionLength, text.Length - startIndex);
+        string description = text.Substring(startIndex, descriptionChars);
+        startIndex += descriptionChars;
+
+        // If there's more text, we have to add it as a field
+        if (startIndex < text.Length)
+        {
+          int fieldChars = Math.Min(Constants.MaximumFieldLength, text.Length - startIndex);
+          string field = text.Substring(startIndex, fieldChars);
+          startIndex += fieldChars;
+          embedBuilder.Fields = [new EmbedFieldBuilder { Name = "...continuation", Value = field }];
         }
+
+        // Removing title from other pages of text
+        title = string.Empty;
+        embedBuilder.Description = description;
+
+        await FollowupAsync("", embed: embedBuilder.Build());
       }
     }
     catch (Exception exception)

@@ -6,7 +6,6 @@ using Discord;
 using Discord.Interactions;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Commands;
-using Serilog;
 using CommandException = Howbot.Core.Models.Exceptions.CommandException;
 
 namespace Howbot.Core.Helpers;
@@ -36,15 +35,21 @@ public static class ModuleHelper
   {
     Guard.Against.Null(commandResponse, nameof(commandResponse));
 
+    if (!string.IsNullOrEmpty(commandResponse.Message))
+    {
+      throw new CommandException(commandResponse.Message);
+    }
+
     if (commandResponse.Exception == null)
     {
-      return;
+      throw new CommandException("An unknown error occurred. Please try again.");
     }
 
     if (commandResponse.Exception.InnerException != null)
     {
       throw new CommandException(commandResponse.Exception.Message, commandResponse.Exception.InnerException);
     }
+      
     throw new CommandException(commandResponse.Exception.Message);
   }
 

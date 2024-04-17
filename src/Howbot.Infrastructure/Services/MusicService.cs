@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text.Json;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,9 +26,9 @@ using Lavalink4NET.Players.Preconditions;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
 using Lavalink4NET.Tracks;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using CacheMode = Lavalink4NET.Rest.Entities.CacheMode;
 
 namespace Howbot.Infrastructure.Services;
 
@@ -120,7 +120,7 @@ public partial class MusicService(
       // The bot is not in the same voice channel as the user.
       PlayerRetrieveStatus.VoiceChannelMismatch => "You are not in the same voice channel as the bot.",
 
-      // The bot failed it's precondition check.
+      // The bot failed its precondition check.
       PlayerRetrieveStatus.PreconditionFailed => "The bot failed it's precondition check.",
 
       _ => "An unknown error occurred while creating the player."
@@ -162,7 +162,7 @@ public partial class MusicService(
   {
     try
     {
-      // TODO: Look if VoiceStateBehavior is required, and what each option does for this command
+      // Voice state behavior will return failed precondition if user is not in a voice channel.
       PlayerRetrieveOptions retrieveOptions = new PlayerRetrieveOptions { ChannelBehavior = PlayerChannelBehavior.Join, VoiceStateBehavior = MemberVoiceStateBehavior.AlwaysRequired };
 
       // The player retrieve options will create a new player if needed.
@@ -180,8 +180,7 @@ public partial class MusicService(
     }
   }
 
-  private ValueTask<HowbotPlayer> CreatePlayerAsync(
-    IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties,
+  private static ValueTask<HowbotPlayer> CreatePlayerAsync(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -193,46 +192,72 @@ public partial class MusicService(
 
   private async Task<List<LavalinkTrack>> GetTracksFromSearchRequestAndProviderAsync(string searchRequest, TrackSearchMode trackSearchMode)
   {
-    List<LavalinkTrack> tracks = [];
-
-    TrackLoadOptions trackLoadOptions = new(trackSearchMode, StrictSearchBehavior.Resolve);
-    // LavaSearch categories to be returned (Tracks, Albums, Artists, Playlists, Text)
-    ImmutableArray<SearchCategory> searchCategories = ImmutableArray.Create(SearchCategory.Track);
-
-    SearchResult? searchResult;
-
     try
     {
-      searchResult = await audioService.Tracks
-        .SearchAsync(searchRequest, loadOptions: trackLoadOptions, categories: searchCategories);
+      if (string.IsNullOrWhiteSpace(searchRequest))
+      {
+        return [];
+      }
+
+      bool isMultipleTracks = ShouldReturnMultipleTracks(searchRequest);
+
+      TrackLoadOptions trackLoadOptions = new()
+      {
+        SearchMode = trackSearchMode,
+        SearchBehavior = StrictSearchBehavior.Resolve,
+        CacheMode = CacheMode.Dynamic
+      };
+
+      return await GetTracksFromSearchQuery(searchRequest, isMultipleTracks, trackLoadOptions);
     }
-    catch (Exception exception)
+    catch (Exception e)
     {
-      Logger.LogError(exception, nameof(GetTracksFromSearchRequestAndProviderAsync));
+      Logger.LogError(e, nameof(GetTracksFromSearchRequestAndProviderAsync));
+      return [];
+    }
+  }
+  
+  private async Task<List<LavalinkTrack>> GetTracksFromSearchQuery(string searchQuery, bool isMultipleTracks = false, TrackLoadOptions trackLoadOptions = default, CancellationToken cancellationToken = default)
+  {
+    SearchResult? searchResult = await audioService.Tracks
+      .SearchAsync(searchQuery, loadOptions: trackLoadOptions, categories: [SearchCategory.Track], cancellationToken: cancellationToken);
 
-      var x = await audioService.Tracks
-                            .LoadTracksAsync(searchRequest, trackLoadOptions);
-
-      searchResult = new SearchResult(x.Tracks, [], [], [], [], ImmutableDictionary<string, JsonElement>.Empty);
+    if (searchResult is not null && !searchResult.Tracks.IsDefaultOrEmpty)
+    {
+      return searchResult.Tracks.ToList();
     }
 
-    if (searchResult == null || searchResult.Tracks.IsDefaultOrEmpty)
+    List<LavalinkTrack> loadedTracks = [];
+      
+    if (isMultipleTracks)
     {
-      return tracks;
-    }
-
-    if (trackSearchMode == TrackSearchMode.None)
-    {
-      tracks.AddRange(searchResult.Tracks);
+      var result = await audioService.Tracks.LoadTracksAsync(searchQuery, loadOptions: trackLoadOptions, cancellationToken: cancellationToken);
+      if (result is { IsSuccess: true, Tracks.IsDefaultOrEmpty: false })
+      {
+        loadedTracks.AddRange(result.Tracks);
+      }
+      else
+      {
+        throw new Exception(result.Exception?.Message ?? "Failed to load tracks.");
+      }
     }
     else
     {
-      tracks.Add(searchResult.Tracks[0]);
+      var result = await audioService.Tracks.LoadTrackAsync(searchQuery, loadOptions: trackLoadOptions, cancellationToken: cancellationToken);
+      if (result is not null)
+      {
+        loadedTracks.Add(result);
+      }
     }
-
-    return tracks;
+      
+    return loadedTracks;
   }
-
+  
+  private static bool ShouldReturnMultipleTracks(string searchRequest)
+  {
+    return searchRequest.Contains("playlist", StringComparison.CurrentCultureIgnoreCase) || searchRequest.Contains("album", StringComparison.CurrentCultureIgnoreCase);
+  }
+  
   public async ValueTask<HowbotPlayer?> GetPlayerByGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default)
   {
     return await audioService.Players.GetPlayerAsync(guildId, cancellationToken) as HowbotPlayer;
@@ -246,45 +271,36 @@ public partial class MusicService(
   {
     try
     {
+      // If the search request is a URL, don't use the LavaSearch plugin
       TrackSearchMode trackSearchMode = UrlRegex().IsMatch(searchRequest) ? TrackSearchMode.None : LavalinkHelper.ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
 
       var tracks = await GetTracksFromSearchRequestAndProviderAsync(searchRequest, trackSearchMode);
       if (tracks.Count == 0)
       {
-        // No tracks found using LavaSearch plugin, use the default native LoadTrackAsync method
-        var track = await audioService.Tracks
-          .LoadTrackAsync(searchRequest, new TrackLoadOptions(trackSearchMode, StrictSearchBehavior.Resolve));
-
-        if (track != null)
-        {
-          await player.PlayAsync(track);
-
-          return CommandResponse.Create(true, lavalinkTrack: track);
-        }
+        return CommandResponse.Create(false, Messages.Responses.CommandPlayNotSuccessfulResponse);
       }
-      else
+
+      List<TrackQueueItem> trackQueueItems = tracks.ConvertAll(track => new TrackQueueItem(new TrackReference(track)));
+
+      // First enqueue the tracks
+      var amountOfTracksAdded = await player.Queue.AddRangeAsync(trackQueueItems);
+
+      if (player.State is PlayerState.Playing or PlayerState.Paused)
       {
-        var trackQueueItems = tracks.ConvertAll(track => new TrackQueueItem(new TrackReference(track)));
-
-        // First enqueue the tracks
-        await player.Queue.AddRangeAsync(trackQueueItems);
-
-        if (player.State is PlayerState.Playing or PlayerState.Paused)
-        {
-          // If the player is already playing or paused, return the tracks added to queue
-          return CommandResponse.Create(true, $"Added {trackQueueItems.Count} tracks to queue.");
-        }
-
-        var trackQueueItem = await player.Queue.TryDequeueAsync(player.Shuffle ? TrackDequeueMode.Shuffle : TrackDequeueMode.Normal);
-        if (trackQueueItem is null)
-        {
-          return CommandResponse.Create(false, Messages.Responses.CommandPlayNotSuccessfulResponse);
-        }
-
-        await player.PlayAsync(trackQueueItem, false);
-
-        return CommandResponse.Create(true, lavalinkTrack: trackQueueItem.Track);
+        return amountOfTracksAdded > 1
+          ? CommandResponse.Create(true, $"Added {amountOfTracksAdded} tracks to queue.")
+          : CommandResponse.Create(true, $"Added {amountOfTracksAdded} track to queue.");
       }
+
+      var trackQueueItem = await player.Queue.TryDequeueAsync(player.Shuffle ? TrackDequeueMode.Shuffle : TrackDequeueMode.Normal);
+      if (trackQueueItem is null)
+      {
+        return CommandResponse.Create(false, Messages.Responses.CommandPlayNotSuccessfulResponse);
+      }
+
+      await player.PlayAsync(trackQueueItem, false);
+
+      return CommandResponse.Create(true, lavalinkTrack: trackQueueItem.Track);
     }
     catch (Exception exception)
     {

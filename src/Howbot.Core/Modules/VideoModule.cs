@@ -1,31 +1,25 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Interactions;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 
 namespace Howbot.Core.Modules;
 
 public class VideoModule(IHttpService httpService, ILoggerAdapter<VideoModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
-  [SlashCommand("w2g", "Creates a Watch2gether room")]
+  [SlashCommand(Constants.Commands.WatchTogetherCommandName, Constants.Commands.WatchTogetherCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
-  public async Task WatchTogetherCommandAsync([Summary("url", "The url to create the room with.")] string? url = null)
+  [RequireBotPermission(GuildPermission.ViewChannel | GuildPermission.SendMessages)]
+  [RequireUserPermission(GuildPermission.Administrator)]
+  public async Task WatchTogetherCommandAsync([Summary("url", "The url to create the room with.")] string url)
   {
-    await DeferAsync();
-
     try
     {
-      var responseMessage =
-        await ModifyOriginalResponseAsync(properties => properties.Content = "Creating Watch2gether room..");
-
-      if (responseMessage is null)
-      {
-        return;
-      }
-
-      if (string.IsNullOrEmpty(url)) return;
-
+      await RespondAsync("Creating Watch2gether room..");
+      
       var watch2GetherRoomUrl = await httpService.CreateWatchTogetherRoomAsync(url);
       if (string.IsNullOrEmpty(watch2GetherRoomUrl))
       {
