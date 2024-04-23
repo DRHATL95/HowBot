@@ -117,6 +117,31 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     }
   }
 
+  public SearchProviderTypes GetSearchProviderTypeAsync(ulong guildId)
+  {
+    try
+    {
+      if (guildId <= 0)
+      {
+        throw new ArgumentException("Invalid guild id");
+      }
+
+      var guildEntity = repository.GetById<Guild>(guildId);
+      if (guildEntity is null)
+      {
+        Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
+        return SearchProviderTypes.YouTubeMusic;
+      }
+
+      return guildEntity.SearchProvider;
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, "Failed to get search provider type for guild [{GuildId}]", guildId);
+      throw;
+    }
+  }
+  
   public async Task UpdateSearchProviderAsync(ulong guildId, SearchProviderTypes searchProviderType)
   {
     try
@@ -149,5 +174,29 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     var guild = GetGuildById(guildId);
 
     return guild is not null;
+  }
+  
+  public async Task UpdateGuildPrefixAsync(ulong guildId, string newPrefix)
+  {
+    try
+    {
+      Guard.Against.NullOrWhiteSpace(newPrefix, nameof(newPrefix));
+
+      var guildEntity = repository.GetById<Guild>(guildId);
+      if (guildEntity is null)
+      {
+        Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
+        return;
+      }
+
+      guildEntity.Prefix = newPrefix;
+
+      await repository.UpdateAsync(guildEntity);
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, "Failed to update guild prefix for guild [{GuildId}]", guildId);
+      throw;
+    }
   }
 }

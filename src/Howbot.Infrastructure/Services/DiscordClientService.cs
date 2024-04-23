@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using Discord;
@@ -272,13 +273,22 @@ public class DiscordClientService(
     return Task.CompletedTask;
   }
 
-  private async Task DiscordSocketClientOnInteractionCreated(SocketInteraction socketInteraction)
+  private async Task DiscordSocketClientOnInteractionCreated(SocketInteraction interaction)
   {
     try
     {
-      var context = new SocketInteractionContext(discordSocketClient, socketInteraction);
-
-      await commandHandlerService.HandleCommandRequestAsync(context);
+      if (interaction is SocketMessageComponent messageComponent && messageComponent.Data.CustomId == "activity_select")
+      {
+        // Handle the select menu interaction
+        var selectedOption = messageComponent.Data.Values.Single();
+        await messageComponent.RespondAsync($"You selected: {selectedOption}");
+      }
+      else
+      {
+        // Handle other types of interactions
+        var context = new SocketInteractionContext(discordSocketClient, interaction);
+        await commandHandlerService.HandleCommandRequestAsync(context);
+      }
     }
     catch (Exception exception)
     {

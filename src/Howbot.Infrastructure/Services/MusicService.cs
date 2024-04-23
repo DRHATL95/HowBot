@@ -111,17 +111,15 @@ public partial class MusicService(
 
     var errorMessage = result.Status switch
     {
-      // The user is not connected to a voice channel.
-      PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not connected to a voice channel.",
+      PlayerRetrieveStatus.UserNotInVoiceChannel => "You must be in a voice channel.",
+      PlayerRetrieveStatus.BotNotConnected => "The bot is not connected to any channel.",
+      PlayerRetrieveStatus.VoiceChannelMismatch => "You must be in the same voice channel as the bot.",
 
-      // The bot is not in a voice channel
-      PlayerRetrieveStatus.BotNotConnected => "The bot is currently not connected to a voice channel.",
-
-      // The bot is not in the same voice channel as the user.
-      PlayerRetrieveStatus.VoiceChannelMismatch => "You are not in the same voice channel as the bot.",
-
-      // The bot failed its precondition check.
-      PlayerRetrieveStatus.PreconditionFailed => "The bot failed it's precondition check.",
+      PlayerRetrieveStatus.PreconditionFailed when Equals(result.Precondition, PlayerPrecondition.Playing) => "The player is currently now playing any track.",
+      PlayerRetrieveStatus.PreconditionFailed when Equals(result.Precondition, PlayerPrecondition.NotPaused) => "The player is already paused.",
+      PlayerRetrieveStatus.PreconditionFailed when Equals(result.Precondition, PlayerPrecondition.Paused) => "The player is not paused.",
+      PlayerRetrieveStatus.PreconditionFailed when Equals(result.Precondition, PlayerPrecondition.QueueEmpty) => "The queue must be empty.",
+      PlayerRetrieveStatus.PreconditionFailed when Equals(result.Precondition, PlayerPrecondition.QueueNotEmpty) => "The queue cannot be empty.",
 
       _ => "An unknown error occurred while creating the player."
     };
@@ -265,12 +263,21 @@ public partial class MusicService(
 
   #region Music Module Commands
 
-  public async ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player,
-    SearchProviderTypes searchProviderType, string searchRequest, IGuildUser user,
+  public async ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player, string searchRequest, IGuildUser user,
     IVoiceState voiceState, ITextChannel textChannel)
   {
     try
     {
+      using var scope = serviceProvider.CreateScope();
+      var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
+      
+      // Attempt to get saved search provider from db for guild
+      SearchProviderTypes searchProviderType = Constants.DefaultSearchProvider;
+      if (databaseService.DoesGuildExist(player.GuildId))
+      {
+        searchProviderType = databaseService.GetSearchProviderTypeAsync(player.GuildId);
+      }
+      
       // If the search request is a URL, don't use the LavaSearch plugin
       TrackSearchMode trackSearchMode = UrlRegex().IsMatch(searchRequest) ? TrackSearchMode.None : LavalinkHelper.ConvertSearchProviderTypeToTrackSearchMode(searchProviderType);
 

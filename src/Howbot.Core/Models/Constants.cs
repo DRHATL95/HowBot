@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using Discord;
+using Lavalink4NET.Players.Preconditions;
 
 namespace Howbot.Core.Models;
 
@@ -9,6 +11,7 @@ public abstract record Constants
   // public const int ApplicationTimeoutInMs = 3000;
   public const int MaximumMessageCount = 10000;
   public const string DefaultPrefix = "!~";
+  public const SearchProviderTypes DefaultSearchProvider = SearchProviderTypes.YouTube;
   
   // Embeds
   public const int MaximumEmbedDescriptionLength = 2048;
@@ -52,9 +55,6 @@ public abstract record Constants
 
     public const string PlaySearchRequestArgumentName = "search_request";
     public const string PlaySearchRequestArgumentDescription = "Search request used for search provider.";
-    public const string PlaySearchTypeArgumentName = "search_type";
-
-    public const string PlaySearchTypeArgumentDescription = "Optional search type used for search request. (Default: YouTube Music)";
 
     public const string PauseCommandName = "pause";
     public const string PauseCommandDescription = "Pauses a currently playing song, otherwise nothing.";
@@ -115,6 +115,24 @@ public abstract record Constants
     
     public const string WatchTogetherCommandName = "w2g";
     public const string WatchTogetherCommandDescription = "Creates a Watch2gether room with a given URL.";
+    
+    public const string ClearCommandName = "clear";
+    public const string ClearCommandDescription = "Clears the current music queue.";
+    
+    public const string CleanCommandName = "clean";
+    public const string CleanCommandDescription = "Cleans the current text channel from bot messages.";
+    
+    public const string ActivitiesCommandName = "activities";
+    public const string ActivitiesCommandDescription = "Gets the current activities for the bot.";
+    
+    public const string MuteCommandName = "mute";
+    public const string MuteCommandDescription = "Mutes a user in the voice channel.";
+    
+    public const string UnmuteCommandName = "unmute";
+    public const string UnmuteCommandDescription = "Unmutes a user in the voice channel.";
+    
+    public const string SettingsProviderArgumentName = "search_type";
+    public const string SettingsProviderArgumentDescription = "Optional search type used for search request. (Default: YouTube Music)";
   }
 
   public struct RabbitMq

@@ -13,4 +13,6 @@ public static class Emojis
   public static string Football => ":football:";
   public static string ThumbsUp => ":thumbsup:";
   public static string NextTrack => ":track_next:";
+  
+  public static string TrashCan => ":wastebasket:";
 }

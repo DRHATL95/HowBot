@@ -18,8 +18,7 @@ public interface IMusicService
 
   ValueTask<string> GetSessionIdForGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default);
 
-  ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player,
-    SearchProviderTypes searchProviderType, string searchRequest, IGuildUser user,
+  ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player, string searchRequest, IGuildUser user,
     IVoiceState voiceState, ITextChannel textChannel);
 
   ValueTask<CommandResponse> PauseTrackAsync(HowbotPlayer player);

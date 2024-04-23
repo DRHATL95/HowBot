@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -35,10 +32,7 @@ public class MusicModule(
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
   public async Task PlayCommandAsync(
-    [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
-    string searchRequest,
-    [Summary(PlaySearchTypeArgumentName, PlaySearchTypeArgumentDescription)]
-    SearchProviderTypes searchProviderType = SearchProviderTypes.YouTubeMusic)
+    [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)] string searchRequest)
   {
     try
     {
@@ -54,11 +48,11 @@ public class MusicModule(
         IGuildUser user = Context.User as IGuildUser ?? throw new InvalidOperationException("User is not a guild user.");
         IVoiceState voiceState = Context.User as IVoiceState ?? throw new InvalidOperationException("User is not connected to a voice channel.");
         ITextChannel channel = Context.Channel as ITextChannel ?? throw new InvalidOperationException("Channel is not a text channel.");
-
+        
         int tracksBeforePlay = player.Queue.Count;
 
         CommandResponse response =
-          await musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
+          await musicService.PlayTrackBySearchTypeAsync(player, searchRequest, user, voiceState,
             channel);
 
         if (!response.IsSuccessful)
@@ -109,7 +103,7 @@ public class MusicModule(
 
       var player =
         await musicService.GetPlayerByContextAsync(Context,
-          preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused));
+          preconditions: [PlayerPrecondition.NotPaused]);
 
       if (player is not null)
       {
@@ -148,7 +142,7 @@ public class MusicModule(
       await DeferAsync();
 
       var player = await musicService
-        .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Paused));
+        .GetPlayerByContextAsync(Context, preconditions: [PlayerPrecondition.Paused]);
 
       if (player is not null)
       {
@@ -497,7 +491,7 @@ public class MusicModule(
       await DeferAsync();
 
       var player = await musicService.GetPlayerByContextAsync(Context,
-        preconditions: [PlayerPrecondition.Playing, PlayerPrecondition.QueueNotEmpty, PlayerPrecondition.Paused]);
+        preconditions: [PlayerPrecondition.QueueNotEmpty]);
 
       if (player is null)
       {
@@ -539,6 +533,36 @@ public class MusicModule(
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(GetQueueCommandAsync));
+      throw;
+    }
+  }
+
+  [SlashCommand(ClearCommandName, ClearCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
+  [RequireGuildUserInVoiceChannel]
+  public async Task ClearQueueCommandAsync()
+  {
+    try
+    {
+      await DeferAsync();
+      
+      var player = await musicService.GetPlayerByContextAsync(Context,
+        preconditions: [PlayerPrecondition.QueueNotEmpty]);
+
+      if (player is null)
+      {
+        return;
+      }
+
+      int tracksRemoved = await player.Queue.ClearAsync();
+      
+      await FollowupAsync($"{Emojis.TrashCan} Removed {tracksRemoved} tracks from the queue.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(ClearQueueCommandAsync));
       throw;
     }
   }

@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
+using Discord.Commands;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using ContextType = Discord.Interactions.ContextType;
+using RunMode = Discord.Interactions.RunMode;
 
 namespace Howbot.Core.Modules;
 
@@ -11,8 +16,8 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
   : InteractionModuleBase<SocketInteractionContext>
 {
   [SlashCommand(Constants.Commands.RollCommandName, Constants.Commands.RollCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  public async Task RollCommandAsync([Summary("totalDice", "Amount of dice to roll. Max is 10.")] int amountOfDice = 1)
+  [Discord.Interactions.RequireContext(ContextType.Guild)]
+  public async Task RollCommandAsync([Discord.Interactions.Summary("totalDice", "Amount of dice to roll. Max is 10.")] int amountOfDice = 1)
   {
     await DeferAsync();
 
@@ -59,7 +64,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
   }
 
   [SlashCommand(Constants.Commands.FlipCommandName, Constants.Commands.FlipCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
+  [Discord.Interactions.RequireContext(ContextType.Guild)]
   public async Task FlipCommandAsync()
   {
     await DeferAsync();
@@ -81,38 +86,46 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
   }
 
-  /*[SlashCommand("test", "test", true, RunMode.Async)]
-  [RequireOwner]
-  public async Task TestCommandAsync()
+  [SlashCommand(Constants.Commands.ActivitiesCommandName, Constants.Commands.ActivitiesCommandDescription, true, RunMode.Async)]
+  public async Task ActivitiesCommandAsync()
   {
-    await DeferAsync();
-
     try
     {
-      var ids = await httpService.GetCurrentApplicationIdsAsync();
-
-      if (ids.Any())
+      var activities = await httpService.GetCurrentApplicationIdsAsync();
+      
+      // Generate a select menu for user to select from to start activity
+      var selectMenuBuilder = new SelectMenuBuilder()
+        .WithPlaceholder("Select an activity")
+        .WithCustomId("activity_select")
+        .WithMinValues(1)
+        .WithMaxValues(1);
+      
+      // Limit the amount of options to 25
+      if (activities.Count > 25)
       {
-        var yt = ids.FirstOrDefault(x => x.Id == 880218394199220334);
-        var link = await httpService.StartDiscordActivityAsync(Context.Channel.Id.ToString(), yt.Id.ToString());
-        if (!string.IsNullOrEmpty(link))
-        {
-          await ModifyOriginalResponseAsync(properties => properties.Content = link);
-          return;
-        }
+        activities = activities.Take(25).ToList();
       }
-
-      await ModifyOriginalResponseAsync(properties => properties.Content = $"Ids returned {ids.Count}");
+      
+      foreach (var activity in activities)
+      {
+        selectMenuBuilder.AddOption(new SelectMenuOptionBuilder().WithLabel(activity.Name).WithValue(activity.Id.ToString()));
+      }
+      
+      var builder = new ComponentBuilder()
+        .WithSelectMenu(selectMenuBuilder);
+      
+      await ReplyAsync(components: builder.Build());
     }
     catch (Exception exception)
     {
-      logger.LogError(exception, nameof(TestCommandAsync));
+      logger.LogError(exception, nameof(ActivitiesCommandAsync));
       throw;
     }
-  }*/
+  }
 
   [SlashCommand(Constants.Commands.EftCommandName, Constants.Commands.EftCommandDescription, true, RunMode.Async)]
-  public async Task EftCommandAsync([Summary("itemName", "The name of the item to search for.")] string itemName)
+  [Discord.Interactions.RequireOwner]
+  public async Task EftCommandAsync([Discord.Interactions.Summary("itemName", "The name of the item to search for.")] string itemName)
   {
     await DeferAsync();
 
