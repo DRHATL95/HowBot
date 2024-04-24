@@ -13,4 +13,5 @@ public sealed record HowbotPlayerOptions() : QueuedLavalinkPlayerOptions
 
   public ITextChannel? TextChannel { get; }
   public IUser? LastRequestedBy { get; }
+  public bool IsAutoPlayEnabled { get; init; }
 }

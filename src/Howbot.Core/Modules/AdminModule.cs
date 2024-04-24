@@ -1,8 +1,6 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -233,14 +231,9 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
       throw;
     }
   }
-  
-  // Add subcommands for settings (Change prefix, volume, etc.)
-  // Add subcommands for user management (Ban, unban, mute, unmute)
-  // Add subcommands for server management (Kick, prune, etc.)
-  // Add subcommands for bot management (Shutdown, restart, etc.)
 
   [Group("settings", "Settings commands for the bot.")]
-  public class SettingsGroup(ILoggerAdapter<SettingsGroup> logger, IServiceProvider serviceProvider) : InteractionModuleBase<SocketInteractionContext>
+  public class SettingsGroup(ILoggerAdapter<SettingsGroup> logger, IMusicService musicService, IServiceProvider serviceProvider) : InteractionModuleBase<SocketInteractionContext>
   {
     // Create a command to display all setting information
     [SlashCommand("info", "Display all current settings for the server.", false, RunMode.Async)]
@@ -273,7 +266,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
     }
     
     [SlashCommand("prefix", "Change the bot prefix for the server.", false, RunMode.Async)]
-    public async Task PrefixCommandAsync(string newPrefix)
+    public async Task PrefixCommandAsync([Summary(Constants.Commands.SettingsPrefixArgumentName, Constants.Commands.SettingsPrefixArgumentDescription)]string newPrefix)
     {
       await DeferAsync();
 
@@ -316,6 +309,55 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
       catch (Exception exception)
       {
         logger.LogError(exception, nameof(ProviderCommandAsync));
+        throw;
+      }
+    }
+    
+    [SlashCommand(Constants.Commands.VolumeCommandName, Constants.Commands.VolumeCommandDescription, false, RunMode.Async)]
+    public async Task VolumeCommandAsync([Summary(Constants.Commands.SettingsVolumeArgumentName, Constants.Commands.SettingsVolumeArgumentDescription)]int? volume = null)
+    {
+      await DeferAsync();
+
+      try
+      {
+        var player = await musicService.GetPlayerByGuildIdAsync(Context.Guild.Id);
+        if (player is null)
+        {
+          await ModifyOriginalResponseAsync(properties => 
+            properties.Content = "Unable to find player in server.");
+          
+          return;
+        }
+        
+        if (!volume.HasValue)
+        {
+          // Respond with the current volume
+          await ModifyOriginalResponseAsync(properties =>
+            properties.Content = $"🔊 Current volume is {player.Volume * 100}%");
+
+          return;
+        }
+        
+        // Update the volume in the database
+        var commandResponse = await musicService.ChangeVolumeAsync(player, volume.Value);
+        
+        if (!commandResponse.IsSuccessful)
+        {
+          ModuleHelper.HandleCommandFailed(commandResponse);
+
+          if (string.IsNullOrEmpty(commandResponse.Message))
+          {
+            await DeleteOriginalResponseAsync();
+            return;
+          }
+        }
+
+        // Send response to user
+        await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
+      }
+      catch (Exception exception)
+      {
+        logger.LogError(exception, nameof(VolumeCommandAsync));
         throw;
       }
     }

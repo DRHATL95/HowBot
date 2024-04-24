@@ -11,6 +11,7 @@ public abstract record Constants
   // public const int ApplicationTimeoutInMs = 3000;
   public const int MaximumMessageCount = 10000;
   public const string DefaultPrefix = "!~";
+  public const float DefaultVolume = 50f;
   public const SearchProviderTypes DefaultSearchProvider = SearchProviderTypes.YouTube;
   
   // Embeds
@@ -24,6 +25,12 @@ public abstract record Constants
     // Discord Development Server (DevTest2)
     public const ulong DiscordDevelopmentGuildId = 656305202185633810;
     public const string BotName = "Howbot";
+  }
+
+  public static class Spotify
+  {
+    public const string SpotifyAPIBaseUrl = "https://api.spotify.com/v1";
+    public const string SpotifyAPIRecommendationsUrl = $"{SpotifyAPIBaseUrl}/recommendations";
   }
 
   // TODO: Revisit this later
@@ -133,6 +140,15 @@ public abstract record Constants
     
     public const string SettingsProviderArgumentName = "search_type";
     public const string SettingsProviderArgumentDescription = "Optional search type used for search request. (Default: YouTube Music)";
+    
+    public const string SettingsVolumeArgumentName = "volume";
+    public const string SettingsVolumeArgumentDescription = "Optional volume level for the bot. (Default: 50)";
+    
+    public const string SettingsPrefixArgumentName = "prefix";
+    public const string SettingsPrefixArgumentDescription = "Optional prefix for the bot. (Default: !~)";
+    
+    public const string AutoPlayCommandName = "autoplay";
+    public const string AutoPlayCommandDescription = "Toggles autoplay for the bot on this Guild.";
   }
 
   public struct RabbitMq

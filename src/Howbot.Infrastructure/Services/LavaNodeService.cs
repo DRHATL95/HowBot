@@ -9,6 +9,7 @@ using Lavalink4NET.Clients.Events;
 using Lavalink4NET.Events;
 using Lavalink4NET.Events.Players;
 using Lavalink4NET.Integrations.Lavasrc;
+using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Protocol.Payloads.Events;
 
 namespace Howbot.Infrastructure.Services;
@@ -16,6 +17,7 @@ namespace Howbot.Infrastructure.Services;
 public class LavaNodeService(
   IAudioService audioService,
   ILoggerAdapter<LavaNodeService> logger,
+  IMusicService musicService,
   IEmbedService embedService)
   : ServiceBase<LavaNodeService>(logger), ILavaNodeService, IAsyncDisposable
 {
@@ -112,7 +114,7 @@ public class LavaNodeService(
     return Task.CompletedTask;
   }
 
-  private Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventArgs)
+  private async Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventArgs)
   {
     if (eventArgs.Reason is not TrackEndReason.Finished)
     {
@@ -124,7 +126,26 @@ public class LavaNodeService(
       Logger.LogDebug("Current song [{SongName}] has ended.", eventArgs.Track.Title);
     }
 
-    return Task.CompletedTask;
+    if (eventArgs.Player is not HowbotPlayer player)
+    {
+      return;
+    }
+
+    if (!player.Queue.IsEmpty || !player.IsAutoPlayEnabled)
+    {
+      await player.DisconnectAsync();
+      return;
+    }
+
+    var track = await musicService.GetSpotifyRecommendationAsync(eventArgs.Track, "US", 1);
+    if (!string.IsNullOrEmpty(track))
+    {
+      await player.PlayAsync(new TrackQueueItem(track));
+    }
+    else
+    {
+      Logger.LogWarning("No recommendations found for track [{TrackName}]", eventArgs.Track.Title);
+    }
   }
 
   private Task AudioServiceOnStatisticsUpdated(object sender, StatisticsUpdatedEventArgs eventArgs)

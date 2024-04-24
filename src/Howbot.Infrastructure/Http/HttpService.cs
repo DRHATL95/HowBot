@@ -1,15 +1,7 @@
-﻿#nullable enable
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
@@ -20,9 +12,14 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Howbot.Infrastructure.Http;
 
-public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpService
+public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, IDisposable
 {
   private readonly HttpClient _client = httpClientFactory.CreateClient();
+  
+  // This is for application ids, this will provide one line at a time from the markdown file
+  // https://raw.githubusercontent.com/Delitefully/DiscordLists/master/activities.md
+  [GeneratedRegex(@"\|\s*!\[Icon\]\((.*?)\)\s*\|\s*(\d{18})\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|")]
+  private static partial Regex DiscordApplicationIdsLineRegex();
 
   /// <summary>
   ///   Gets the response status code of the specified URL.
@@ -245,11 +242,13 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     return new Tuple<string, string, int>(result.Key, trader, maxPrice);
   }
-
-  // This is for application ids, this will provide one line at a time from the markdown file
-  // https://raw.githubusercontent.com/Delitefully/DiscordLists/master/activities.md
-  [GeneratedRegex(@"\|\s*!\[Icon\]\((.*?)\)\s*\|\s*(\d{18})\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|")]
-  private static partial Regex DiscordApplicationIdsLineRegex();
+  
+  public void Dispose()
+  {
+    _client.Dispose();
+    
+    GC.SuppressFinalize(this);
+  }
 }
 
 internal record GraphQlResponse
@@ -396,4 +395,130 @@ internal record Watch2GetherResponse
 
   [JsonProperty("moderated_cam")]
   public bool ModeratedCam { get; set; }
+}
+
+internal record SpotifyRecommendationsResponse
+{
+  [JsonProperty("tracks")]
+  public List<SpotifyTrack> Tracks { get; set; } = new();
+  
+  [JsonProperty("seeds")]
+  public List<SpotifySeed> Seeds { get; set; } = new();
+}
+
+internal record SpotifyTrack
+{
+  [JsonProperty("album")]
+  public SpotifyAlbum Album { get; set; } = new();
+
+  [JsonProperty("artists")]
+  public List<SpotifyArtist> Artists { get; set; } = new();
+
+  [JsonProperty("duration_ms")]
+  public int DurationMs { get; set; }
+
+  [JsonProperty("external_urls")]
+  public Dictionary<string, string> ExternalUrls { get; set; } = new();
+
+  [JsonProperty("id")]
+  public string Id { get; set; } = string.Empty;
+
+  [JsonProperty("name")]
+  public string Name { get; set; } = string.Empty;
+
+  [JsonProperty("popularity")]
+  public int Popularity { get; set; }
+
+  [JsonProperty("preview_url")]
+  public string PreviewUrl { get; set; } = string.Empty;
+
+  [JsonProperty("uri")]
+  public string Uri { get; set; } = string.Empty;
+}
+
+internal record SpotifyAlbum
+{
+  [JsonProperty("album_type")]
+  public string AlbumType { get; set; } = string.Empty;
+
+  [JsonProperty("artists")]
+  public List<SpotifyArtist> Artists { get; set; } = new();
+
+  [JsonProperty("external_urls")]
+  public Dictionary<string, string> ExternalUrls { get; set; } = new();
+
+  [JsonProperty("id")]
+  public string Id { get; set; } = string.Empty;
+
+  [JsonProperty("images")]
+  public List<SpotifyImage> Images { get; set; } = new();
+
+  [JsonProperty("name")]
+  public string Name { get; set; } = string.Empty;
+
+  [JsonProperty("release_date")]
+  public string ReleaseDate { get; set; } = string.Empty;
+
+  [JsonProperty("release_date_precision")]
+  public string ReleaseDatePrecision { get; set; } = string.Empty;
+
+  [JsonProperty("total_tracks")]
+  public int TotalTracks { get; set; }
+
+  [JsonProperty("uri")]
+  public string Uri { get; set; } = string.Empty;
+}
+
+internal record SpotifyArtist
+{
+  [JsonProperty("external_urls")]
+  public Dictionary<string, string> ExternalUrls { get; set; } = new();
+
+  [JsonProperty("href")]
+  public string Href { get; set; } = string.Empty;
+
+  [JsonProperty("id")]
+  public string Id { get; set; } = string.Empty;
+
+  [JsonProperty("name")]
+  public string Name { get; set; } = string.Empty;
+
+  [JsonProperty("type")]
+  public string Type { get; set; } = string.Empty;
+
+  [JsonProperty("uri")]
+  public string Uri { get; set; } = string.Empty;
+}
+
+internal record SpotifyImage
+{
+  [JsonProperty("height")]
+  public int Height { get; set; }
+
+  [JsonProperty("url")]
+  public string Url { get; set; } = string.Empty;
+
+  [JsonProperty("width")]
+  public int Width { get; set; }
+}
+
+internal record SpotifySeed
+{
+  [JsonProperty("initialPoolSize")]
+  public int InitialPoolSize { get; set; }
+
+  [JsonProperty("afterFilteringSize")]
+  public int AfterFilteringSize { get; set; }
+
+  [JsonProperty("afterRelinkingSize")]
+  public int AfterRelinkingSize { get; set; }
+
+  [JsonProperty("href")]
+  public string Href { get; set; } = string.Empty;
+
+  [JsonProperty("id")]
+  public string Id { get; set; } = string.Empty;
+
+  [JsonProperty("type")]
+  public string Type { get; set; } = string.Empty;
 }

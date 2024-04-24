@@ -33,6 +33,9 @@ public static class Configuration
   private const string RabbitMqUserNameKey = "RabbitMQUser";
   private const string RabbitMqPasswordKey = "RabbitMQPassword";
 
+  private const string SpotifyClientIdKey = "SpotifyClientId";
+  private const string SpotifyClientSecretKey = "SpotifyClientSecret";
+
   public static string DiscordToken => GetTokenByName(DiscordApiToken);
 
   public static string DiscordOAuthClientId => GetTokenByName(DiscordOAuthClientIdKey);
@@ -56,6 +59,10 @@ public static class Configuration
   private static string RabbitMqUserName => GetTokenByName(RabbitMqUserNameKey);
 
   private static string RabbitMqPassword => GetTokenByName(RabbitMqPasswordKey);
+  
+  public static string SpotifyClientId => GetTokenByName(SpotifyClientIdKey);
+  
+  public static string SpotifyClientSecret => GetTokenByName(SpotifyClientSecretKey);
 
   /// <summary>
   ///   Represents the gateway intents to subscribe to.

@@ -31,7 +31,7 @@ public class GeneralModule(
   {
     try
     {
-      await DeferAsync(true);
+      await DeferAsync();
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
@@ -201,42 +201,4 @@ public class GeneralModule(
       throw;
     }
   }
-
-  /*[Group("settings", "Settings commands")]
-  public class SettingsGroup(/*IServiceProvider serviceProvider,#1# ILoggerAdapter<SettingsGroup> logger)
-    : InteractionModuleBase<SocketInteractionContext>
-  {
-    [SlashCommand("provider", "Sets the bot default music search provider")]
-    [RequireContext(ContextType.Guild)]
-    [RequireBotPermission(GuildPermission.ManageGuild)]
-    [RequireUserPermission(GuildPermission.ManageGuild)]
-    [RequireOwner] // Until table is updated to support new column
-    public async Task SetProviderCommandAsync(
-      [Summary("provider", "The new music search provider to use for queries.")]
-      SearchProviderTypes provider)
-    {
-      try
-      {
-        await RespondAsync("This command is not yet implemented.");
-
-        // await DeferAsync();
-
-        /*using var scope = serviceProvider.CreateScope();
-        var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
-
-        var guild = databaseService.GetGuildById(Context.Guild.Id);
-        if (guild is null)
-        {
-          throw new CommandException("Guild not found in database.");
-        }
-
-        await databaseService.UpdateSearchProviderAsync(guild.Id, provider);#1#
-      }
-      catch (Exception exception)
-      {
-        logger.LogError(exception, nameof(SetProviderCommandAsync));
-        throw;
-      }
-    }
-  }*/
 }

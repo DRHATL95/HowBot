@@ -7,9 +7,9 @@ namespace Howbot.Core.Interfaces;
 public interface IDatabaseService
 {
   void Initialize();
-
+  
   void AddNewGuild(Guild guild);
-
+  
   Guild? GetGuildById(ulong guildId);
 
   float GetPlayerVolumeLevel(ulong guildId);

@@ -28,6 +28,7 @@ using Lavalink4NET.Rest.Entities.Tracks;
 using Lavalink4NET.Tracks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using SpotifyAPI.Web;
 using CacheMode = Lavalink4NET.Rest.Entities.CacheMode;
 
 namespace Howbot.Infrastructure.Services;
@@ -35,6 +36,7 @@ namespace Howbot.Infrastructure.Services;
 public partial class MusicService(
   IEmbedService embedService,
   IAudioService audioService,
+  ISpotifyClient spotifyClient,
   ILavalinkSessionProvider sessionProvider,
   IServiceProvider serviceProvider,
   ILoggerAdapter<MusicService> logger)
@@ -92,10 +94,10 @@ public partial class MusicService(
     var playerOptions = new HowbotPlayerOptions(textChannel, guildUser)
     {
       DisconnectOnDestroy = true,
-      DisconnectOnStop = true,
+      DisconnectOnStop = false,
       SelfDeaf = true,
-      ClearQueueOnStop = true,
-      ClearHistoryOnStop = true,
+      ClearQueueOnStop = false,
+      ClearHistoryOnStop = false,
       InitialVolume = persistedVolume > 0 ? persistedVolume / 100f : initialVolume / 100f,
     };
 
@@ -259,6 +261,47 @@ public partial class MusicService(
   public async ValueTask<HowbotPlayer?> GetPlayerByGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default)
   {
     return await audioService.Players.GetPlayerAsync(guildId, cancellationToken) as HowbotPlayer;
+  }
+  
+  public async ValueTask<string> GetSpotifyRecommendationAsync(LavalinkTrack lavalinkTrack, string market = "US", int limit = 10, CancellationToken cancellationToken = default)
+  {
+    try
+    {
+      var searchItem = await spotifyClient.Search.Item(new SearchRequest(SearchRequest.Types.Track, $"{lavalinkTrack.Title} {lavalinkTrack.Author}"), cancellationToken);
+      var track = searchItem.Tracks.Items?.FirstOrDefault();
+
+      string? genre = null;
+      FullTrack? fullTrack = null;
+      FullArtist? fullArtist = null;
+      if (track != null)
+      {
+        var trackId = track.Id;
+        fullTrack = await spotifyClient.Tracks.Get(trackId, cancellationToken);
+        fullArtist = await spotifyClient.Artists.Get(track.Artists.First().Id, cancellationToken);
+        genre = fullArtist.Genres.FirstOrDefault();
+      }
+      
+      if (fullTrack is null || fullArtist is null || string.IsNullOrEmpty(genre))
+      {
+        return string.Empty;
+      }
+
+      var recommendationRequest = new RecommendationsRequest() { Limit = limit, Market = market, };
+      
+      recommendationRequest.SeedArtists.Add(fullArtist.Id);
+      recommendationRequest.SeedGenres.Add(genre);
+      recommendationRequest.SeedTracks.Add(fullTrack.Id);
+      
+      var recommendationsResponse = await spotifyClient.Browse
+        .GetRecommendations(recommendationRequest, cancellationToken);
+      
+      return recommendationsResponse.Tracks.Count == 0 || !recommendationsResponse.Tracks[0].ExternalUrls.TryGetValue("spotify", out var url) ? string.Empty : url ?? string.Empty;
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, nameof(GetSpotifyRecommendationAsync));
+      return string.Empty;
+    }
   }
 
   #region Music Module Commands

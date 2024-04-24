@@ -258,55 +258,6 @@ public class MusicModule(
     }
   }
 
-  [SlashCommand(VolumeCommandName, VolumeCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
-  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  public async Task VolumeCommandAsync(int? newVolume = null)
-  {
-    try
-    {
-      await DeferAsync();
-
-      var player = await musicService.GetPlayerByContextAsync(Context, false, true, [PlayerPrecondition.Playing]);
-
-      if (player is null)
-      {
-        return;
-      }
-
-      if (!newVolume.HasValue)
-      {
-        // Respond with the current volume
-        await ModifyOriginalResponseAsync(properties =>
-          properties.Content = $"🔊 Current volume is {player.Volume * 100}%");
-
-        return;
-      }
-
-      var commandResponse = await musicService.ChangeVolumeAsync(player, newVolume.Value);
-
-      if (!commandResponse.IsSuccessful)
-      {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-
-        if (string.IsNullOrEmpty(commandResponse.Message))
-        {
-          await DeleteOriginalResponseAsync();
-          return;
-        }
-      }
-
-      await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
-    }
-    catch (Exception exception)
-    {
-      logger.LogError(exception, nameof(VolumeCommandAsync));
-      throw;
-    }
-  }
-
   [SlashCommand(NowPlayingCommandName, NowPlayingCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
@@ -563,6 +514,31 @@ public class MusicModule(
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(ClearQueueCommandAsync));
+      throw;
+    }
+  }
+
+  [SlashCommand(AutoPlayCommandName, AutoPlayCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  public async Task AutoPlayCommandAsync()
+  {
+    try
+    {
+      await DeferAsync();
+      
+      var player = await musicService.GetPlayerByContextAsync(Context);
+      if (player is null)
+      {
+        return;
+      }
+      
+      player.IsAutoPlayEnabled = !player.IsAutoPlayEnabled;
+      
+      await FollowupAsync($"Autoplay is now {(player.IsAutoPlayEnabled ? "enabled" : "disabled")}.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(AutoPlayCommandAsync));
       throw;
     }
   }

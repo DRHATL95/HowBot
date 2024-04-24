@@ -16,6 +16,7 @@ using Lavalink4NET.InactivityTracking.Trackers.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpotifyAPI.Web;
 
 namespace Howbot.Infrastructure;
 
@@ -53,7 +54,15 @@ public static class ServiceCollectionSetupExtensions
     // Discord related services
     services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
     services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
-
+    
+    // Spotify related services
+    var spotifyConfig = SpotifyClientConfig.CreateDefault();
+    var request = new ClientCredentialsRequest(Configuration.SpotifyClientId, Configuration.SpotifyClientSecret);
+    var response = new OAuthClient(spotifyConfig).RequestToken(request).Result;
+    
+    services.AddSingleton<ISpotifyClient, SpotifyClient>(x =>
+      new SpotifyClient(spotifyConfig.WithToken(response.AccessToken)));
+    
     // Howbot related services
     services.AddSingleton<IHowbotService, HowbotService>();
     services.AddSingleton<ICommandHandlerService, CommandHandlerService>();

@@ -15,6 +15,7 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
 {
   private readonly ILogger<HowbotPlayer> _logger = properties.Logger;
   public ITextChannel? TextChannel { get; } = properties.Options.Value.TextChannel;
+  public bool IsAutoPlayEnabled { get; set; } = properties.Options.Value.IsAutoPlayEnabled;
 
   #region Inactivity Tracking Events
 

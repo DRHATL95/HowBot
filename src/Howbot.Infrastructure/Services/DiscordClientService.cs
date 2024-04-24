@@ -71,12 +71,6 @@ public class DiscordClientService(
     {
       // Will signal ready state. Must be called only when bot has finished logging in.
       await discordSocketClient.StartAsync();
-
-      // Only in debug, set bots online presence to offline
-      if (Configuration.IsDebug())
-      {
-        await discordSocketClient.SetStatusAsync(UserStatus.Invisible);
-      }
     }
     catch (Exception exception)
     {

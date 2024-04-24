@@ -9,6 +9,7 @@ using Howbot.Core.Models.Commands;
 using Howbot.Core.Models.Players;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
+using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Interfaces;
 
@@ -51,4 +52,6 @@ public interface IMusicService
   CommandResponse GetMusicQueueForServer(HowbotPlayer player);
 
   ValueTask<HowbotPlayer?> GetPlayerByGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default);
+  
+  ValueTask<string> GetSpotifyRecommendationAsync(LavalinkTrack lavalinkTrack, string market = "US", int limit = 10, CancellationToken cancellationToken = default);
 }
