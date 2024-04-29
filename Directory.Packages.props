@@ -82,7 +82,7 @@
     <PackageVersion Include="Swashbuckle.AspNetCore.Annotations" Version="6.5.0" />
     <PackageVersion Include="Victoria" Version="6.0.1026" />
     <PackageVersion Include="WebSocketSharp-netstandard" Version="1.0.1" />
-    <PackageVersion Include="xunit" Version="2.6.6" />
+    <PackageVersion Include="xunit" Version="2.8.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.6">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
