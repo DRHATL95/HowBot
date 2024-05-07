@@ -2,18 +2,18 @@
     background-color: var(--nord0); /* Use darker shade for navbar bg */
 }
 
-    .navbar-custom .navbar-brand, .navbar-custom .nav-link {
-        color: var(--nord4); /* Lighter text for contrast */
-    }
+.navbar-custom .navbar-brand, .navbar-custom .nav-link {
+    color: var(--nord4); /* Lighter text for contrast */
+}
 
-        .navbar-custom .nav-link:hover, .navbar-custom .nav-link:focus {
-            color: var(--nord7); /* A frost color for hover state */
-        }
+.navbar-custom .nav-link:hover, .navbar-custom .nav-link:focus {
+    color: var(--nord7); /* A frost color for hover state */
+}
 
-        .navbar-custom .nav-link.active {
-            color: var(--nord8); /* Different frost color for active link */
-            background-color: var(--nord1); /* Slightly lighter navbar bg for active link */
-        }
+.navbar-custom .nav-link.active {
+    color: var(--nord8); /* Different frost color for active link */
+    background-color: var(--nord1); /* Slightly lighter navbar bg for active link */
+}
 
 /* Adjustments for mobile nav toggle */
 .navbar-toggler {

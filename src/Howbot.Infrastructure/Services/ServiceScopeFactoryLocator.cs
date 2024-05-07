@@ -1,8 +1,7 @@
-﻿using System;
-using Howbot.Core.Interfaces;
+﻿using Howbot.Core.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 /// <summary>
 ///   A wrapper around ServiceScopeFactory to make it easier to fake out with MOQ.

@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Howbot.Core.Models.Commands;
+﻿namespace Howbot.Core.Models.Commands;
 
 public class ApiCommandRequest : CommandRequestBase
 {
-
   public Dictionary<string, string> Arguments { get; init; } = [];
 
   public static ApiCommandRequest Create(CreateApiCommandRequestParameters parameters)
@@ -25,12 +21,12 @@ public class ApiCommandRequest : CommandRequestBase
   }
 }
 
-public struct CreateApiCommandRequestParameters()
+public struct CreateApiCommandRequestParameters
 {
   public CommandTypes CommandType { get; init; }
 
   public ulong GuildId { get; init; }
-  
+
   public ulong UserId { get; init; }
 
   public Dictionary<string, string> Arguments { get; init; }

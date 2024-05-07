@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Howbot.Core.Models;
@@ -12,23 +9,35 @@ namespace Howbot.Core.Helpers;
 
 public static class ModuleHelper
 {
-  public static readonly Dictionary<string, string> CommandExampleDictionary = new()
+  public static readonly Dictionary<string, List<string>> CommandExampleDictionary = new()
   {
-    { Constants.Commands.PingCommandName, "/ping" },
-    { Constants.Commands.HelpCommandName, "/help" },
-    { Constants.Commands.JoinCommandName, "/join" },
-    { Constants.Commands.LeaveCommandName, "/leave" },
-    { Constants.Commands.PlayCommandName, "/play https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
-    // { Constants.Commands.StopCommandName, "/stop" },
-    { Constants.Commands.PauseCommandName, "/pause" },
-    { Constants.Commands.ResumeCommandName, "/resume" },
-    { Constants.Commands.SkipCommandName, "/skip" },
-    // { Constants.Commands.QueueCommandName, "/queue" },
-    // { Constants.Commands.ClearCommandName, "/clear" },
-    { Constants.Commands.SeekCommandName, "/seek 1:30" },
-    { Constants.Commands.VolumeCommandName, "/volume 50" },
-    { Constants.Commands.ShuffleCommandName, "/shuffle" },
-    { Constants.Commands.NowPlayingCommandName, "/nowplaying" }
+    { Constants.Commands.PingCommandName, ["/ping"] },
+    { Constants.Commands.HelpCommandName, ["/help", "/help ping"] },
+    { Constants.Commands.JoinCommandName, ["/join"] },
+    { Constants.Commands.LeaveCommandName, ["/leave"] },
+    {
+      Constants.Commands.PlayCommandName,
+      ["/play https://www.youtube.com/watch?v=dQw4w9WgXcQ", "/play my favorite song"]
+    },
+    { Constants.Commands.PauseCommandName, ["/pause"] },
+    { Constants.Commands.ResumeCommandName, ["/resume"] },
+    { Constants.Commands.SkipCommandName, ["/skip"] },
+    { Constants.Commands.QueueCommandName, ["/queue"] },
+    { Constants.Commands.ClearCommandName, ["/clear"] },
+    // { Constants.Commands.LoopCommandName, ["/loop"] },
+    { Constants.Commands.SeekCommandName, ["/seek 1:30", "/seek 0 1 30"] },
+    { Constants.Commands.VolumeCommandName, ["/volume 50"] },
+    { Constants.Commands.ShuffleCommandName, ["/shuffle"] },
+    { Constants.Commands.NowPlayingCommandName, ["/nowplaying"] },
+    { Constants.Commands.BanCommandName, ["/ban @user"] },
+    { Constants.Commands.KickCommandName, ["/kick @user"] },
+    { Constants.Commands.MuteCommandName, ["/mute @user"] },
+    { Constants.Commands.UnmuteCommandName, ["/unmute @user"] },
+    { Constants.Commands.SlowmodeCommandName, ["/slowmode 5"] },
+    { Constants.Commands.LockCommandName, ["/lock"] },
+    { Constants.Commands.UnlockCommandName, ["/unlock"] },
+    { Constants.Commands.PurgeCommandName, ["/purge 5"] },
+    { Constants.Commands.SayCommandName, ["/say Hello, World!"] }
   };
 
   public static void HandleCommandFailed(CommandResponse commandResponse)
@@ -49,7 +58,7 @@ public static class ModuleHelper
     {
       throw new CommandException(commandResponse.Exception.Message, commandResponse.Exception.InnerException);
     }
-      
+
     throw new CommandException(commandResponse.Exception.Message);
   }
 
@@ -97,6 +106,8 @@ public static class ModuleHelper
       var originalResponse = await context.Interaction.GetOriginalResponseAsync();
 
       await originalResponse.DeleteAsync();
+
+      return;
     }
 
     if (response.IsSuccessful)

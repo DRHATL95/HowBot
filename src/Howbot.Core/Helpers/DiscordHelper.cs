@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -33,8 +31,8 @@ public static class DiscordHelper
     {
       Guard.Against.Null(guild, nameof(guild));
 
-      string guildName = guild.Name ?? "Unknown Guild";
-      ulong guildId = guild.Id;
+      var guildName = guild.Name ?? "Unknown Guild";
+      var guildId = guild.Id;
 
       return $"[{guildName} - {guildId}]";
     }

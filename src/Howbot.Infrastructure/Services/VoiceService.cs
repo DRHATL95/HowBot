@@ -1,10 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models.Commands;
-using Howbot.Core.Services;
 using Lavalink4NET;
 using Lavalink4NET.Players;
 using Microsoft.Extensions.Options;

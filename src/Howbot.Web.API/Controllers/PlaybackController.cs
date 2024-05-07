@@ -84,16 +84,16 @@ public class PlaybackController(MessageQueuePublisherService publisherService) :
       return BadRequest("Invalid guild id");
     }
 
-    var commandRequestParams = new CreateApiCommandRequestParameters()
+    var commandRequestParams = new CreateApiCommandRequestParameters
     {
       CommandType = CommandTypes.JoinVoiceChannel,
       GuildId = guildId,
       Arguments = new Dictionary<string, string> { { "channelId", "1083117434443153518" } }
     };
-    
+
     var commandRequest = ApiCommandRequest.Create(commandRequestParams);
     var commandRequestJson = JsonConvert.SerializeObject(commandRequest);
-    
+
     var commandResponseJson = await publisherService.CallAsync(commandRequestJson);
     var commandResponse = JsonConvert.DeserializeObject<ApiCommandResponse>(commandResponseJson);
 

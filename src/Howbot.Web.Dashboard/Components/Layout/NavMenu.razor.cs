@@ -32,9 +32,12 @@ public partial class NavMenu : ComponentBase
 
   private void Logout()
   {
-    if (!IsAuthenticated) return;
+    if (!IsAuthenticated)
+    {
+      return;
+    }
 
     // Call the blazor server logout endpoint
-    NavigationManager.NavigateTo("/authentication/logout", forceLoad: true);
+    NavigationManager.NavigateTo("/authentication/logout", true);
   }
 }

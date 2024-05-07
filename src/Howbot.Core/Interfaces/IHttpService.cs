@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Howbot.Core.Models;
+﻿using Howbot.Core.Models;
 
 namespace Howbot.Core.Interfaces;
 
@@ -14,7 +10,9 @@ public interface IHttpService
 
   Task<List<ActivityApplication>> GetCurrentApplicationIdsAsync(CancellationToken cancellationToken = default);
 
-  Task<string> StartDiscordActivityAsync(string channelId, string activityId, CancellationToken cancellationToken = default);
+  Task<string> StartDiscordActivityAsync(string channelId, string activityId,
+    CancellationToken cancellationToken = default);
 
-  Task<Tuple<string, string, int>?> GetTarkovMarketPriceByItemNameAsync(string itemName, CancellationToken cancellationToken = default);
+  Task<Tuple<string, string, int>?> GetTarkovMarketPriceByItemNameAsync(string itemName,
+    CancellationToken cancellationToken = default);
 }

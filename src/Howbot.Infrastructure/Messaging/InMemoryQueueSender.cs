@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Howbot.Core.Interfaces;
+﻿using Howbot.Core.Interfaces;
 
 namespace Howbot.Infrastructure.Messaging;
 

@@ -12,6 +12,6 @@
     color: var(--nord9);
 }
 
-    .link-dark:hover {
-        color: var(--nord10);
-    }
+.link-dark:hover {
+    color: var(--nord10);
+}

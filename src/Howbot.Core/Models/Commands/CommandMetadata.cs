@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Howbot.Core.Models.Commands;
+﻿namespace Howbot.Core.Models.Commands;
 
 public struct CommandMetadata
 {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -11,23 +7,29 @@ using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Commands;
 using Howbot.Core.Models.Exceptions;
-using Howbot.Core.Services;
 using Newtonsoft.Json;
 
 namespace Howbot.Infrastructure.Services;
-public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSocketClient discordSocketClient, InteractionService interactionService, IMusicService musicService, ILoggerAdapter<CommandHandlerService> logger) : ServiceBase<CommandHandlerService>(logger), ICommandHandlerService
+
+public class CommandHandlerService(
+  IServiceProvider serviceProvider,
+  DiscordSocketClient discordSocketClient,
+  InteractionService interactionService,
+  IMusicService musicService,
+  ILoggerAdapter<CommandHandlerService> logger) : ServiceBase<CommandHandlerService>(logger), ICommandHandlerService
 {
   /// <summary>
-  /// This will be called internally when using the bot. This will handle the command request and execute the command.
+  ///   This will be called internally when using the bot. This will handle the command request and execute the command.
   /// </summary>
   /// <param name="socketInteractionContext"></param>
   /// <param name="cancellationToken"></param>
   /// <returns></returns>
-  public async Task<CommandResponse> HandleCommandRequestAsync(SocketInteractionContext socketInteractionContext, CancellationToken cancellationToken = default)
+  public async Task<CommandResponse> HandleCommandRequestAsync(SocketInteractionContext socketInteractionContext,
+    CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
     Guard.Against.Null(socketInteractionContext, nameof(socketInteractionContext));
-    
+
     try
     {
       var result = await interactionService.ExecuteCommandAsync(socketInteractionContext, serviceProvider);
@@ -61,13 +63,14 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
   }
 
   /// <summary>
-  /// This will be called when using the API. The command will be sent through MQ, parsed and then executed.
-  /// Once executed, the response will be sent back to the API.
+  ///   This will be called when using the API. The command will be sent through MQ, parsed and then executed.
+  ///   Once executed, the response will be sent back to the API.
   /// </summary>
   /// <param name="commandJson"></param>
   /// <param name="cancellationToken"></param>
   /// <returns></returns>
-  public async Task<ApiCommandResponse> HandleCommandRequestAsync(string commandJson, CancellationToken cancellationToken = default)
+  public async Task<ApiCommandResponse> HandleCommandRequestAsync(string commandJson,
+    CancellationToken cancellationToken = default)
   {
     try
     {
@@ -92,7 +95,8 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
     }
   }
 
-  private async ValueTask<ApiCommandResponse> HandleCommandExecuteAsync(ApiCommandRequest command, CancellationToken cancellationToken = default)
+  private async ValueTask<ApiCommandResponse> HandleCommandExecuteAsync(ApiCommandRequest command,
+    CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
@@ -227,18 +231,18 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
       return ApiCommandResponse.Create(false, new ApiCommandRequestException("Guild not found"));
     }
 
-    var guildDto = new GuildDto()
+    var guildDto = new GuildDto
     {
       Id = guild.Id,
       Name = guild.Name,
       Icon = guild.IconUrl,
-      Permissions = (int) guild.CurrentUser.GuildPermissions.RawValue,
-      Owner = guild.OwnerId == command.Metadata.RequestedById,
+      Permissions = (int)guild.CurrentUser.GuildPermissions.RawValue,
+      Owner = guild.OwnerId == command.Metadata.RequestedById
     };
 
     return ApiCommandResponse.Create(true, value: guildDto);
   }
-  
+
   private ApiCommandResponse HandleGetGuildsForUser(ApiCommandRequest command)
   {
     // Get the guild user 
@@ -250,18 +254,18 @@ public class CommandHandlerService(IServiceProvider serviceProvider, DiscordSock
     }
 
     var guilds = user.MutualGuilds;
-    
-    var guildsDto = guilds.Select(g => new GuildDto()
+
+    var guildsDto = guilds.Select(g => new GuildDto
     {
       Id = g.Id,
       Name = g.Name,
       Icon = g.IconUrl,
-      Permissions = (int) g.CurrentUser.GuildPermissions.RawValue,
-      Owner = g.OwnerId == user.Id,
+      Permissions = (int)g.CurrentUser.GuildPermissions.RawValue,
+      Owner = g.OwnerId == user.Id
     });
 
     return ApiCommandResponse.Create(true, value: guildsDto);
   }
-  
+
   #endregion
 }

@@ -1,12 +1,11 @@
-﻿using System;
+﻿namespace Howbot.Core.Models.Commands;
 
-namespace Howbot.Core.Models.Commands;
 public abstract class CommandRequestBase
 {
   public CommandTypes CommandType { get; init; }
-  
+
   public ulong GuildId { get; set; }
-  
+
   public CommandRequestMetadata Metadata { get; init; }
 }
 

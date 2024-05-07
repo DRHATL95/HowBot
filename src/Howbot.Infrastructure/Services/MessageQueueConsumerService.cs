@@ -1,7 +1,4 @@
-﻿using System;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Text;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models.Commands;
 using Howbot.Core.Models.Exceptions;
@@ -27,12 +24,12 @@ public class MessageQueueConsumerService(
     using var connection = connectionFactory.CreateConnection();
     using var channel = connection.CreateModel();
 
-    channel.QueueDeclare(queue: MessageQueueConstants.RpcQueue, durable: true, exclusive: false, autoDelete: false, arguments: null);
-    channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+    channel.QueueDeclare(MessageQueueConstants.RpcQueue, true, false, false, null);
+    channel.BasicQos(0, 1, false);
 
     var consumer = new EventingBasicConsumer(channel);
 
-    channel.BasicConsume(MessageQueueConstants.RpcQueue, autoAck: false, consumer);
+    channel.BasicConsume(MessageQueueConstants.RpcQueue, false, consumer);
 
     consumer.Received += ConsumerOnReceived;
 
@@ -41,7 +38,10 @@ public class MessageQueueConsumerService(
 
   private async void ConsumerOnReceived(object? sender, BasicDeliverEventArgs e)
   {
-    if (sender is not EventingBasicConsumer consumer) return;
+    if (sender is not EventingBasicConsumer consumer)
+    {
+      return;
+    }
 
     var channel = consumer.Model;
     var props = e.BasicProperties;
@@ -68,7 +68,7 @@ public class MessageQueueConsumerService(
       try
       {
         // Process the message
-        channel.BasicAck(deliveryTag: e.DeliveryTag, multiple: false);
+        channel.BasicAck(e.DeliveryTag, false);
       }
       catch (Exception exception)
       {
@@ -77,7 +77,8 @@ public class MessageQueueConsumerService(
     }
   }
 
-  private async Task<ApiCommandResponse> HandleMessageRequestAsync(byte[] bodyContent, CancellationToken cancellationToken = default)
+  private async Task<ApiCommandResponse> HandleMessageRequestAsync(byte[] bodyContent,
+    CancellationToken cancellationToken = default)
   {
     try
     {
@@ -95,7 +96,7 @@ public class MessageQueueConsumerService(
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(HandleMessageRequestAsync));
-      return ApiCommandResponse.Create(false, exception: new ApiCommandRequestException(exception.Message));
+      return ApiCommandResponse.Create(false, new ApiCommandRequestException(exception.Message));
     }
   }
 }

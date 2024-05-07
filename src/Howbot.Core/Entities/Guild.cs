@@ -5,7 +5,7 @@ namespace Howbot.Core.Entities;
 
 public class Guild : BaseEntity
 {
-  [Required][StringLength(10)] public string Prefix { get; set; } = Constants.DefaultPrefix;
+  [Required] [StringLength(10)] public string Prefix { get; set; } = Constants.DefaultPrefix;
 
   [Required] public float Volume { get; set; } = 100.0f;
 

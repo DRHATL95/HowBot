@@ -1,9 +1,7 @@
-﻿using System;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data;
 using Howbot.Infrastructure.Http;
@@ -53,20 +51,23 @@ public static class ServiceCollectionSetupExtensions
   {
     // Discord related services
     services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
-    services.AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
-    
+    services.AddSingleton(x =>
+      new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
+
     // Spotify related services
     var spotifyConfig = SpotifyClientConfig.CreateDefault();
     var request = new ClientCredentialsRequest(Configuration.SpotifyClientId, Configuration.SpotifyClientSecret);
     var response = new OAuthClient(spotifyConfig).RequestToken(request).Result;
-    
+
     services.AddSingleton<ISpotifyClient, SpotifyClient>(x =>
       new SpotifyClient(spotifyConfig.WithToken(response.AccessToken)));
-    
+
     // Howbot related services
     services.AddSingleton<IHowbotService, HowbotService>();
     services.AddSingleton<ICommandHandlerService, CommandHandlerService>();
-    services.AddSingleton<IVoiceService, VoiceService>(); // TODO: Remove this service, and add functions to music service or lava node service
+    services
+      .AddSingleton<IVoiceService,
+        VoiceService>(); // TODO: Remove this service, and add functions to music service or lava node service
     services.AddSingleton<IMusicService, MusicService>();
     services.AddSingleton<IEmbedService, EmbedService>();
     services.AddSingleton<IDiscordClientService, DiscordClientService>();

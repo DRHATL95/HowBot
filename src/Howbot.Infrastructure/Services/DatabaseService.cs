@@ -1,10 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Howbot.Infrastructure.Services;
@@ -12,26 +9,6 @@ namespace Howbot.Infrastructure.Services;
 public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseService> logger)
   : ServiceBase<DatabaseService>(logger), IDatabaseService
 {
-  private bool ShouldCreateGuild(ulong guildId)
-  {
-    try
-    {
-      Guard.Against.NegativeOrZero((long)guildId, nameof(guildId));
-
-      return repository.GetById<Guild>(guildId) is null;
-    }
-    catch (ArgumentException)
-    {
-      Logger.LogError("Unable to check if guild should be created. Invalid id provided");
-      return false;
-    }
-    catch (Exception e)
-    {
-      Logger.LogError(e, "Failed to check if guild should be created");
-      return false;
-    }
-  }
-  
   public void AddNewGuild(Guild guild)
   {
     try
@@ -55,7 +32,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
   }
 
   /// <summary>
-  /// Retrieves a Guild from the database by its ID. If the Guild does not exist, a new one is created.
+  ///   Retrieves a Guild from the database by its ID. If the Guild does not exist, a new one is created.
   /// </summary>
   /// <param name="guildId">The ID of the Guild.</param>
   /// <returns>The Guild object if found, otherwise null.</returns>
@@ -72,7 +49,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       }
 
       Logger.LogInformation("Adding new guild with id [{GuildId}] to database", guildId);
-        
+
       AddNewGuild(new Guild
       {
         Id = guildId,
@@ -182,7 +159,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       throw;
     }
   }
-  
+
   public async Task UpdateSearchProviderAsync(ulong guildId, SearchProviderTypes searchProviderType)
   {
     try
@@ -216,7 +193,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
 
     return guild is not null;
   }
-  
+
   public async Task UpdateGuildPrefixAsync(ulong guildId, string newPrefix)
   {
     try
@@ -238,6 +215,26 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     {
       Logger.LogError(exception, "Failed to update guild prefix for guild [{GuildId}]", guildId);
       throw;
+    }
+  }
+
+  private bool ShouldCreateGuild(ulong guildId)
+  {
+    try
+    {
+      Guard.Against.NegativeOrZero((long)guildId, nameof(guildId));
+
+      return repository.GetById<Guild>(guildId) is null;
+    }
+    catch (ArgumentException)
+    {
+      Logger.LogError("Unable to check if guild should be created. Invalid id provided");
+      return false;
+    }
+    catch (Exception e)
+    {
+      Logger.LogError(e, "Failed to check if guild should be created");
+      return false;
     }
   }
 }

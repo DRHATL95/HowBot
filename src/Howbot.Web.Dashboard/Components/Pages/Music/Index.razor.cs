@@ -28,14 +28,14 @@ public partial class Index
   {
     try
     {
-      var response = await HttpClient.GetAsync($"api/Bot");
+      var response = await HttpClient.GetAsync("api/Bot");
       if (response.IsSuccessStatusCode)
       {
         var result = await response.Content.ReadFromJsonAsync<ApiCommandResponse>();
 
         if (result != null)
         {
-          SelectedGuild = JsonConvert.DeserializeObject<GuildDto>((result.Value as string) ?? string.Empty);
+          SelectedGuild = JsonConvert.DeserializeObject<GuildDto>(result.Value as string ?? string.Empty);
         }
       }
     }
@@ -53,12 +53,7 @@ public partial class Index
       return;
     }
 
-    var track = new LavalinkTrack
-    {
-      Title = "The Best Song",
-      Identifier = "123",
-      Author = "The Best Artist",
-    };
+    var track = new LavalinkTrack { Title = "The Best Song", Identifier = "123", Author = "The Best Artist" };
 
     if (CurrentTrack != null)
     {

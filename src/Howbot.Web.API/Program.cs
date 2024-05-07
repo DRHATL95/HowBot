@@ -17,7 +17,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 
 builder.Services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
-builder.Services.AddSingleton<DiscordRestClient>(_ => new DiscordRestClient(new DiscordRestConfig()
+builder.Services.AddSingleton<DiscordRestClient>(_ => new DiscordRestClient(new DiscordRestConfig
 {
   LogLevel = LogSeverity.Info
 }));
@@ -27,14 +27,16 @@ builder.Services.AddMemoryCache();
 builder.Services.TryAddSingleton<ILavalinkApiClientFactory, LavalinkApiClientFactory>();
 
 // RabbitMQ - Web API only needs to publish messages
-builder.Services.AddSingleton<MessageQueuePublisherService>(sp => new MessageQueuePublisherService(Configuration.RabbitMqConnectionFactory, sp.GetRequiredService<ILoggerAdapter<MessageQueuePublisherService>>()));
+builder.Services.AddSingleton<MessageQueuePublisherService>(sp =>
+  new MessageQueuePublisherService(Configuration.RabbitMqConnectionFactory,
+    sp.GetRequiredService<ILoggerAdapter<MessageQueuePublisherService>>()));
 
 var app = builder.Build();
 
 var discordRestClient = app.Services.GetRequiredService<DiscordRestClient>();
 await discordRestClient.LoginAsync(TokenType.Bot, Configuration.DiscordToken);
 
-discordRestClient.Log += (message) =>
+discordRestClient.Log += message =>
 {
   app.Services.GetRequiredService<ILoggerAdapter<Program>>().Log(LogLevel.Information, message.Message);
   return Task.CompletedTask;

@@ -1,13 +1,12 @@
 ﻿@page "/music/{GuildId:long}"
 @attribute [Authorize]
+@using Howbot.Core.Models
+@using Microsoft.AspNetCore.Authorization
 @inherits ComponentBase
 @inject HttpClient HttpClient
 @rendermode InteractiveServer
 
 <PageTitle>Music - @(Constants.Discord.BotName)</PageTitle>
-
-@using Microsoft.AspNetCore.Authorization
-@using Howbot.Core.Models
 
 <h2 class="text-center mb-5 text-nord4">Music Queue for @SelectedGuild?.Name</h2>
 

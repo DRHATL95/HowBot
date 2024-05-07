@@ -1,20 +1,17 @@
-﻿using System;
-
-namespace Howbot.Core.Models.Commands;
+﻿namespace Howbot.Core.Models.Commands;
 
 /// <summary>
-/// Command requests that come from internally, executed in discord text channels.
+///   Command requests that come from internally, executed in discord text channels.
 /// </summary>
 public class CommandRequest : CommandRequestBase
 {
-  
   /// <summary>
-  /// The channel where the command was executed from, will be a Discord TextChannel id.
+  ///   The channel where the command was executed from, will be a Discord TextChannel id.
   /// </summary>
   public ulong ChannelId { get; init; }
 
   /// <summary>
-  /// TODO
+  ///   TODO
   /// </summary>
   /// <param name="commandType">The command request type. Will always be</param>
   /// <param name="guildId">The guild where the command was executed</param>
@@ -23,16 +20,14 @@ public class CommandRequest : CommandRequestBase
   /// <returns>A new command request</returns>
   public static CommandRequest Create(CommandTypes commandType, ulong guildId, ulong channelId, ulong userId)
   {
-    return new CommandRequest()
+    return new CommandRequest
     {
       CommandType = commandType,
       GuildId = guildId,
       ChannelId = channelId,
-      Metadata = new CommandRequestMetadata()
+      Metadata = new CommandRequestMetadata
       {
-        Source = CommandSource.Discord,
-        RequestedById = userId,
-        RequestDateTime = DateTime.UtcNow
+        Source = CommandSource.Discord, RequestedById = userId, RequestDateTime = DateTime.UtcNow
       }
     };
   }

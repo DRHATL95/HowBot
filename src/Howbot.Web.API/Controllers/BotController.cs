@@ -1,5 +1,4 @@
-﻿using Discord;
-using Howbot.Core.Models;
+﻿using Howbot.Core.Models;
 using Howbot.Core.Models.Commands;
 using Howbot.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -14,17 +13,15 @@ public class BotController(MessageQueuePublisherService messageQueuePublisherSer
   [HttpGet]
   public async Task<IActionResult> Get()
   {
-    var commandParams = new CreateApiCommandRequestParameters()
+    var commandParams = new CreateApiCommandRequestParameters
     {
-      CommandType = CommandTypes.Guild, 
-      GuildId = 656305202185633810, 
-      UserId = 213133997520191489
+      CommandType = CommandTypes.Guild, GuildId = 656305202185633810, UserId = 213133997520191489
     };
-    
-    ApiCommandRequest commandRequest = ApiCommandRequest.Create(commandParams);
-    
+
+    var commandRequest = ApiCommandRequest.Create(commandParams);
+
     var commandRequestJson = JsonConvert.SerializeObject(commandRequest);
-    
+
     var commandResultJson = await messageQueuePublisherService.CallAsync(commandRequestJson);
     if (string.IsNullOrEmpty(commandResultJson))
     {
@@ -51,15 +48,11 @@ public class BotController(MessageQueuePublisherService messageQueuePublisherSer
   [HttpGet("guilds/{userId}")]
   public async Task<IActionResult> GetGuildsForUserId(ulong userId)
   {
-    var commandParams = new CreateApiCommandRequestParameters()
-    {
-      CommandType = CommandTypes.Guilds, 
-      UserId = userId
-    };
-    
+    var commandParams = new CreateApiCommandRequestParameters { CommandType = CommandTypes.Guilds, UserId = userId };
+
     var commandRequest = ApiCommandRequest.Create(commandParams);
     var commandRequestJson = JsonConvert.SerializeObject(commandRequest);
-    
+
     var commandResponseJson = await messageQueuePublisherService.CallAsync(commandRequestJson);
     var commandResponse = JsonConvert.DeserializeObject<ApiCommandResponse>(commandResponseJson);
 
@@ -67,10 +60,10 @@ public class BotController(MessageQueuePublisherService messageQueuePublisherSer
     {
       return BadRequest("Unable to get guilds for user");
     }
-    
+
     // Parse the guilds from json string
     var guilds = JsonConvert.DeserializeObject<List<GuildDto>>(commandResponse.Value?.ToString() ?? string.Empty);
-    
+
     return Ok(guilds);
   }
 }

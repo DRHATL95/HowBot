@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Howbot.Core.Interfaces;
-using Microsoft.Extensions.Hosting;
+﻿using Howbot.Core.Interfaces;
 
 namespace Howbot.Worker;
 
@@ -40,7 +36,8 @@ public class Worker(
     }
     catch (Exception exception)
     {
-      logger.LogCritical(exception, "A critical exception has been thrown in the main worker. Stopping the worker service");
+      logger.LogCritical(exception,
+        "A critical exception has been thrown in the main worker. Stopping the worker service");
     }
   }
 
@@ -56,7 +53,8 @@ public class Worker(
     }
     catch (Exception exception)
     {
-      logger.LogCritical(exception, "A critical exception has been thrown in the main worker. Stopping the worker service");
+      logger.LogCritical(exception,
+        "A critical exception has been thrown in the main worker. Stopping the worker service");
     }
   }
 }

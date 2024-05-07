@@ -1,7 +1,6 @@
 ﻿@page "/"
-
-@using Howbot.Core.Models
 @using System.Security.Claims
+@using Howbot.Core.Models
 @inherits ComponentBase
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -43,7 +42,7 @@
                 </div>
             }
         </div>
-    </div>   
+    </div>
 }
 
 @code {
@@ -87,4 +86,5 @@
     {
         NavigationManager.NavigateTo($"/music/{guildId}");
     }
+
 }

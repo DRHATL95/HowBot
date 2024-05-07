@@ -1,12 +1,8 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Howbot.Infrastructure.Services;
@@ -17,6 +13,14 @@ public class InteractionHandlerService(
   ILoggerAdapter<InteractionHandlerService> logger)
   : ServiceBase<InteractionHandlerService>(logger), IInteractionHandlerService, IDisposable
 {
+  public void Dispose()
+  {
+    interactionService.Log -= InteractionServiceOnLog;
+    interactionService.InteractionExecuted -= InteractionServiceOnInteractionExecuted;
+
+    GC.SuppressFinalize(this);
+  }
+
   public override async Task InitializeAsync()
   {
     await base.InitializeAsync();
@@ -37,7 +41,8 @@ public class InteractionHandlerService(
     try
     {
       var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-      var assembly = assemblies.FirstOrDefault(x => !string.IsNullOrEmpty(x.FullName) && x.FullName.Contains("Howbot.Core"));
+      var assembly =
+        assemblies.FirstOrDefault(x => !string.IsNullOrEmpty(x.FullName) && x.FullName.Contains("Howbot.Core"));
 
       var modules = await interactionService.AddModulesAsync(assembly, services);
       if (!modules.Any())
@@ -92,13 +97,5 @@ public class InteractionHandlerService(
     {
       Logger.LogError(exception, nameof(InteractionServiceOnInteractionExecuted));
     }
-  }
-
-  public void Dispose()
-  {
-    interactionService.Log -= InteractionServiceOnLog;
-    interactionService.InteractionExecuted -= InteractionServiceOnInteractionExecuted;
-
-    GC.SuppressFinalize(this);
   }
 }

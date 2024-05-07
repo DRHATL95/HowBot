@@ -1,9 +1,4 @@
-﻿#nullable enable
-
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Howbot.Core.Entities;
+﻿using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,17 +1,24 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Discord.WebSocket;
+﻿using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models.Exceptions;
-using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Howbot.Infrastructure.Services;
 
-public class HowbotService(DiscordSocketClient discordClient, IDiscordClientService discordClientService, IServiceProvider serviceProvider, ILoggerAdapter<HowbotService> logger) : ServiceBase<HowbotService>(logger), IHowbotService, IDisposable
+public class HowbotService(
+  DiscordSocketClient discordClient,
+  IDiscordClientService discordClientService,
+  IServiceProvider serviceProvider,
+  ILoggerAdapter<HowbotService> logger) : ServiceBase<HowbotService>(logger), IHowbotService, IDisposable
 {
+  public void Dispose()
+  {
+    discordClient?.Dispose();
+
+    GC.SuppressFinalize(this);
+  }
+
   public async Task StartWorkerServiceAsync(CancellationToken cancellationToken = default)
   {
     try
@@ -19,7 +26,7 @@ public class HowbotService(DiscordSocketClient discordClient, IDiscordClientServ
       cancellationToken.ThrowIfCancellationRequested();
 
       await InitializeHowbotServicesAsync();
-      
+
       await LoginBotToDiscordAsync(Configuration.DiscordToken, cancellationToken);
 
       await StartDiscordBotAsync(cancellationToken);
@@ -71,7 +78,7 @@ public class HowbotService(DiscordSocketClient discordClient, IDiscordClientServ
     try
     {
       cancellationToken.ThrowIfCancellationRequested();
-      
+
       await discordClientService.StartDiscordBotAsync();
     }
     catch (Exception exception)
@@ -92,7 +99,7 @@ public class HowbotService(DiscordSocketClient discordClient, IDiscordClientServ
         serviceProvider.GetRequiredService<ILavaNodeService>()?.Initialize();
         serviceProvider.GetRequiredService<IEmbedService>()?.Initialize();
         serviceProvider.GetRequiredService<IMusicService>()?.Initialize();
-        
+
         var interactionHandlerService = serviceProvider.GetRequiredService<IInteractionHandlerService>();
         if (interactionHandlerService != null)
         {
@@ -108,12 +115,5 @@ public class HowbotService(DiscordSocketClient discordClient, IDiscordClientServ
       Logger.LogError(exception, nameof(InitializeHowbotServicesAsync));
       throw;
     }
-  }
-
-  public void Dispose()
-  {
-    discordClient?.Dispose();
-
-    GC.SuppressFinalize(this);
   }
 }

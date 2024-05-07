@@ -1,13 +1,9 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
 using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Models.Commands;
 using Lavalink4NET;
 using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Integrations.LyricsJava.Extensions;
@@ -32,7 +28,8 @@ public class MusicModule(
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
   [RequireGuildUserInVoiceChannel]
   public async Task PlayCommandAsync(
-    [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)] string searchRequest)
+    [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
+    string searchRequest)
   {
     try
     {
@@ -45,38 +42,40 @@ public class MusicModule(
       {
         // Get the user, voice state, and channel
         // This should never be null (because of the preconditions)
-        IGuildUser user = Context.User as IGuildUser ?? throw new InvalidOperationException("User is not a guild user.");
-        IVoiceState voiceState = Context.User as IVoiceState ?? throw new InvalidOperationException("User is not connected to a voice channel.");
-        ITextChannel channel = Context.Channel as ITextChannel ?? throw new InvalidOperationException("Channel is not a text channel.");
-        
-        int tracksBeforePlay = player.Queue.Count;
+        var user = Context.User as IGuildUser ?? throw new InvalidOperationException("User is not a guild user.");
+        var voiceState = Context.User as IVoiceState ??
+                         throw new InvalidOperationException("User is not connected to a voice channel.");
+        var channel = Context.Channel as ITextChannel ??
+                      throw new InvalidOperationException("Channel is not a text channel.");
 
-        CommandResponse response =
+        var tracksBeforePlay = player.Queue.Count;
+
+        var response =
           await musicService.PlayTrackBySearchTypeAsync(player, searchRequest, user, voiceState,
             channel);
 
         if (!response.IsSuccessful)
         {
           await DeleteOriginalResponseAsync();
-          
+
           ModuleHelper.HandleCommandFailed(response);
 
           return;
         }
 
-        if (player.Queue.Count > (tracksBeforePlay + 1))
+        if (player.Queue.Count > tracksBeforePlay + 1)
         {
           await FollowupAsync($"{Emojis.MusicalNote} Added multiple tracks to the queue.");
           return;
         }
-        
+
         // Should only happen if the command response doesn't contain the Lavalink track
         if (response.LavalinkTrack is null)
         {
           await FollowupAsync($"{Emojis.MusicalNote} Added track to the queue.");
           return;
         }
-        
+
         var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
           user);
 
@@ -195,7 +194,7 @@ public class MusicModule(
       {
         return;
       }
-      
+
       var commandResponse = await musicService.SeekTrackAsync(player, timeSpan);
 
       if (!commandResponse.IsSuccessful)
@@ -303,7 +302,8 @@ public class MusicModule(
         }
         else
         {
-          properties.Content = $"Now playing {commandResponse.LavalinkTrack?.Title ?? Context.Interaction.Data.ToString()}";
+          properties.Content =
+            $"Now playing {commandResponse.LavalinkTrack?.Title ?? Context.Interaction.Data.ToString()}";
         }
       });
     }
@@ -389,29 +389,25 @@ public class MusicModule(
         await FollowupAsync("😖 No lyrics found.");
         return;
       }
-      
-      string text = lyrics.Text;
-      int startIndex = 0;
-      string title = $"Lyrics for {track.Title}";
-      
+
+      var text = lyrics.Text;
+      var startIndex = 0;
+      var title = $"Lyrics for {track.Title}";
+
       // Loop that sends potentially multiple embeds
       while (startIndex < text.Length)
       {
-        EmbedBuilder embedBuilder = new EmbedBuilder()
-        {
-          Title = title,
-          Color = Constants.ThemeColor,
-        };
+        var embedBuilder = new EmbedBuilder { Title = title, Color = Constants.ThemeColor };
 
-        int descriptionChars = Math.Min(Constants.MaximumEmbedDescriptionLength, text.Length - startIndex);
-        string description = text.Substring(startIndex, descriptionChars);
+        var descriptionChars = Math.Min(Constants.MaximumEmbedDescriptionLength, text.Length - startIndex);
+        var description = text.Substring(startIndex, descriptionChars);
         startIndex += descriptionChars;
 
         // If there's more text, we have to add it as a field
         if (startIndex < text.Length)
         {
-          int fieldChars = Math.Min(Constants.MaximumFieldLength, text.Length - startIndex);
-          string field = text.Substring(startIndex, fieldChars);
+          var fieldChars = Math.Min(Constants.MaximumFieldLength, text.Length - startIndex);
+          var field = text.Substring(startIndex, fieldChars);
           startIndex += fieldChars;
           embedBuilder.Fields = [new EmbedFieldBuilder { Name = "...continuation", Value = field }];
         }
@@ -498,7 +494,7 @@ public class MusicModule(
     try
     {
       await DeferAsync();
-      
+
       var player = await musicService.GetPlayerByContextAsync(Context,
         preconditions: [PlayerPrecondition.QueueNotEmpty]);
 
@@ -507,8 +503,8 @@ public class MusicModule(
         return;
       }
 
-      int tracksRemoved = await player.Queue.ClearAsync();
-      
+      var tracksRemoved = await player.Queue.ClearAsync();
+
       await FollowupAsync($"{Emojis.TrashCan} Removed {tracksRemoved} tracks from the queue.");
     }
     catch (Exception exception)
@@ -525,15 +521,15 @@ public class MusicModule(
     try
     {
       await DeferAsync();
-      
+
       var player = await musicService.GetPlayerByContextAsync(Context);
       if (player is null)
       {
         return;
       }
-      
+
       player.IsAutoPlayEnabled = !player.IsAutoPlayEnabled;
-      
+
       await FollowupAsync($"Autoplay is now {(player.IsAutoPlayEnabled ? "enabled" : "disabled")}.");
     }
     catch (Exception exception)

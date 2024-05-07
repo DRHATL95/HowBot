@@ -129,7 +129,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
       throw;
     }
   }
-  
+
   [SlashCommand(Constants.Commands.CleanCommandName, Constants.Commands.CleanCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireUserPermission(GuildPermission.Administrator | GuildPermission.UseApplicationCommands)]
@@ -145,10 +145,10 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
       {
         return;
       }
-      
+
       // Delete all messages from bot in the channel
       messages = messages.Where(x => x.Author.Id == Context.Client.CurrentUser.Id).ToList();
-      
+
       await channel.DeleteMessagesAsync(messages);
     }
     catch (Exception exception)
@@ -157,7 +157,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
       throw;
     }
   }
-  
+
   [SlashCommand(Constants.Commands.MuteCommandName, Constants.Commands.MuteCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireUserPermission(GuildPermission.Administrator | GuildPermission.MuteMembers |
@@ -194,7 +194,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
       throw;
     }
   }
-  
+
   [SlashCommand(Constants.Commands.UnmuteCommandName, Constants.Commands.UnmuteCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireUserPermission(GuildPermission.Administrator | GuildPermission.MuteMembers |
@@ -232,8 +232,126 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
     }
   }
 
+  [SlashCommand(Constants.Commands.KickCommandName, Constants.Commands.KickCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireUserPermission(GuildPermission.Administrator | GuildPermission.KickMembers |
+                         GuildPermission.UseApplicationCommands)]
+  [RequireBotPermission(GuildPermission.Administrator | GuildPermission.KickMembers)]
+  public async Task KickUserCommandAsync(string username, string? reason = null)
+  {
+    await DeferAsync();
+
+    try
+    {
+      var user = Context.Guild.Users.FirstOrDefault(x => x.Username == username);
+      if (user is null)
+      {
+        await FollowupAsync("Unable to find user in server.");
+        return;
+      }
+
+      await user.KickAsync(reason);
+
+      await FollowupAsync("Successfully kicked user.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(KickUserCommandAsync));
+      await FollowupAsync("Failed to kick user.");
+      throw;
+    }
+  }
+
+  [SlashCommand(Constants.Commands.SlowmodeCommandName, Constants.Commands.SlowmodeCommandDescription, true,
+    RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireUserPermission(GuildPermission.Administrator | GuildPermission.ManageChannels |
+                         GuildPermission.UseApplicationCommands)]
+  [RequireBotPermission(GuildPermission.Administrator | GuildPermission.ManageChannels)]
+  public async Task SlowmodeCommandAsync(int seconds)
+  {
+    await DeferAsync();
+
+    try
+    {
+      if (Context.Channel is not ITextChannel channel)
+      {
+        return;
+      }
+
+      await channel.ModifyAsync(properties => properties.SlowModeInterval = seconds);
+
+      await FollowupAsync($"Successfully set slowmode to {seconds} seconds.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(SlowmodeCommandAsync));
+      await FollowupAsync("Failed to set slowmode.");
+      throw;
+    }
+  }
+
+  [SlashCommand(Constants.Commands.LockCommandName, Constants.Commands.LockCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireUserPermission(GuildPermission.Administrator | GuildPermission.ManageChannels |
+                         GuildPermission.UseApplicationCommands)]
+  [RequireBotPermission(GuildPermission.Administrator | GuildPermission.ManageChannels)]
+  public async Task LockCommandAsync()
+  {
+    await DeferAsync();
+
+    try
+    {
+      if (Context.Channel is not ITextChannel channel)
+      {
+        return;
+      }
+
+      await channel.AddPermissionOverwriteAsync(Context.Guild.EveryoneRole, OverwritePermissions.DenyAll(channel));
+
+      await FollowupAsync("Successfully locked channel.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(LockCommandAsync));
+      await FollowupAsync("Failed to lock channel.");
+      throw;
+    }
+  }
+
+  [SlashCommand(Constants.Commands.UnlockCommandName, Constants.Commands.UnlockCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireUserPermission(GuildPermission.Administrator | GuildPermission.ManageChannels |
+                         GuildPermission.UseApplicationCommands)]
+  [RequireBotPermission(GuildPermission.Administrator | GuildPermission.ManageChannels)]
+  public async Task UnlockCommandAsync()
+  {
+    await DeferAsync();
+
+    try
+    {
+      if (Context.Channel is not ITextChannel channel)
+      {
+        return;
+      }
+
+      await channel.AddPermissionOverwriteAsync(Context.Guild.EveryoneRole, OverwritePermissions.InheritAll);
+
+      await FollowupAsync("Successfully unlocked channel.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(UnlockCommandAsync));
+      await FollowupAsync("Failed to unlock channel.");
+      throw;
+    }
+  }
+
   [Group("settings", "Settings commands for the bot.")]
-  public class SettingsGroup(ILoggerAdapter<SettingsGroup> logger, IMusicService musicService, IServiceProvider serviceProvider) : InteractionModuleBase<SocketInteractionContext>
+  public class SettingsGroup(
+    ILoggerAdapter<SettingsGroup> logger,
+    IMusicService musicService,
+    IServiceProvider serviceProvider) : InteractionModuleBase<SocketInteractionContext>
   {
     // Create a command to display all setting information
     [SlashCommand("info", "Display all current settings for the server.", false, RunMode.Async)]
@@ -246,7 +364,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
         // Get scoped database service from provider
         using var scope = serviceProvider.CreateScope();
         var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
-        
+
         // Get the guild settings from the database
         var guild = databaseService.GetGuildById(Context.Guild.Id);
         if (guild is null)
@@ -256,7 +374,8 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
         }
 
         // Send response to user
-        await FollowupAsync($"Prefix: `{guild.Prefix}`\nVolume: `{guild.Volume}%`\nMusic Search Provider: `{guild.SearchProvider}`");
+        await FollowupAsync(
+          $"Prefix: `{guild.Prefix}`\nVolume: `{guild.Volume}%`\nMusic Search Provider: `{guild.SearchProvider}`");
       }
       catch (Exception exception)
       {
@@ -264,9 +383,12 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
         throw;
       }
     }
-    
+
     [SlashCommand("prefix", "Change the bot prefix for the server.", false, RunMode.Async)]
-    public async Task PrefixCommandAsync([Summary(Constants.Commands.SettingsPrefixArgumentName, Constants.Commands.SettingsPrefixArgumentDescription)]string newPrefix)
+    public async Task PrefixCommandAsync(
+      [Summary(Constants.Commands.SettingsPrefixArgumentName,
+        Constants.Commands.SettingsPrefixArgumentDescription)]
+      string newPrefix)
     {
       await DeferAsync();
 
@@ -275,7 +397,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
         // Get scoped database service from provider
         using var scope = serviceProvider.CreateScope();
         var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
-        
+
         // Update the prefix in the database
         await databaseService.UpdateGuildPrefixAsync(Context.Guild.Id, newPrefix);
 
@@ -288,9 +410,11 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
         throw;
       }
     }
-    
+
     [SlashCommand("provider", "Update the music search provider for resolving search queries.", false, RunMode.Async)]
-    public async Task ProviderCommandAsync([Summary(Constants.Commands.SettingsProviderArgumentName, Constants.Commands.SettingsProviderArgumentDescription)] SearchProviderTypes provider)
+    public async Task ProviderCommandAsync(
+      [Summary(Constants.Commands.SettingsProviderArgumentName, Constants.Commands.SettingsProviderArgumentDescription)]
+      SearchProviderTypes provider)
     {
       await DeferAsync();
 
@@ -299,7 +423,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
         // Get scoped database service from provider
         using var scope = serviceProvider.CreateScope();
         var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
-        
+
         // Update the search provider in the database
         await databaseService.UpdateSearchProviderAsync(Context.Guild.Id, provider);
 
@@ -312,9 +436,12 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
         throw;
       }
     }
-    
-    [SlashCommand(Constants.Commands.VolumeCommandName, Constants.Commands.VolumeCommandDescription, false, RunMode.Async)]
-    public async Task VolumeCommandAsync([Summary(Constants.Commands.SettingsVolumeArgumentName, Constants.Commands.SettingsVolumeArgumentDescription)]int? volume = null)
+
+    [SlashCommand(Constants.Commands.VolumeCommandName, Constants.Commands.VolumeCommandDescription, false,
+      RunMode.Async)]
+    public async Task VolumeCommandAsync(
+      [Summary(Constants.Commands.SettingsVolumeArgumentName, Constants.Commands.SettingsVolumeArgumentDescription)]
+      int? volume = null)
     {
       await DeferAsync();
 
@@ -323,12 +450,12 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
         var player = await musicService.GetPlayerByGuildIdAsync(Context.Guild.Id);
         if (player is null)
         {
-          await ModifyOriginalResponseAsync(properties => 
+          await ModifyOriginalResponseAsync(properties =>
             properties.Content = "Unable to find player in server.");
-          
+
           return;
         }
-        
+
         if (!volume.HasValue)
         {
           // Respond with the current volume
@@ -337,10 +464,10 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
 
           return;
         }
-        
+
         // Update the volume in the database
         var commandResponse = await musicService.ChangeVolumeAsync(player, volume.Value);
-        
+
         if (!commandResponse.IsSuccessful)
         {
           ModuleHelper.HandleCommandFailed(commandResponse);

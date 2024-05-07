@@ -1,5 +1,4 @@
-﻿using System;
-using Discord;
+﻿using Discord;
 using Howbot.Core.Models.Players;
 using Lavalink4NET.Tracks;
 
@@ -16,7 +15,8 @@ public class CommandResponse
   public CommandResponseMetadata Metadata { get; private init; }
 
   public static CommandResponse Create(bool isSuccessful, string? message = null, Exception? exception = null,
-    IEmbed? embed = null, HowbotPlayer? player = null, LavalinkTrack? lavalinkTrack = null, CommandResponseMetadata metadata = default)
+    IEmbed? embed = null, HowbotPlayer? player = null, LavalinkTrack? lavalinkTrack = null,
+    CommandResponseMetadata metadata = default)
   {
     return new CommandResponse
     {
@@ -46,9 +46,9 @@ public class CommandResponse
 
   public override string ToString()
   {
-    return !string.IsNullOrEmpty(this.Message)
-      ? this.Message
-      : this.Embed?.ToString() ?? string.Empty;
+    return !string.IsNullOrEmpty(Message)
+      ? Message
+      : Embed?.ToString() ?? string.Empty;
   }
 }
 

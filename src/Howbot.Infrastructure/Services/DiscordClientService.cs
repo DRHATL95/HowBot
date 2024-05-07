@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -9,7 +6,6 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Exceptions;
-using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Messages.Debug;
@@ -119,10 +115,10 @@ public class DiscordClientService(
   }
 
   /// <summary>
-  /// Maps <see cref="LogSeverity"/> enum to <see cref="LogLevel"/> enum.
+  ///   Maps <see cref="LogSeverity" /> enum to <see cref="LogLevel" /> enum.
   /// </summary>
-  /// <param name="severity">The Discord.NET <see cref="LogSeverity"/> level</param>
-  /// <returns>The <see cref="LogLevel"/> representation</returns>
+  /// <param name="severity">The Discord.NET <see cref="LogSeverity" /> level</param>
+  /// <returns>The <see cref="LogLevel" /> representation</returns>
   private static LogLevel MapLogSeverity(LogSeverity severity)
   {
     return severity switch
@@ -152,7 +148,8 @@ public class DiscordClientService(
 
   private Task DiscordSocketClientOnUserJoined(SocketGuildUser socketGuildUser)
   {
-    Logger.LogDebug("[{0}] has joined Guild [{1}]", socketGuildUser.Username, DiscordHelper.GetGuildTag(socketGuildUser.Guild));
+    Logger.LogDebug("[{0}] has joined Guild [{1}]", socketGuildUser.Username,
+      DiscordHelper.GetGuildTag(socketGuildUser.Guild));
 
     return Task.CompletedTask;
   }

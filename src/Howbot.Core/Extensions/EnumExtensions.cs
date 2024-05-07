@@ -1,6 +1,4 @@
-﻿using System;
-using System.ComponentModel;
-using System.Linq;
+﻿using System.ComponentModel;
 using System.Reflection;
 
 namespace Howbot.Core.Extensions;
@@ -26,7 +24,9 @@ public static class EnumExtensions
     var displayNameAttribute = memberInfo
       .GetCustomAttribute<DisplayNameAttribute>();
 
-    return displayNameAttribute != null ? displayNameAttribute.DisplayName :
+    return displayNameAttribute != null
+      ? displayNameAttribute.DisplayName
+      :
       // If DisplayNameAttribute is not found, return the enum name itself
       enumName;
   }

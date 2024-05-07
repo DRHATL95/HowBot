@@ -1,7 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-
-namespace Howbot.Core.Interfaces;
+﻿namespace Howbot.Core.Interfaces;
 
 public interface IHowbotService
 {

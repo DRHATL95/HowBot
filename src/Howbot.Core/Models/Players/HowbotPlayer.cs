@@ -1,6 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Howbot.Core.Settings;
 using Lavalink4NET.InactivityTracking.Players;
 using Lavalink4NET.InactivityTracking.Trackers;

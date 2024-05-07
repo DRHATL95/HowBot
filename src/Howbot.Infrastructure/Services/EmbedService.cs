@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
@@ -9,7 +7,7 @@ using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<EmbedService>(logger), IEmbedService
 {
@@ -115,9 +113,7 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
 
     embedBuilder.Fields.Add(new EmbedFieldBuilder
     {
-      IsInline = true,
-      Name = "Source",
-      Value = LavalinkHelper.GetSourceAsString(lavalinkTrack.SourceName)
+      IsInline = true, Name = "Source", Value = LavalinkHelper.GetSourceAsString(lavalinkTrack.SourceName)
     });
 
     if (trackPosition.HasValue)

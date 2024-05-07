@@ -1,6 +1,4 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using Discord.Interactions;
+﻿using Discord.Interactions;
 using Howbot.Core.Models.Commands;
 
 namespace Howbot.Core.Interfaces;

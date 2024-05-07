@@ -1,5 +1,4 @@
-﻿using System;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -59,9 +58,9 @@ public static class Configuration
   private static string RabbitMqUserName => GetTokenByName(RabbitMqUserNameKey);
 
   private static string RabbitMqPassword => GetTokenByName(RabbitMqPasswordKey);
-  
+
   public static string SpotifyClientId => GetTokenByName(SpotifyClientIdKey);
-  
+
   public static string SpotifyClientSecret => GetTokenByName(SpotifyClientSecretKey);
 
   /// <summary>
@@ -87,9 +86,7 @@ public static class Configuration
   /// </summary>
   public static AudioServiceOptions AudioServiceOptions => new()
   {
-    Passphrase = LavaNodePassword,
-    BaseAddress = LavalinkUri,
-    HttpClientName = Constants.Discord.BotName
+    Passphrase = LavaNodePassword, BaseAddress = LavalinkUri, HttpClientName = Constants.Discord.BotName
   };
 
   /// <summary>
@@ -99,6 +96,14 @@ public static class Configuration
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
   public static Uri LavalinkUri { get; } = new(LavaNodeAddress);
+
+  public static ConnectionFactory RabbitMqConnectionFactory => new()
+  {
+    HostName = RabbitMqHostName,
+    Port = int.TryParse(RabbitMqPort, out var portAsInt) ? portAsInt : 5672,
+    UserName = RabbitMqUserName,
+    Password = RabbitMqPassword
+  };
 
   /// <summary>
   ///   Determines if the application is running in debug mode
@@ -112,14 +117,6 @@ public static class Configuration
       return false;
 #endif
   }
-
-  public static ConnectionFactory RabbitMqConnectionFactory => new()
-  {
-    HostName = RabbitMqHostName,
-    Port = int.TryParse(RabbitMqPort, out var portAsInt) ? portAsInt : 5672,
-    UserName = RabbitMqUserName,
-    Password = RabbitMqPassword
-  };
 
   /// <summary>
   ///   Can be used to retrieve either env. variable or secrets using secret manager

@@ -1,10 +1,5 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Discord;
-using Discord.Commands;
+﻿using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using ContextType = Discord.Interactions.ContextType;
@@ -16,8 +11,8 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
   : InteractionModuleBase<SocketInteractionContext>
 {
   [SlashCommand(Constants.Commands.RollCommandName, Constants.Commands.RollCommandDescription, true, RunMode.Async)]
-  [Discord.Interactions.RequireContext(ContextType.Guild)]
-  public async Task RollCommandAsync([Discord.Interactions.Summary("totalDice", "Amount of dice to roll. Max is 10.")] int amountOfDice = 1)
+  [RequireContext(ContextType.Guild)]
+  public async Task RollCommandAsync([Summary("totalDice", "Amount of dice to roll. Max is 10.")] int amountOfDice = 1)
   {
     await DeferAsync();
 
@@ -35,25 +30,25 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
           return;
 
         case > 1:
+        {
+          var rolls = new int[amountOfDice];
+
+          for (var i = 0; i < amountOfDice; i++)
           {
-            var rolls = new int[amountOfDice];
-
-            for (var i = 0; i < amountOfDice; i++)
-            {
-              rolls[i] = random.Next(1, 7);
-            }
-
-            await ModifyOriginalResponseAsync(
-              properties => properties.Content = $"You rolled {string.Join(", ", rolls)}!");
-            return;
+            rolls[i] = random.Next(1, 7);
           }
+
+          await ModifyOriginalResponseAsync(
+            properties => properties.Content = $"You rolled {string.Join(", ", rolls)}!");
+          return;
+        }
         default:
-          {
-            var roll = random.Next(1, 7);
+        {
+          var roll = random.Next(1, 7);
 
-            await ModifyOriginalResponseAsync(properties => properties.Content = $"You rolled a {roll}!");
-            break;
-          }
+          await ModifyOriginalResponseAsync(properties => properties.Content = $"You rolled a {roll}!");
+          break;
+        }
       }
     }
     catch (Exception exception)
@@ -64,7 +59,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
   }
 
   [SlashCommand(Constants.Commands.FlipCommandName, Constants.Commands.FlipCommandDescription, true, RunMode.Async)]
-  [Discord.Interactions.RequireContext(ContextType.Guild)]
+  [RequireContext(ContextType.Guild)]
   public async Task FlipCommandAsync()
   {
     await DeferAsync();
@@ -86,34 +81,36 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
   }
 
-  [SlashCommand(Constants.Commands.ActivitiesCommandName, Constants.Commands.ActivitiesCommandDescription, true, RunMode.Async)]
+  [SlashCommand(Constants.Commands.ActivitiesCommandName, Constants.Commands.ActivitiesCommandDescription, true,
+    RunMode.Async)]
   public async Task ActivitiesCommandAsync()
   {
     try
     {
       var activities = await httpService.GetCurrentApplicationIdsAsync();
-      
+
       // Generate a select menu for user to select from to start activity
       var selectMenuBuilder = new SelectMenuBuilder()
         .WithPlaceholder("Select an activity")
         .WithCustomId("activity_select")
         .WithMinValues(1)
         .WithMaxValues(1);
-      
+
       // Limit the amount of options to 25
       if (activities.Count > 25)
       {
         activities = activities.Take(25).ToList();
       }
-      
+
       foreach (var activity in activities)
       {
-        selectMenuBuilder.AddOption(new SelectMenuOptionBuilder().WithLabel(activity.Name).WithValue(activity.Id.ToString()));
+        selectMenuBuilder.AddOption(new SelectMenuOptionBuilder().WithLabel(activity.Name)
+          .WithValue(activity.Id.ToString()));
       }
-      
+
       var builder = new ComponentBuilder()
         .WithSelectMenu(selectMenuBuilder);
-      
+
       await ReplyAsync(components: builder.Build());
     }
     catch (Exception exception)
@@ -124,8 +121,8 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
   }
 
   [SlashCommand(Constants.Commands.EftCommandName, Constants.Commands.EftCommandDescription, true, RunMode.Async)]
-  [Discord.Interactions.RequireOwner]
-  public async Task EftCommandAsync([Discord.Interactions.Summary("itemName", "The name of the item to search for.")] string itemName)
+  [RequireOwner]
+  public async Task EftCommandAsync([Summary("itemName", "The name of the item to search for.")] string itemName)
   {
     await DeferAsync();
 
@@ -139,7 +136,9 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
         return;
       }
 
-      await ModifyOriginalResponseAsync(properties => properties.Content = $"The item **{priceTuple.Item1}** is being bought by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
+      await ModifyOriginalResponseAsync(properties =>
+        properties.Content =
+          $"The item **{priceTuple.Item1}** is being bought by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
     }
     catch (Exception exception)
     {
