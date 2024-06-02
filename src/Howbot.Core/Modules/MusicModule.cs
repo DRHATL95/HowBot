@@ -7,6 +7,7 @@ using Howbot.Core.Models;
 using Lavalink4NET;
 using Lavalink4NET.Integrations.Lavasrc;
 using Lavalink4NET.Integrations.LyricsJava.Extensions;
+using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
@@ -62,24 +63,29 @@ public class MusicModule(
 
           return;
         }
-
-        if (player.Queue.Count > tracksBeforePlay + 1)
+        
+        if (player.Queue.Any() && player.CurrentTrack != null && player.State is PlayerState.Playing or PlayerState.Paused)
         {
-          await FollowupAsync($"{Emojis.MusicalNote} Added multiple tracks to the queue.");
-          return;
+          if (player.Queue.Count > tracksBeforePlay + 1)
+          {
+            await FollowupAsync($"{Emojis.MusicalNote} Added multiple tracks to the queue.");
+            return;
+          }
+
+          // Should only happen if the command response doesn't contain the Lavalink track
+          if (response.LavalinkTrack is null)
+          {
+            await FollowupAsync($"{Emojis.MusicalNote} Added track to the queue.");
+            return;
+          }
+
+          var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
+            user);
+
+          await FollowupAsync(embed: embed as Embed);
         }
 
-        // Should only happen if the command response doesn't contain the Lavalink track
-        if (response.LavalinkTrack is null)
-        {
-          await FollowupAsync($"{Emojis.MusicalNote} Added track to the queue.");
-          return;
-        }
-
-        var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
-          user);
-
-        await FollowupAsync(embed: embed as Embed);
+        await DeleteOriginalResponseAsync();
       }
     }
     catch (Exception exception)

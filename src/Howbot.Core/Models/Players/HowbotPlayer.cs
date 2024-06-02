@@ -1,5 +1,4 @@
 ﻿using Discord;
-using Howbot.Core.Settings;
 using Lavalink4NET.InactivityTracking.Players;
 using Lavalink4NET.InactivityTracking.Trackers;
 using Lavalink4NET.Players;
@@ -17,17 +16,14 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
 
   #region Inactivity Tracking Events
 
-  public async ValueTask NotifyPlayerActiveAsync(PlayerTrackingState trackingState,
+  public ValueTask NotifyPlayerActiveAsync(PlayerTrackingState trackingState,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
     _logger.LogDebug("Player is being tracked as active");
-
-    if (TextChannel is not null && Configuration.IsDebug())
-    {
-      await TextChannel.SendMessageAsync("Player is being tracked as active");
-    }
+    
+    return ValueTask.CompletedTask;
   }
 
   public ValueTask NotifyPlayerInactiveAsync(PlayerTrackingState trackingState,
@@ -40,17 +36,14 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
     return ValueTask.CompletedTask;
   }
 
-  public async ValueTask NotifyPlayerTrackedAsync(PlayerTrackingState trackingState,
+  public ValueTask NotifyPlayerTrackedAsync(PlayerTrackingState trackingState,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
     _logger.LogDebug("Player is being tracked as inactive");
 
-    if (TextChannel is not null && Configuration.IsDebug())
-    {
-      await TextChannel.SendMessageAsync("Player is being tracked as inactive");
-    }
+    return ValueTask.CompletedTask;
   }
 
   #endregion Inactivity Tracking Events

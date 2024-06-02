@@ -59,7 +59,7 @@ public static class ServiceCollectionSetupExtensions
     var request = new ClientCredentialsRequest(Configuration.SpotifyClientId, Configuration.SpotifyClientSecret);
     var response = new OAuthClient(spotifyConfig).RequestToken(request).Result;
 
-    services.AddSingleton<ISpotifyClient, SpotifyClient>(x =>
+    services.AddSingleton<ISpotifyClient, SpotifyClient>(_ =>
       new SpotifyClient(spotifyConfig.WithToken(response.AccessToken)));
 
     // Howbot related services
