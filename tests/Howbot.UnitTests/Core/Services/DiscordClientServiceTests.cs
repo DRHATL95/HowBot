@@ -27,7 +27,7 @@ public class DiscordClientServiceTests
   }
 
   [Fact]
-  public async void LoginDiscordBotAsync_WithValidToken()
+  public async Task LoginDiscordBotAsync_WithValidToken()
   {
     // Arrange
     const string discordToken = "TestToken";
@@ -46,7 +46,7 @@ public class DiscordClientServiceTests
   }
 
   [Fact]
-  public async void LoginDiscordBotAsync_ThrowsArgumentException()
+  public async Task LoginDiscordBotAsync_ThrowsArgumentException()
   {
     // Arrange
     var token = string.Empty;
@@ -67,7 +67,7 @@ public class DiscordClientServiceTests
   }
 
   [Fact]
-  public async void StartDiscordBotAsync_ShouldStart()
+  public async Task StartDiscordBotAsync_ShouldStart()
   {
     // Arrange
     var (discordClientService, _, _, _, _) = Factory();
