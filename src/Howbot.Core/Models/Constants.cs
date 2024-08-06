@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Howbot.Core.Models.Enums;
 
 namespace Howbot.Core.Models;
 

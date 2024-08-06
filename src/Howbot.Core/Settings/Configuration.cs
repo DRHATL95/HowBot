@@ -62,15 +62,9 @@ public static class Configuration
   public static string SpotifyClientId => GetTokenByName(SpotifyClientIdKey);
 
   public static string SpotifyClientSecret => GetTokenByName(SpotifyClientSecretKey);
-
-  /// <summary>
-  ///   Represents the gateway intents to subscribe to.
-  /// </summary>
+  
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
-
-  /// <summary>
-  ///   DiscordSocketClient configuration
-  /// </summary>
+  
   public static DiscordSocketConfig DiscordSocketConfig =>
     new()
     {
@@ -80,18 +74,12 @@ public static class Configuration
       LogGatewayIntentWarnings = false,
       UseInteractionSnowflakeDate = false
     };
-
-  /// <summary>
-  ///   Lavalink4NET configuration
-  /// </summary>
+  
   public static AudioServiceOptions AudioServiceOptions => new()
   {
     Passphrase = LavaNodePassword, BaseAddress = LavalinkUri, HttpClientName = Constants.Discord.BotName
   };
-
-  /// <summary>
-  ///   Discord Interactions configuration
-  /// </summary>
+  
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
@@ -104,11 +92,7 @@ public static class Configuration
     UserName = RabbitMqUserName,
     Password = RabbitMqPassword
   };
-
-  /// <summary>
-  ///   Determines if the application is running in debug mode
-  /// </summary>
-  /// <returns>A boolean representing if application was ran in debug mode</returns>
+  
   public static bool IsDebug()
   {
 #if DEBUG
@@ -121,8 +105,8 @@ public static class Configuration
   /// <summary>
   ///   Can be used to retrieve either env. variable or secrets using secret manager
   /// </summary>
-  /// <param name="tokenName"></param>
-  /// <returns></returns>
+  /// <param name="tokenName">The name of the value's key.</param>
+  /// <returns>The value associated with the key, or empty string.</returns>
   private static string GetTokenByName(string tokenName)
   {
     // Should only be hit if empty, should never be null

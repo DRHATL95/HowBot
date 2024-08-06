@@ -2,6 +2,7 @@
 using Howbot.Core.Entities;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Howbot.Infrastructure.Services;

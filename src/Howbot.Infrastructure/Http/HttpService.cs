@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
+using Howbot.Core.Models.Commands;
 using Howbot.Core.Settings;
 using Newtonsoft.Json;
 using Constants = Howbot.Infrastructure.Data.Config.Constants;

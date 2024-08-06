@@ -1,5 +1,5 @@
 ﻿using Howbot.Core.Entities;
-using Howbot.Core.Models;
+using Howbot.Core.Models.Enums;
 
 namespace Howbot.Core.Interfaces;
 

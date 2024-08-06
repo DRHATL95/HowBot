@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Enums;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Howbot.Core.Modules;

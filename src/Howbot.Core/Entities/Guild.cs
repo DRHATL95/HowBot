@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Enums;
 
 namespace Howbot.Core.Entities;
 
