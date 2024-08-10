@@ -9,6 +9,8 @@ public sealed record HowbotPlayerOptions() : QueuedLavalinkPlayerOptions
   {
     TextChannel = textChannel;
     LastRequestedBy = lastRequestedBy;
+    
+    IsAutoPlayEnabled = false;
   }
 
   public ITextChannel? TextChannel { get; }

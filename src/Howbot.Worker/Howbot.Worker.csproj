@@ -31,4 +31,8 @@
     <ProjectReference Include="..\Howbot.Core\Howbot.Core.csproj"/>
     <ProjectReference Include="..\Howbot.Infrastructure\Howbot.Infrastructure.csproj"/>
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="logs\" />
+  </ItemGroup>
 </Project>

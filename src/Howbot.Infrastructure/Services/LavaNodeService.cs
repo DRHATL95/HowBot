@@ -128,20 +128,29 @@ public class LavaNodeService(
       return;
     }
 
-    if (!player.Queue.IsEmpty || !player.IsAutoPlayEnabled)
+    if (player.Queue.IsEmpty)
     {
-      await player.DisconnectAsync();
-      return;
-    }
-
-    var track = await musicService.GetSpotifyRecommendationAsync(eventArgs.Track, "US", 1);
-    if (!string.IsNullOrEmpty(track))
-    {
-      await player.PlayAsync(new TrackQueueItem(track));
-    }
-    else
-    {
-      Logger.LogWarning("No recommendations found for track [{TrackName}]", eventArgs.Track.Title);
+      if (player.AutoPlayQueue.IsEmpty)
+      {
+        var track = await musicService.GetSpotifyRecommendationAsync(eventArgs.Track, "US", 1);
+        if (!string.IsNullOrEmpty(track))
+        {
+          await player.PlayAsync(new TrackQueueItem(track));
+        }
+        else
+        {
+          Logger.LogWarning("No recommendations found for track [{TrackName}]", eventArgs.Track.Title);
+        }
+      }
+      else
+      {
+        var nextTrack = player.AutoPlayQueue.Peek();
+        if (nextTrack == null)
+        {
+          return;
+        }
+        await player.PlayAsync(nextTrack);
+      }
     }
   }
 

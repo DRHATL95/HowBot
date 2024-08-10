@@ -1,10 +1,13 @@
 ﻿using Discord;
 using Discord.Rest;
 using Howbot.Core.Interfaces;
+using Howbot.Core.Models;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
+using Howbot.Infrastructure.Data;
 using Howbot.Infrastructure.Services;
 using Lavalink4NET.Rest;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,13 +20,22 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 
 builder.Services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
-builder.Services.AddSingleton<DiscordRestClient>(_ => new DiscordRestClient(new DiscordRestConfig
+/*builder.Services.AddSingleton<DiscordRestClient>(_ => new DiscordRestClient(new DiscordRestConfig
 {
   LogLevel = LogSeverity.Info
-}));
+}));*/
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+
+var configuration = builder.Configuration;
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+  options.UseNpgsql(
+    configuration.GetConnectionString(Constants.DatabaseConnectionStringName)));
+
+builder.Services.TryAddScoped<IRepository, EfRepository>();
+builder.Services.TryAddScoped<IDatabaseService, DatabaseService>();
 builder.Services.TryAddSingleton<ILavalinkApiClientFactory, LavalinkApiClientFactory>();
 
 // RabbitMQ - Web API only needs to publish messages
@@ -33,14 +45,14 @@ builder.Services.AddSingleton<MessageQueuePublisherService>(sp =>
 
 var app = builder.Build();
 
-var discordRestClient = app.Services.GetRequiredService<DiscordRestClient>();
+/*var discordRestClient = app.Services.GetRequiredService<DiscordRestClient>();
 await discordRestClient.LoginAsync(TokenType.Bot, Configuration.DiscordToken);
 
 discordRestClient.Log += message =>
 {
   app.Services.GetRequiredService<ILoggerAdapter<Program>>().Log(LogLevel.Information, message.Message);
   return Task.CompletedTask;
-};
+};*/
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

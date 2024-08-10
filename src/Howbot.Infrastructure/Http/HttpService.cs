@@ -22,13 +22,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     GC.SuppressFinalize(this);
   }
-
-  /// <summary>
-  ///   Gets the response status code of the specified URL.
-  /// </summary>
-  /// <param name="url">The URL to send the request to.</param>
-  /// <param name="cancellationToken"></param>
-  /// <returns>The response status code as an integer.</returns>
+  
   public async Task<int> GetUrlResponseStatusCodeAsync(string url, CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -37,13 +31,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     return (int)result.StatusCode;
   }
-
-  /// <summary>
-  ///   Creates a Watch2Gether room for watching videos together.
-  /// </summary>
-  /// <param name="url">The URL of the video to be shared.</param>
-  /// <param name="cancellationToken"></param>
-  /// <returns>The URL of the created Watch2Gether room.</returns>
+  
   public async Task<string> CreateWatchTogetherRoomAsync(string url, CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -73,13 +61,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     return $"{Constants.WatchTogetherRoomUrl}/{convertedResponse.StreamKey}";
   }
-
-  /// <summary>
-  ///   TODO
-  /// </summary>
-  /// <param name="cancellationToken"></param>
-  /// <returns></returns>
-  /// <exception cref="Exception"></exception>
+  
   public async Task<List<ActivityApplication>> GetCurrentApplicationIdsAsync(
     CancellationToken cancellationToken = default)
   {
@@ -125,15 +107,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     return data;
   }
-
-  /// <summary>
-  ///   TODO
-  /// </summary>
-  /// <param name="channelId"></param>
-  /// <param name="activityId"></param>
-  /// <param name="cancellationToken"></param>
-  /// <returns></returns>
-  /// <exception cref="Exception"></exception>
+  
   public async Task<string> StartDiscordActivityAsync(string channelId, string activityId,
     CancellationToken cancellationToken = default)
   {
@@ -167,14 +141,69 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
     // Return the invite link
     return $"https://discord.gg/{invite.Code}";
   }
+  
+  public async Task<string> GetRandomCatImageUrlAsync(int limit = 1, CancellationToken cancellationToken = default)
+  {
+    cancellationToken.ThrowIfCancellationRequested();
 
-  /// <summary>
-  ///   TODO
-  /// </summary>
-  /// <param name="itemName"></param>
-  /// <param name="cancellationToken"></param>
-  /// <returns></returns>
-  /// <exception cref="Exception"></exception>
+    if (limit is < 1 or > 10)
+    {
+      throw new Exception("Invalid number of cat images requested. Limit must be between 1 and 10.");
+    }
+
+    string url = $"{Constants.CapApiUrl}/images/search?limit={limit}";
+    
+    var response = await _client.GetAsync(url, cancellationToken);
+    // Limit doesn't work without API key, so anything with limit will return 10
+    var responseContent = await response.Content.ReadFromJsonAsync<CatImageResponse[]>(cancellationToken);
+
+    if (responseContent is null || !response.IsSuccessStatusCode)
+    {
+      throw new Exception($"Failed to get cat image. Status code: {response.StatusCode}. Response: {responseContent}");
+    }
+
+    if (limit > 1)
+    {
+      // Only take the limit amount of images
+      // see above comment about limit not working without API key
+      responseContent = responseContent.Take(limit).ToArray();
+    }
+
+    // Default behavior
+    return limit == 1 ? responseContent[0].Url : string.Join(",", responseContent.Select(x => x.Url));
+  }
+  
+  public async Task<string> GetRandomDogImageUrlAsync(int limit = 1, CancellationToken cancellationToken = default)
+  {
+    cancellationToken.ThrowIfCancellationRequested();
+
+    if (limit is < 1 or > 10)
+    {
+      throw new Exception("Invalid number of dog images requested. Limit must be between 1 and 10.");
+    }
+
+    string url = $"{Constants.DogApiUrl}/images/search?limit={limit}";
+    
+    var response = await _client.GetAsync(url, cancellationToken);
+    // Limit doesn't work without API key, so anything with limit will return 10
+    var responseContent = await response.Content.ReadFromJsonAsync<DogImageResponse[]>(cancellationToken);
+
+    if (responseContent is null || !response.IsSuccessStatusCode)
+    {
+      throw new Exception($"Failed to get dog image. Status code: {response.StatusCode}. Response: {responseContent}");
+    }
+
+    if (limit > 1)
+    {
+      // Only take the limit amount of images
+      // see above comment about limit not working without API key
+      responseContent = responseContent.Take(limit).ToArray();
+    }
+
+    // Default behavior
+    return limit == 1 ? responseContent[0].Url : string.Join(",", responseContent.Select(x => x.Url));
+  }
+  
   public async Task<Tuple<string, string, int>?> GetTarkovMarketPriceByItemNameAsync(string itemName,
     CancellationToken cancellationToken = default)
   {
@@ -457,4 +486,26 @@ internal record SpotifySeed
   [JsonProperty("id")] public string Id { get; set; } = string.Empty;
 
   [JsonProperty("type")] public string Type { get; set; } = string.Empty;
+}
+
+internal record CatImageResponse
+{
+  [JsonProperty("id")] public string Id { get; set; } = string.Empty;
+
+  [JsonProperty("url")] public string Url { get; set; } = string.Empty;
+
+  [JsonProperty("width")] public int Width { get; set; }
+
+  [JsonProperty("height")] public int Height { get; set; }
+}
+
+internal record DogImageResponse
+{
+  [JsonProperty("id")] public string Id { get; set; } = string.Empty;
+
+  [JsonProperty("url")] public string Url { get; set; } = string.Empty;
+
+  [JsonProperty("width")] public int Width { get; set; }
+
+  [JsonProperty("height")] public int Height { get; set; }
 }

@@ -13,6 +13,7 @@ using static Howbot.Core.Models.Permissions.User;
 namespace Howbot.Core.Modules;
 
 public class GeneralModule(
+  IHttpService httpService,
   InteractionService interactionService,
   IVoiceService voiceService,
   ILogger<GeneralModule> logger)
@@ -208,6 +209,120 @@ public class GeneralModule(
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(HelpCommandAsync));
+      throw;
+    }
+  }
+  
+  [SlashCommand(CatCommandName, CatCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
+  [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
+                         GuildPermission.ViewChannel)]
+  public async Task CatCommandAsync([Summary("limit", "The limit of images to return. Max 10.")]int limit = 1)
+  {
+    if (limit is < 1 or > 10)
+    {
+      await RespondAsync("The limit must be between 1 and 10.");
+      return;
+    }
+    
+    try
+    {
+      await DeferAsync();
+      
+      // Either returns a single cat image or a list of cat images separated by commas
+      var catImageUrl = await httpService.GetRandomCatImageUrlAsync(limit);
+
+      if (limit == 1)
+      {
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = "Random Cat Image",
+          ImageUrl = catImageUrl,
+          Color = Constants.ThemeColor
+        };
+
+        await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
+      }
+      else
+      {
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = "Random Cat Images",
+          Color = Constants.ThemeColor
+        };
+        
+        // Convert the comma-separated string to a list of URLs
+        var urls = catImageUrl.Split(",").ToList();
+        for (var i = 0; i < urls.Count; i++)
+        {
+          int count = i + 1;
+          embedBuilder.AddField($"Cat Image #{count}", urls[i]);
+        }
+
+        await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
+      }
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(CatCommandAsync));
+      throw;
+    }
+  }
+  
+  [SlashCommand(DogCommandName, DogCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
+  [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
+                         GuildPermission.ViewChannel)]
+  public async Task DogCommandAsync([Summary("limit", "The limit of images to return. Max 10.")]int limit = 1)
+  {
+    if (limit is < 1 or > 10)
+    {
+      await RespondAsync("The limit must be between 1 and 10.");
+      return;
+    }
+    
+    try
+    {
+      await DeferAsync();
+      
+      // Either returns a single dog image or a list of dog images separated by commas
+      var dogImageUrl = await httpService.GetRandomDogImageUrlAsync(limit);
+
+      if (limit == 1)
+      {
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = "Random Dog Image",
+          ImageUrl = dogImageUrl,
+          Color = Constants.ThemeColor
+        };
+        
+        await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
+      }
+      else
+      {
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = "Random Dog Images",
+          Color = Constants.ThemeColor
+        };
+        
+        // Convert the comma-separated string to a list of URLs
+        var urls = dogImageUrl.Split(",").ToList();
+        for (var i = 0; i < urls.Count; i++)
+        {
+          int count = i + 1;
+          embedBuilder.AddField($"Dog Image #{count}", urls[i]);
+        }
+
+        await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
+      }
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(DogCommandAsync));
       throw;
     }
   }

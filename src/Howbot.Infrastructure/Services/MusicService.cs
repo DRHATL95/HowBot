@@ -76,6 +76,8 @@ public partial class MusicService(
     {
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
+      
+      await db.UpdateGuildSessionIdAsync(guildId, await GetSessionIdForGuildIdAsync(guildId, cancellationToken));
     }
 
     if (context.Channel is not ITextChannel textChannel)
@@ -90,7 +92,8 @@ public partial class MusicService(
       SelfDeaf = true,
       ClearQueueOnStop = false,
       ClearHistoryOnStop = false,
-      InitialVolume = persistedVolume > 0 ? persistedVolume / 100f : initialVolume / 100f
+      InitialVolume = persistedVolume > 0 ? persistedVolume / 100f : initialVolume / 100f,
+      IsAutoPlayEnabled = false,
     };
 
     var result = await audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,
@@ -238,7 +241,7 @@ public partial class MusicService(
   [GeneratedRegex(Constants.RegexPatterns.UrlPattern)]
   private static partial Regex UrlRegex();
 
-  private static ValueTask<HowbotPlayer> CreatePlayerAsync(
+  private ValueTask<HowbotPlayer> CreatePlayerAsync(
     IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties,
     CancellationToken cancellationToken = default)
   {
@@ -246,7 +249,9 @@ public partial class MusicService(
 
     Guard.Against.Null(properties, nameof(properties));
 
-    return ValueTask.FromResult(new HowbotPlayer(properties));
+    var logger = serviceProvider.GetRequiredService<ILoggerAdapter<HowbotPlayer>>();
+
+    return ValueTask.FromResult(new HowbotPlayer(properties, logger));
   }
 
   private async Task<List<LavalinkTrack>> GetTracksFromSearchRequestAndProviderAsync(string searchRequest,

@@ -16,7 +16,7 @@ namespace Howbot.Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.2")
+                .HasAnnotation("ProductVersion", "8.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -26,6 +26,10 @@ namespace Howbot.Infrastructure.Data.Migrations
                     b.Property<decimal>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("numeric(20,0)");
+
+                    b.Property<string>("EncryptedSessionId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Prefix")
                         .IsRequired()

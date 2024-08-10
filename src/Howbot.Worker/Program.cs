@@ -82,17 +82,17 @@ public static class Program
 
         services.AddRepositories();
 
-        services.AddSingleton(x => new MessageQueuePublisherService(Configuration.RabbitMqConnectionFactory,
-          x.GetRequiredService<ILoggerAdapter<MessageQueuePublisherService>>()));
+        /*services.AddSingleton(x => new MessageQueuePublisherService(Configuration.RabbitMqConnectionFactory,
+          x.GetRequiredService<ILoggerAdapter<MessageQueuePublisherService>>()));*/
 
         var workerSettings = new WorkerSettings();
         hostContext.Configuration.Bind(nameof(WorkerSettings), workerSettings);
         services.AddSingleton(workerSettings);
 
         services.AddHostedService<Worker>();
-        services.AddHostedService(sp => new MessageQueueConsumerService(Configuration.RabbitMqConnectionFactory,
+        /*services.AddHostedService(sp => new MessageQueueConsumerService(Configuration.RabbitMqConnectionFactory,
           sp.GetRequiredService<ICommandHandlerService>(),
-          sp.GetRequiredService<ILoggerAdapter<MessageQueueConsumerService>>()));
+          sp.GetRequiredService<ILoggerAdapter<MessageQueueConsumerService>>()));*/
       });
   }
 }

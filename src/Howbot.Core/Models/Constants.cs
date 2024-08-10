@@ -177,6 +177,13 @@ public abstract record Constants
 
     public const string SayCommandName = "say";
     public const string SayCommandDescription = "Repeats the message back to the user.";
+    
+    public const string DogCommandName = "dog";
+    public const string DogCommandDescription = "Gets a random dog image or up to 10 random images.";
+    
+    public const string CatCommandName = "cat";
+    public const string CatCommandDescription = "Gets a random cat image or up to 10 random images.";
+    
   }
 
   public struct RabbitMq
