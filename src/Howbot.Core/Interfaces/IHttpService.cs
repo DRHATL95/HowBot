@@ -1,20 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Howbot.Core.Models;
+﻿using Howbot.Core.Models.Commands;
 
 namespace Howbot.Core.Interfaces;
 
 public interface IHttpService
 {
-  Task<int> GetUrlResponseStatusCodeAsync(string url);
+  Task<int> GetUrlResponseStatusCodeAsync(string url, CancellationToken cancellationToken = default);
 
-  Task<string> CreateWatchTogetherRoomAsync(string url);
+  Task<string> CreateWatchTogetherRoomAsync(string url, CancellationToken cancellationToken = default);
 
-  Task<List<ActivityApplication>> GetCurrentApplicationIdsAsync(CancellationToken token = default);
+  Task<List<ActivityApplication>> GetCurrentApplicationIdsAsync(CancellationToken cancellationToken = default);
 
-  Task<string> StartDiscordActivityAsync(string channelId, string activityId);
+  Task<string> StartDiscordActivityAsync(string channelId, string activityId,
+    CancellationToken cancellationToken = default);
 
-  Task<Tuple<string, string, int>> GetTarkovMarketPriceByItemNameAsync(string itemName);
+  Task<Tuple<string, string, int>?> GetTarkovMarketPriceByItemNameAsync(string itemName,
+    CancellationToken cancellationToken = default);
+  
+  Task<string> GetRandomCatImageUrlAsync(int limit = 1, CancellationToken cancellationToken = default);
+  
+  Task<string> GetRandomDogImageUrlAsync(int limit = 1, CancellationToken cancellationToken = default);
 }

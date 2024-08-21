@@ -8,15 +8,21 @@ namespace Howbot.Core.Helpers;
 
 public static class ConfigurationHelper
 {
-  public static IConfiguration HostConfiguration { get; private set; }
-  
+  public static IConfiguration? HostConfiguration { get; private set; }
+
   public static void AddOrUpdateAppSetting<T>(string sectionPathKey, T value)
   {
     try
     {
       var filePath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
       var json = File.ReadAllText(filePath);
-      dynamic jsonObj = JsonConvert.DeserializeObject(json);
+      dynamic? jsonObj = JsonConvert.DeserializeObject(json);
+
+      if (jsonObj is null)
+      {
+        Log.Logger.Error("Error reading app settings");
+        return;
+      }
 
       SetValueRecursively(sectionPathKey, jsonObj, value);
 
@@ -28,12 +34,12 @@ public static class ConfigurationHelper
       Log.Logger.Error(ex, "Error writing app settings");
     }
   }
-  
+
   public static void SetHostConfiguration(IConfiguration configuration)
   {
     HostConfiguration = configuration;
   }
-  
+
   private static void SetValueRecursively<T>(string sectionPathKey, dynamic jsonObj, T value)
   {
     // split the string at the first ':' character

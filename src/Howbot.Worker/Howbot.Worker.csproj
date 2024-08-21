@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <UserSecretsId>dotnet-CleanArchitecture.Worker-AF0DD401-BB78-4FCC-8186-3E275E001A54</UserSecretsId>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..</DockerfileContext>
     <GenerateRuntimeConfigurationFiles>True</GenerateRuntimeConfigurationFiles>

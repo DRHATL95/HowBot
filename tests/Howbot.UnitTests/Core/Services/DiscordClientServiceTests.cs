@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Services;
+using Howbot.Infrastructure.Services;
 using Moq;
 using Xunit;
 
@@ -10,22 +11,22 @@ namespace Howbot.UnitTests.Core.Services;
 
 public class DiscordClientServiceTests
 {
-  private static (DiscordClientService, Mock<DiscordSocketClient>, Mock<IInteractionService>, Mock<IServiceProvider>,
+  private static (DiscordClientService, Mock<DiscordSocketClient>, Mock<InteractionService>, Mock<IServiceProvider>,
     Mock<ILoggerAdapter<DiscordClientService>>) Factory()
   {
     var discordSocketClient = new Mock<DiscordSocketClient>();
     var serviceProvider = new Mock<IServiceProvider>();
-    var interactionService = new Mock<IInteractionService>();
+    var interactionService = new Mock<InteractionService>();
     var logger = new Mock<ILoggerAdapter<DiscordClientService>>();
 
     var discordClientService = new DiscordClientService(discordSocketClient.Object,
-      interactionService.Object, logger.Object);
+      interactionService.Object, serviceProvider.Object, logger.Object);
 
     return (discordClientService, discordSocketClient, interactionService, serviceProvider, logger);
   }
 
   [Fact]
-  public async void LoginDiscordBotAsync_WithValidToken()
+  public async Task LoginDiscordBotAsync_WithValidToken()
   {
     // Arrange
     const string discordToken = "TestToken";
@@ -44,7 +45,7 @@ public class DiscordClientServiceTests
   }
 
   [Fact]
-  public async void LoginDiscordBotAsync_ThrowsArgumentException()
+  public async Task LoginDiscordBotAsync_ThrowsArgumentException()
   {
     // Arrange
     var token = string.Empty;
@@ -65,7 +66,7 @@ public class DiscordClientServiceTests
   }
 
   [Fact]
-  public async void StartDiscordBotAsync_ShouldStart()
+  public async Task StartDiscordBotAsync_ShouldStart()
   {
     // Arrange
     var (discordClientService, _, _, _, _) = Factory();

@@ -1,23 +1,23 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Howbot.Core.Models.Exceptions;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Messages.Debug;
 using static Howbot.Core.Models.Messages.Errors;
+using InteractionService = Discord.Interactions.InteractionService;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public class DiscordClientService(
   DiscordSocketClient discordSocketClient,
-  IInteractionService interactionService,
+  InteractionService interactionService,
+  IServiceProvider serviceProvider,
   ILoggerAdapter<DiscordClientService> logger)
   : ServiceBase<DiscordClientService>(logger), IDiscordClientService, IDisposable
 {
@@ -50,15 +50,15 @@ public class DiscordClientService(
 
       await discordSocketClient.LoginAsync(TokenType.Bot, discordToken);
     }
-    catch (ArgumentException argumentException)
+    catch (ArgumentException)
     {
-      Logger.LogError(argumentException, "The provided token is invalid.");
-      throw;
+      // Should bubble up to the caller
+      throw new DiscordLoginException("Invalid token provided.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(LoginDiscordBotAsync));
-      throw;
+      throw new DiscordLoginException("An exception has been thrown while logging into Discord.");
     }
   }
 
@@ -68,12 +68,6 @@ public class DiscordClientService(
     {
       // Will signal ready state. Must be called only when bot has finished logging in.
       await discordSocketClient.StartAsync();
-
-      // Only in debug, set bots online presence to offline
-      if (Configuration.IsDebug())
-      {
-        await discordSocketClient.SetStatusAsync(UserStatus.Invisible);
-      }
     }
     catch (Exception exception)
     {
@@ -100,7 +94,7 @@ public class DiscordClientService(
     discordSocketClient.Connected += DiscordSocketClientOnConnected;
     discordSocketClient.Disconnected += DiscordSocketClientOnDisconnected;
     // discordSocketClient.SlashCommandExecuted += DiscordSocketClientOnSlashCommandExecuted; TODO: Revisit this
-    // discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated; TODO: Revisit this
+    discordSocketClient.UserVoiceStateUpdated += DiscordSocketClientOnUserVoiceStateUpdated;
     discordSocketClient.VoiceServerUpdated += DiscordSocketClientOnVoiceServerUpdated;
     discordSocketClient.InteractionCreated += DiscordSocketClientOnInteractionCreated;
   }
@@ -116,16 +110,16 @@ public class DiscordClientService(
     discordSocketClient.Connected -= DiscordSocketClientOnConnected;
     discordSocketClient.Disconnected -= DiscordSocketClientOnDisconnected;
     // discordSocketClient.SlashCommandExecuted -= DiscordSocketClientOnSlashCommandExecuted; TODO: Revisit this
-    // discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated; TODO: Revisit this
+    discordSocketClient.UserVoiceStateUpdated -= DiscordSocketClientOnUserVoiceStateUpdated;
     discordSocketClient.VoiceServerUpdated -= DiscordSocketClientOnVoiceServerUpdated;
     discordSocketClient.InteractionCreated -= DiscordSocketClientOnInteractionCreated;
   }
 
   /// <summary>
-  /// Maps <see cref="LogSeverity"/> enum to <see cref="LogLevel"/> enum.
+  ///   Maps <see cref="LogSeverity" /> enum to <see cref="LogLevel" /> enum.
   /// </summary>
-  /// <param name="severity">The Discord.NET <see cref="LogSeverity"/> level</param>
-  /// <returns>The <see cref="LogLevel"/> representation</returns>
+  /// <param name="severity">The Discord.NET <see cref="LogSeverity" /> level</param>
+  /// <returns>The <see cref="LogLevel" /> representation</returns>
   private static LogLevel MapLogSeverity(LogSeverity severity)
   {
     return severity switch
@@ -145,17 +139,18 @@ public class DiscordClientService(
   private Task DiscordSocketClientOnLog(LogMessage arg)
   {
     var severity = MapLogSeverity(arg.Severity);
-    
+
     var message = arg.Message ?? arg.Exception?.Message ?? "No message provided";
 
     Logger.Log(severity, message);
-    
+
     return Task.CompletedTask;
   }
 
   private Task DiscordSocketClientOnUserJoined(SocketGuildUser socketGuildUser)
   {
-    Logger.LogDebug("[{0}] has joined Guild [{1}]", socketGuildUser.Username, DiscordHelper.GetGuildTag(socketGuildUser.Guild));
+    Logger.LogDebug("[{0}] has joined Guild [{1}]", socketGuildUser.Username,
+      DiscordHelper.GetGuildTag(socketGuildUser.Guild));
 
     return Task.CompletedTask;
   }
@@ -240,22 +235,21 @@ public class DiscordClientService(
     return Task.CompletedTask;
   }
 
-  // TODO: Revisit this
-  /*private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
+  private Task DiscordSocketClientOnUserVoiceStateUpdated(SocketUser user, SocketVoiceState oldVoiceState,
     SocketVoiceState newVoiceState)
   {
     // Don't care about bot voice state
     if (user.IsBot && user.Id == discordSocketClient.CurrentUser.Id)
     {
       Logger.LogDebug("Voice state update ignored for bot user [{0}].", user.Username);
-      
+
       return Task.CompletedTask;
     }
 
     Logger.LogDebug("User {0} has updated voice state.", user.Username);
 
     return Task.CompletedTask;
-  }*/
+  }
 
   private Task DiscordSocketClientOnVoiceServerUpdated(SocketVoiceServer socketVoiceServer)
   {
@@ -265,7 +259,7 @@ public class DiscordClientService(
     }
 
     var guildTag = $"{socketVoiceServer.Guild.Value.Name} - {socketVoiceServer.Guild.Value.Id}";
-      
+
     Logger.LogDebug("[{0}] has connected to server [{1}]", LoggedInUsername, guildTag);
 
     return Task.CompletedTask;
@@ -276,7 +270,7 @@ public class DiscordClientService(
     try
     {
       var context = new SocketInteractionContext(discordSocketClient, socketInteraction);
-      var result = await interactionService.ExecuteCommandAsync(context);
+      var result = await interactionService.ExecuteCommandAsync(context, serviceProvider);
 
       // Due to async nature of InteractionFramework, the result here may always be success.
       // That's why we also need to handle the InteractionExecuted event.

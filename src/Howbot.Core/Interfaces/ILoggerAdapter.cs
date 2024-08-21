@@ -3,8 +3,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Interfaces;
 
-// Helps if you need to confirm logging is happening
-// https://ardalis.com/testing-logging-in-aspnet-core
 public interface ILoggerAdapter<T>
 {
   void Log(LogLevel severity, string message, params object[] args);

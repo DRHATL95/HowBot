@@ -1,6 +1,6 @@
 ﻿using Howbot.Core.Interfaces;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public abstract class ServiceBase<T>(ILoggerAdapter<T> logger)
 {
@@ -10,5 +10,12 @@ public abstract class ServiceBase<T>(ILoggerAdapter<T> logger)
   public virtual void Initialize()
   {
     Logger.LogDebug($"{_serviceName} is initializing...");
+  }
+
+  public virtual Task InitializeAsync()
+  {
+    Logger.LogDebug($"{_serviceName} is initializing...");
+
+    return Task.CompletedTask;
   }
 }

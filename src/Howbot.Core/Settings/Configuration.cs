@@ -1,10 +1,12 @@
 ﻿using System;
+using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Helpers;
-using Howbot.Core.Models;
 using Lavalink4NET;
+using RabbitMQ.Client;
+using Constants = Howbot.Core.Models.Constants;
 
 namespace Howbot.Core.Settings;
 
@@ -15,32 +17,55 @@ public static class Configuration
 {
   // The names of the environment variable
   private const string DiscordApiToken = "DiscordToken";
-  private const string YouTube = "YoutubeToken";
+
+  private const string DiscordOAuthClientIdKey = "DiscordOAuthClientId";
+  private const string DiscordOAuthClientSecretKey = "DiscordOAuthClientSecret";
+
+  // private const string YouTube = "YoutubeToken";
   private const string Postgres = "HowbotPostgres";
-  private const string Lavalink = "DiscordLavalinkServerPassword";
-  private const string LavalinkAddress = "DiscordLavalinkServerAddress";
+
+  private const string LavalinkPassword = "LavalinkNodePassword";
+  private const string LavalinkAddress = "LavalinkNodeAddress";
   private const string WatchTogetherKey = "Watch2GetherKey";
+
+  private const string RabbitMqHostNameKey = "RabbitMQHost";
+  private const string RabbitMqPortKey = "RabbitMQPort";
+  private const string RabbitMqUserNameKey = "RabbitMQUser";
+  private const string RabbitMqPasswordKey = "RabbitMQPassword";
+
+  private const string SpotifyClientIdKey = "SpotifyClientId";
+  private const string SpotifyClientSecretKey = "SpotifyClientSecret";
 
   public static string DiscordToken => GetTokenByName(DiscordApiToken);
 
-  public static string YouTubeToken => GetTokenByName(YouTube);
+  public static string DiscordOAuthClientId => GetTokenByName(DiscordOAuthClientIdKey);
+
+  public static string DiscordOAuthClientSecret => GetTokenByName(DiscordOAuthClientSecretKey);
+
+  // public static string YouTubeToken => GetTokenByName(YouTube);
 
   public static string PostgresConnectionString => GetTokenByName(Postgres);
 
   public static string WatchTogetherApiKey => GetTokenByName(WatchTogetherKey);
 
-  private static string LavaNodePassword => GetTokenByName(Lavalink);
+  private static string LavaNodePassword => GetTokenByName(LavalinkPassword);
 
   private static string LavaNodeAddress => GetTokenByName(LavalinkAddress);
 
-  /// <summary>
-  ///   Represents the gateway intents to subscribe to.
-  /// </summary>
-  private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
+  private static string RabbitMqHostName => GetTokenByName(RabbitMqHostNameKey);
 
-  /// <summary>
-  ///   DiscordSocketClient configuration
-  /// </summary>
+  private static string RabbitMqPort => GetTokenByName(RabbitMqPortKey);
+
+  private static string RabbitMqUserName => GetTokenByName(RabbitMqUserNameKey);
+
+  private static string RabbitMqPassword => GetTokenByName(RabbitMqPasswordKey);
+
+  public static string SpotifyClientId => GetTokenByName(SpotifyClientIdKey);
+
+  public static string SpotifyClientSecret => GetTokenByName(SpotifyClientSecretKey);
+  
+  private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
+  
   public static DiscordSocketConfig DiscordSocketConfig =>
     new()
     {
@@ -50,27 +75,25 @@ public static class Configuration
       LogGatewayIntentWarnings = false,
       UseInteractionSnowflakeDate = false
     };
-
-  /// <summary>
-  ///   Lavalink4NET configuration
-  /// </summary>
+  
   public static AudioServiceOptions AudioServiceOptions => new()
   {
-    Passphrase = LavaNodePassword, BaseAddress = LavalinkUrl, HttpClientName = Constants.Discord.BotName
+    Passphrase = LavaNodePassword, BaseAddress = LavalinkUri, HttpClientName = Constants.Discord.BotName
   };
-
-  /// <summary>
-  ///   Discord Interactions configuration
-  /// </summary>
+  
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
-  public static Uri LavalinkUrl { get; } = new(LavaNodeAddress);
+  public static Uri LavalinkUri { get; } = new(LavaNodeAddress);
 
-  /// <summary>
-  ///   Determines if the application is running in debug mode
-  /// </summary>
-  /// <returns>A boolean representing if application was ran in debug mode</returns>
+  public static ConnectionFactory RabbitMqConnectionFactory => new()
+  {
+    HostName = RabbitMqHostName,
+    Port = int.TryParse(RabbitMqPort, out var portAsInt) ? portAsInt : 5672,
+    UserName = RabbitMqUserName,
+    Password = RabbitMqPassword
+  };
+  
   public static bool IsDebug()
   {
 #if DEBUG
@@ -83,15 +106,17 @@ public static class Configuration
   /// <summary>
   ///   Can be used to retrieve either env. variable or secrets using secret manager
   /// </summary>
-  /// <param name="tokenName"></param>
-  /// <returns></returns>
+  /// <param name="tokenName">The name of the value's key.</param>
+  /// <returns>The value associated with the key, or empty string.</returns>
   private static string GetTokenByName(string tokenName)
   {
     // Should only be hit if empty, should never be null
-    ArgumentException.ThrowIfNullOrEmpty(tokenName);
+    Guard.Against.NullOrEmpty(tokenName, nameof(tokenName));
+
+    var token = Environment.GetEnvironmentVariable(tokenName);
 
     // First attempt to get token, using hosted process
-    var token = Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Process);
+    token ??= Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.Process);
     // Second attempt to get token, using user environment variables
     token ??= Environment.GetEnvironmentVariable(tokenName, EnvironmentVariableTarget.User);
     // Third attempt to get token, using machine environment variables
@@ -100,7 +125,7 @@ public static class Configuration
     if (string.IsNullOrEmpty(token))
     {
       // 9/27/23 - Add support for secrets.json
-      token = ConfigurationHelper.HostConfiguration[tokenName];
+      token = ConfigurationHelper.HostConfiguration?[tokenName];
     }
 
     return token ?? string.Empty;

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
@@ -14,12 +13,17 @@ using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
 using static Howbot.Core.Models.Permissions.Bot;
 using static Howbot.Core.Models.Permissions.User;
+using Lavalink4NET;
+using Lavalink4NET.Integrations.LyricsJava.Extensions;
+using Lavalink4NET.Players;
+
 
 namespace Howbot.Core.Modules;
 
 public class MusicModule(
   IMusicService musicService,
   IEmbedService embedService,
+  IAudioService audioService,
   ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
@@ -30,61 +34,62 @@ public class MusicModule(
   [RequireGuildUserInVoiceChannel]
   public async Task PlayCommandAsync(
     [Summary(PlaySearchRequestArgumentName, PlaySearchRequestArgumentDescription)]
-    string searchRequest,
-    [Summary(PlaySearchTypeArgumentName, PlaySearchTypeArgumentDescription)]
-    SearchProviderTypes searchProviderType = SearchProviderTypes.YouTubeMusic)
+    string searchRequest)
   {
     try
     {
       await DeferAsync();
-
-      if (string.IsNullOrEmpty(searchRequest))
-      {
-        await ModifyOriginalResponseAsync(properties => properties.Content = "You must enter a search request!");
-        return;
-      }
 
       var player =
         await musicService.GetPlayerByContextAsync(Context, true);
 
       if (player is not null)
       {
-        var user = Context.User as IGuildUser ?? throw new ArgumentNullException(nameof(Context.User));
-        var voiceState = Context.User as IVoiceState ?? throw new ArgumentNullException(nameof(Context.User));
-        var channel = Context.Channel as ITextChannel ?? throw new ArgumentNullException(nameof(Context.Channel));
-        
-        int tracksBeforePlay = player.Queue.Count;
+        // Get the user, voice state, and channel
+        // This should never be null (because of the preconditions)
+        var user = Context.User as IGuildUser ?? throw new InvalidOperationException("User is not a guild user.");
+        var voiceState = Context.User as IVoiceState ??
+                         throw new InvalidOperationException("User is not connected to a voice channel.");
+        var channel = Context.Channel as ITextChannel ??
+                      throw new InvalidOperationException("Channel is not a text channel.");
+
+        var tracksBeforePlay = player.Queue.Count;
 
         var response =
-          await musicService.PlayTrackBySearchTypeAsync(player, searchProviderType, searchRequest, user, voiceState,
+          await musicService.PlayTrackBySearchTypeAsync(player, searchRequest, user, voiceState,
             channel);
 
         if (!response.IsSuccessful)
         {
-          ModuleHelper.HandleCommandFailed(response);
           await DeleteOriginalResponseAsync();
+
+          ModuleHelper.HandleCommandFailed(response);
+
           return;
         }
-
-        if (player.Queue.Any())
+        
+        if (player.Queue.Any() && player.CurrentTrack != null && player.State is PlayerState.Playing or PlayerState.Paused)
         {
-          // Added more than one track to the queue
-          if (player.Queue.Count > (tracksBeforePlay + 1))
+          if (player.Queue.Count > tracksBeforePlay + 1)
           {
-            await FollowupAsync("🎵 Added multiple tracks to the queue.");
+            await FollowupAsync($"{Emojis.MusicalNote} Added multiple tracks to the queue.");
+            return;
           }
-          else
-          {
-            var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
-              user);
 
-            await FollowupAsync(embed: embed as Embed); 
+          // Should only happen if the command response doesn't contain the Lavalink track
+          if (response.LavalinkTrack is null)
+          {
+            await FollowupAsync($"{Emojis.MusicalNote} Added track to the queue.");
+            return;
           }
+
+          var embed = embedService.CreateTrackAddedToQueueEmbed(new ExtendedLavalinkTrack(response.LavalinkTrack),
+            user);
+
+          await FollowupAsync(embed: embed as Embed);
         }
-        else
-        {
-          await DeleteOriginalResponseAsync();
-        }
+
+        await DeleteOriginalResponseAsync();
       }
     }
     catch (Exception exception)
@@ -107,7 +112,7 @@ public class MusicModule(
 
       var player =
         await musicService.GetPlayerByContextAsync(Context,
-          preconditions: ImmutableArray.Create(PlayerPrecondition.NotPaused));
+          preconditions: [PlayerPrecondition.NotPaused]);
 
       if (player is not null)
       {
@@ -146,7 +151,7 @@ public class MusicModule(
       await DeferAsync();
 
       var player = await musicService
-        .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Paused));
+        .GetPlayerByContextAsync(Context, preconditions: [PlayerPrecondition.Paused]);
 
       if (player is not null)
       {
@@ -190,10 +195,15 @@ public class MusicModule(
         throw new ArgumentNullException(nameof(timeToSeek));
       }
 
-      var player = await musicService.GetPlayerByContextAsync(Context);
-
       var timeSpan =
         timeToSeek == default ? ModuleHelper.ConvertToTimeSpan(hours, minutes, seconds) : timeToSeek;
+
+      var player = await musicService.GetPlayerByContextAsync(Context, false, true, [PlayerPrecondition.Playing]);
+
+      if (player is null)
+      {
+        return;
+      }
 
       var commandResponse = await musicService.SeekTrackAsync(player, timeSpan);
 
@@ -228,7 +238,12 @@ public class MusicModule(
     {
       await DeferAsync();
 
-      var player = await musicService.GetPlayerByContextAsync(Context);
+      var player = await musicService.GetPlayerByContextAsync(Context, false, true, [PlayerPrecondition.Playing]);
+
+      if (player is null)
+      {
+        return;
+      }
 
       var commandResponse = await musicService.SkipTrackAsync(player, tracksToSkip);
 
@@ -252,41 +267,6 @@ public class MusicModule(
     }
   }
 
-  [SlashCommand(VolumeCommandName, VolumeCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
-  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  public async Task VolumeCommandAsync(int newVolume = 100)
-  {
-    try
-    {
-      await DeferAsync();
-
-      var player = await musicService.GetPlayerByContextAsync(Context);
-
-      var commandResponse = await musicService.ChangeVolumeAsync(player, newVolume);
-
-      if (!commandResponse.IsSuccessful)
-      {
-        ModuleHelper.HandleCommandFailed(commandResponse);
-
-        if (string.IsNullOrEmpty(commandResponse.Message))
-        {
-          await DeleteOriginalResponseAsync();
-          return;
-        }
-      }
-
-      await ModifyOriginalResponseAsync(properties => properties.Content = commandResponse.Message);
-    }
-    catch (Exception exception)
-    {
-      logger.LogError(exception, nameof(VolumeCommandAsync));
-      throw;
-    }
-  }
-
   [SlashCommand(NowPlayingCommandName, NowPlayingCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
@@ -298,16 +278,20 @@ public class MusicModule(
     {
       await DeferAsync();
 
-      var player = await musicService
-        .GetPlayerByContextAsync(Context, preconditions: ImmutableArray.Create(PlayerPrecondition.Playing));
+      var player = await musicService.GetPlayerByContextAsync(Context, preconditions: [PlayerPrecondition.Playing]);
 
-      if (Context.User is not IGuildUser guildUser || Context.Channel is not ITextChannel textChannel)
+      if (player is null)
       {
         return;
       }
 
-      var commandResponse =
-        musicService.NowPlaying(player, guildUser, textChannel);
+
+      if (Context.User is not IGuildUser user || Context.Channel is not ITextChannel textChannel)
+      {
+        return;
+      }
+
+      var commandResponse = musicService.NowPlaying(player, user, textChannel);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -320,43 +304,22 @@ public class MusicModule(
         }
       }
 
-      if (commandResponse.Embed != null)
+      await ModifyOriginalResponseAsync(properties =>
       {
-        await ModifyOriginalResponseAsync(properties => properties.Embed = commandResponse.Embed as Embed);
-      }
-      else
-      {
-        await ModifyOriginalResponseAsync(properties =>
+        if (commandResponse.Embed != null)
+        {
+          properties.Embed = commandResponse.Embed as Embed;
+        }
+        else
+        {
           properties.Content =
-            $"Now playing {commandResponse.LavalinkTrack?.Title ?? Context.Interaction.Data.ToString()}");
-      }
+            $"Now playing {commandResponse.LavalinkTrack?.Title ?? Context.Interaction.Data.ToString()}";
+        }
+      });
     }
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(NowPlayingCommandAsync));
-      throw;
-    }
-  }
-
-  [SlashCommand(RadioCommandName, RadioCommandDescription, true, RunMode.Async)]
-  [RequireContext(ContextType.Guild)]
-  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
-  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireGuildUserInVoiceChannel]
-  [RequireOwner]
-  public async Task RadioCommandAsync()
-  {
-    try
-    {
-      logger.LogDebug(Messages.Debug.PlayingRadio);
-
-      await RespondAsync("This command is not quite ready yet. Check back later.");
-
-      // await RespondAsync(Messages.Responses.PlayingRadio);
-    }
-    catch (Exception exception)
-    {
-      logger.LogError(exception, nameof(RadioCommandAsync));
       throw;
     }
   }
@@ -373,7 +336,12 @@ public class MusicModule(
       await DeferAsync();
 
       var player = await musicService.GetPlayerByContextAsync(Context,
-        preconditions: ImmutableArray.Create(PlayerPrecondition.QueueNotEmpty));
+        preconditions: [PlayerPrecondition.QueueNotEmpty]);
+
+      if (player is null)
+      {
+        return;
+      }
 
       var commandResponse = musicService.ToggleShuffle(player);
 
@@ -401,17 +369,15 @@ public class MusicModule(
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
-  [RequireOwner]
-  public Task LyricsCommandAsync()
+  [RequireGuildUserInVoiceChannel]
+  public async Task LyricsCommandAsync()
   {
-    throw new NotImplementedException();
-
-    /*try
+    try
     {
       await DeferAsync();
 
       var player = await musicService.GetPlayerByContextAsync(Context,
-        preconditions: ImmutableArray.Create(PlayerPrecondition.Playing));
+        preconditions: [PlayerPrecondition.Playing]);
 
       if (player is null)
       {
@@ -426,7 +392,7 @@ public class MusicModule(
         return;
       }
 
-      var lyrics = await lyricsService.GetLyricsAsync(track.Title, track.Author);
+      var lyrics = await audioService.Tracks.GetCurrentTrackLyricsAsync(player);
 
       if (lyrics is null)
       {
@@ -434,13 +400,40 @@ public class MusicModule(
         return;
       }
 
-      await FollowupAsync($"📃 Lyrics for {track.Title} by {track.Author}:\n{lyrics}");
+      var text = lyrics.Text;
+      var startIndex = 0;
+      var title = $"Lyrics for {track.Title}";
+
+      // Loop that sends potentially multiple embeds
+      while (startIndex < text.Length)
+      {
+        var embedBuilder = new EmbedBuilder { Title = title, Color = Constants.ThemeColor };
+
+        var descriptionChars = Math.Min(Constants.MaximumEmbedDescriptionLength, text.Length - startIndex);
+        var description = text.Substring(startIndex, descriptionChars);
+        startIndex += descriptionChars;
+
+        // If there's more text, we have to add it as a field
+        if (startIndex < text.Length)
+        {
+          var fieldChars = Math.Min(Constants.MaximumFieldLength, text.Length - startIndex);
+          var field = text.Substring(startIndex, fieldChars);
+          startIndex += fieldChars;
+          embedBuilder.Fields = [new EmbedFieldBuilder { Name = "...continuation", Value = field }];
+        }
+
+        // Removing title from other pages of text
+        title = string.Empty;
+        embedBuilder.Description = description;
+
+        await FollowupAsync("", embed: embedBuilder.Build());
+      }
     }
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(LyricsCommandAsync));
       throw;
-    }*/
+    }
   }
 
   [SlashCommand(QueueCommandName, QueueCommandDescription, true, RunMode.Async)]
@@ -455,7 +448,7 @@ public class MusicModule(
       await DeferAsync();
 
       var player = await musicService.GetPlayerByContextAsync(Context,
-        preconditions: ImmutableArray.Create(PlayerPrecondition.Playing));
+        preconditions: [PlayerPrecondition.QueueNotEmpty]);
 
       if (player is null)
       {
@@ -468,7 +461,7 @@ public class MusicModule(
         return;
       }
 
-      var commandResponse = musicService.GetGuildMusicQueueEmbed(player);
+      var commandResponse = musicService.GetMusicQueueForServer(player);
 
       if (!commandResponse.IsSuccessful)
       {
@@ -481,20 +474,77 @@ public class MusicModule(
         }
       }
 
-      if (commandResponse.Embed != null)
+      await ModifyOriginalResponseAsync(properties =>
       {
-        await ModifyOriginalResponseAsync(properties => properties.Embed = commandResponse.Embed as Embed);
-      }
-      else
-      {
-        // TODO: When the queue is empty, this is throwing an error. Create an embed to display "No tracks in queue."
-        await ModifyOriginalResponseAsync(properties =>
-          properties.Content = player.Queue.Select(x => x.Track?.Title).Aggregate((x, y) => $"{x}\n{y}"));
-      }
+        if (commandResponse.Embed != null)
+        {
+          properties.Embed = commandResponse.Embed as Embed;
+        }
+        else
+        {
+          // TODO: When the queue is empty, this is throwing an error. Create an embed to display "No tracks in queue."
+          properties.Content = player.Queue.Select(x => x.Track?.Title).Aggregate((x, y) => $"{x}\n{y}");
+        }
+      });
     }
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(GetQueueCommandAsync));
+      throw;
+    }
+  }
+
+  [SlashCommand(ClearCommandName, ClearCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
+  [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
+  [RequireGuildUserInVoiceChannel]
+  public async Task ClearQueueCommandAsync()
+  {
+    try
+    {
+      await DeferAsync();
+
+      var player = await musicService.GetPlayerByContextAsync(Context,
+        preconditions: [PlayerPrecondition.QueueNotEmpty]);
+
+      if (player is null)
+      {
+        return;
+      }
+
+      var tracksRemoved = await player.Queue.ClearAsync();
+
+      await FollowupAsync($"{Emojis.TrashCan} Removed {tracksRemoved} tracks from the queue.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(ClearQueueCommandAsync));
+      throw;
+    }
+  }
+
+  [SlashCommand(AutoPlayCommandName, AutoPlayCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  public async Task AutoPlayCommandAsync()
+  {
+    try
+    {
+      await DeferAsync();
+
+      var player = await musicService.GetPlayerByContextAsync(Context);
+      if (player is null)
+      {
+        return;
+      }
+
+      player.IsAutoPlayEnabled = !player.IsAutoPlayEnabled;
+
+      await FollowupAsync($"Autoplay is now {(player.IsAutoPlayEnabled ? "enabled" : "disabled")}.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(AutoPlayCommandAsync));
       throw;
     }
   }

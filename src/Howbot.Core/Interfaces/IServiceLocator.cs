@@ -7,5 +7,5 @@ public interface IServiceLocator : IDisposable
 {
   IServiceScope CreateScope();
 
-  T Get<T>();
+  T? Get<T>();
 }

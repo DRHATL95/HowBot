@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
+using Howbot.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,6 +15,11 @@ namespace Howbot.Worker;
 
 public static class Program
 {
+  /// <summary>
+  ///   The main entry point for the application.
+  /// </summary>
+  /// <param name="args">The command-line arguments.</param>
+  /// <returns>The exit code that is given to the operating system after the app ends.</returns>
   private static async Task<int> Main(string[] args)
   {
     try
@@ -22,20 +27,15 @@ public static class Program
       // Create host builder that will be used to handle application (console) life-cycle.
       var hostBuilder = CreateHostBuilder(args);
 
-      if (Log.Logger.IsEnabled(LogEventLevel.Information))
-      {
-        Log.Logger.Information("Starting application..");
-      }
-      else
-      {
-        Console.WriteLine("Starting application..");
-      }
+      Log.Logger.Information("Starting worker application...");
 
       // Will run indefinitely until canceled w/ cancellation token or process is stopped.
       await hostBuilder.RunConsoleAsync();
     }
     catch (Exception exception)
     {
+      Log.Logger.Fatal(exception, nameof(Main));
+
       if (Log.IsEnabled(LogEventLevel.Fatal))
       {
         Log.Fatal(exception, "A fatal exception has been thrown while running the application");
@@ -50,6 +50,12 @@ public static class Program
     return Environment.ExitCode;
   }
 
+
+  /// <summary>
+  ///   Creates a host builder that configures the services for the application.
+  /// </summary>
+  /// <param name="args">The command-line arguments.</param>
+  /// <returns>A configured IHostBuilder.</returns>
   private static IHostBuilder CreateHostBuilder(string[] args)
   {
     return Host.CreateDefaultBuilder(args)
@@ -65,6 +71,7 @@ public static class Program
         services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
 
         services.AddHowbotServices();
+        services.AddLavalinkServices();
 
         // Add in-memory cache
         services.AddMemoryCache();
@@ -73,7 +80,11 @@ public static class Program
         ConfigurationHelper.SetHostConfiguration(hostContext.Configuration);
 
         // Infrastructure.ContainerSetup
-        services.AddDbContext(ConfigurationHelper.HostConfiguration);
+        if (ConfigurationHelper.HostConfiguration is not null)
+        {
+          services.AddDbContext(ConfigurationHelper.HostConfiguration);
+        }
+
         services.AddRepositories();
 
         var workerSettings = new WorkerSettings();

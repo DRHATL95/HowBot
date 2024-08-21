@@ -4,10 +4,9 @@ using Howbot.Core.Entities;
 
 namespace Howbot.Core.Interfaces;
 
-// Purpose: Interface for the Repository
 public interface IRepository
 {
-  T GetById<T>(ulong id) where T : BaseEntity;
+  T? GetById<T>(ulong id) where T : BaseEntity;
 
   List<T> List<T>() where T : BaseEntity;
 

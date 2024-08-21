@@ -1,14 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
+using Howbot.Core.Models.Commands;
 using Lavalink4NET;
 using Lavalink4NET.Players;
 using Microsoft.Extensions.Options;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceService> logger)
   : ServiceBase<VoiceService>(logger), IVoiceService
@@ -32,12 +30,12 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
 
       Logger.LogDebug("Successfully joined voice channel {0}.", guildTag);
 
-      return CommandResponse.CommandSuccessful("Successfully joined voice channel.", true);
+      return CommandResponse.Create(true, "Successfully joined voice channel.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(JoinVoiceChannelAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
@@ -55,23 +53,21 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
 
       if (player is null)
       {
-        return CommandResponse.CommandNotSuccessful("Unable to leave channel. Not in a voice channel.");
+        return CommandResponse.Create(false, "Unable to leave channel. Not in a voice channel.");
       }
 
-      // Using lavalink player disconnect from the voice channel.
       await player.DisconnectAsync();
 
-      // Return successful response
-      return CommandResponse.CommandSuccessful("Successfully disconnected from voice channel.");
+      return CommandResponse.Create(true, "Successfully disconnected from voice channel.");
     }
     catch (Exception exception)
     {
       Logger.LogError(exception, nameof(LeaveVoiceChannelAsync));
-      return CommandResponse.CommandNotSuccessful(exception);
+      return CommandResponse.Create(false, exception: exception);
     }
   }
 
-  private async ValueTask<ILavalinkPlayer> GetPlayerAsync(GetPlayerParameters playerParams)
+  private async ValueTask<ILavalinkPlayer?> GetPlayerAsync(GetPlayerParameters playerParams)
   {
     ArgumentNullException.ThrowIfNull(playerParams);
 

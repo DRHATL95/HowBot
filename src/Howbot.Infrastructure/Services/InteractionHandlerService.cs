@@ -1,14 +1,14 @@
-﻿using System;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public class InteractionHandlerService(
+  IServiceProvider services,
   InteractionService interactionService,
   ILoggerAdapter<InteractionHandlerService> logger)
   : ServiceBase<InteractionHandlerService>(logger), IInteractionHandlerService, IDisposable
@@ -21,16 +21,40 @@ public class InteractionHandlerService(
     GC.SuppressFinalize(this);
   }
 
-  public override void Initialize()
+  public override async Task InitializeAsync()
   {
-    base.Initialize();
+    await base.InitializeAsync();
+
+    await AddModulesToDiscordBotAsync();
 
     interactionService.Log += InteractionServiceOnLog;
     interactionService.InteractionExecuted += InteractionServiceOnInteractionExecuted;
+
     // _interactionService.SlashCommandExecuted += InteractionServiceOnSlashCommandExecuted;
     // _interactionService.ContextCommandExecuted += InteractionServiceOnContextCommandExecuted;
     // _interactionService.AutocompleteCommandExecuted += InteractionServiceOnAutocompleteCommandExecuted;
     // _interactionService.AutocompleteHandlerExecuted += InteractionServiceOnAutocompleteHandlerExecuted;
+  }
+
+  private async Task AddModulesToDiscordBotAsync()
+  {
+    try
+    {
+      var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+      var assembly =
+        assemblies.FirstOrDefault(x => !string.IsNullOrEmpty(x.FullName) && x.FullName.Contains("Howbot.Core"));
+
+      var modules = await interactionService.AddModulesAsync(assembly, services);
+      if (!modules.Any())
+      {
+        throw new Exception("No modules were added to the Discord bot.");
+      }
+    }
+    catch (Exception e)
+    {
+      Logger.LogError(e, nameof(AddModulesToDiscordBotAsync));
+      throw;
+    }
   }
 
   private Task InteractionServiceOnLog(LogMessage logMessage)
@@ -47,15 +71,9 @@ public class InteractionHandlerService(
 
       return Task.CompletedTask;
     }
-    catch (ArgumentOutOfRangeException exception)
-    {
-      Logger.LogError("LogMessage.Severity is not a valid LogSeverity value");
-
-      return Task.FromException(exception);
-    }
     catch (Exception exception)
     {
-      Logger.LogError("An exception occurred while logging interaction service log message");
+      Logger.LogError(exception, nameof(InteractionServiceOnLog));
 
       return Task.FromException(exception);
     }
@@ -66,49 +84,18 @@ public class InteractionHandlerService(
   {
     try
     {
-      if (result.IsSuccess)
+      if (!result.IsSuccess)
       {
-        return;
-      }
-
-      Logger.LogError("Interaction command did not execute successfully");
-
-      if (!string.IsNullOrEmpty(result.ErrorReason))
-      {
-        await interactionContext.Interaction.FollowupAsync(result.ErrorReason);
-      }
-      else
-      {
-        await interactionContext.Interaction.FollowupAsync(
-          "Interaction command was not able to execute successfully. Try again later.");
+        if (interactionContext.Interaction is SocketInteraction socketInteraction)
+        {
+          await DiscordHelper.HandleSocketInteractionErrorAsync(socketInteraction, result,
+            Logger);
+        }
       }
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, "An exception occurred while handling interaction command execution");
+      Logger.LogError(exception, nameof(InteractionServiceOnInteractionExecuted));
     }
   }
-
-  /*private Task InteractionServiceOnAutocompleteHandlerExecuted(IAutocompleteHandler arg1, IInteractionContext arg2,
-    IResult arg3)
-  {
-    throw new NotImplementedException();
-  }
-
-  private Task InteractionServiceOnAutocompleteCommandExecuted(AutocompleteCommandInfo arg1, IInteractionContext arg2,
-    IResult arg3)
-  {
-    throw new NotImplementedException();
-  }
-
-  private Task InteractionServiceOnContextCommandExecuted(ContextCommandInfo arg1, IInteractionContext arg2,
-    IResult arg3)
-  {
-    throw new NotImplementedException();
-  }
-
-  private Task InteractionServiceOnSlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
-  {
-    throw new NotImplementedException();
-  }*/
 }

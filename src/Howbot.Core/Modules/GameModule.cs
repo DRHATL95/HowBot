@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Discord;
 using Discord.Interactions;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
@@ -10,8 +11,6 @@ namespace Howbot.Core.Modules;
 public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
-  private ILoggerAdapter<GameModule> Logger { get; } = logger;
-
   [SlashCommand(Constants.Commands.RollCommandName, Constants.Commands.RollCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   public async Task RollCommandAsync([Summary("totalDice", "Amount of dice to roll. Max is 10.")] int amountOfDice = 1)
@@ -30,6 +29,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
           await ModifyOriginalResponseAsync(properties =>
             properties.Content = "You can't roll more than 10 dice at once!");
           return;
+
         case > 1:
         {
           var rolls = new int[amountOfDice];
@@ -54,7 +54,7 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(RollCommandAsync));
+      logger.LogError(exception, nameof(RollCommandAsync));
       throw;
     }
   }
@@ -77,42 +77,52 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(FlipCommandAsync));
+      logger.LogError(exception, nameof(FlipCommandAsync));
       throw;
     }
   }
 
-  [SlashCommand("test", "test", true, RunMode.Async)]
-  [RequireOwner]
-  public async Task TestCommandAsync()
+  [SlashCommand(Constants.Commands.ActivitiesCommandName, Constants.Commands.ActivitiesCommandDescription, true,
+    RunMode.Async)]
+  public async Task ActivitiesCommandAsync()
   {
-    await DeferAsync();
-
     try
     {
-      var ids = await httpService.GetCurrentApplicationIdsAsync();
+      var activities = await httpService.GetCurrentApplicationIdsAsync();
 
-      if (ids.Any())
+      // Generate a select menu for user to select from to start activity
+      var selectMenuBuilder = new SelectMenuBuilder()
+        .WithPlaceholder("Select an activity")
+        .WithCustomId("activity_select")
+        .WithMinValues(1)
+        .WithMaxValues(1);
+
+      // Limit the amount of options to 25
+      if (activities.Count > 25)
       {
-        var yt = ids.FirstOrDefault(x => x.Id == 880218394199220334);
-        var link = await httpService.StartDiscordActivityAsync(Context.Channel.Id.ToString(), yt.Id.ToString());
-        if (!string.IsNullOrEmpty(link))
-        {
-          await ModifyOriginalResponseAsync(properties => properties.Content = link);
-          return;
-        }
+        activities = activities.Take(25).ToList();
       }
 
-      await ModifyOriginalResponseAsync(properties => properties.Content = $"Ids returned {ids.Count}");
+      foreach (var activity in activities)
+      {
+        selectMenuBuilder.AddOption(new SelectMenuOptionBuilder().WithLabel(activity.Name)
+          .WithValue(activity.Id.ToString()));
+      }
+
+      var builder = new ComponentBuilder()
+        .WithSelectMenu(selectMenuBuilder);
+
+      await ReplyAsync(components: builder.Build());
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(TestCommandAsync));
+      logger.LogError(exception, nameof(ActivitiesCommandAsync));
       throw;
     }
   }
-  
-  [SlashCommand("eft", "Search for EFT items on the flea market.", true, RunMode.Async)]
+
+  [SlashCommand(Constants.Commands.EftCommandName, Constants.Commands.EftCommandDescription, true, RunMode.Async)]
+  [RequireOwner]
   public async Task EftCommandAsync([Summary("itemName", "The name of the item to search for.")] string itemName)
   {
     await DeferAsync();
@@ -120,18 +130,20 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     try
     {
       var priceTuple = await httpService.GetTarkovMarketPriceByItemNameAsync(itemName);
-      
+
       if (priceTuple is null)
       {
         await ModifyOriginalResponseAsync(properties => properties.Content = "Failed to get Tarkov market price.");
         return;
       }
-      
-      await ModifyOriginalResponseAsync(properties => properties.Content = $"The item **{priceTuple.Item1}** is being bought by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
+
+      await ModifyOriginalResponseAsync(properties =>
+        properties.Content =
+          $"The item **{priceTuple.Item1}** is being bought by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
     }
     catch (Exception exception)
     {
-      Logger.LogError(exception, nameof(EftCommandAsync));
+      logger.LogError(exception, nameof(EftCommandAsync));
       await DeleteOriginalResponseAsync();
     }
   }

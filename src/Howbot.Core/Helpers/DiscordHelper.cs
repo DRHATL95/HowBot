@@ -13,7 +13,6 @@ namespace Howbot.Core.Helpers;
 
 public static class DiscordHelper
 {
-
   public static LogLevel ConvertLogSeverityToLogLevel(LogSeverity logSeverity)
   {
     return logSeverity switch
@@ -27,16 +26,16 @@ public static class DiscordHelper
       _ => throw new ArgumentOutOfRangeException(nameof(logSeverity), logSeverity, null)
     };
   }
-  
+
   public static string GetGuildTag(IGuild guild)
   {
     try
     {
       Guard.Against.Null(guild, nameof(guild));
 
-      string guildName = guild.Name ?? "Unknown Guild";
-      ulong guildId = guild.Id;
-      
+      var guildName = guild.Name ?? "Unknown Guild";
+      var guildId = guild.Id;
+
       return $"[{guildName} - {guildId}]";
     }
     catch (ArgumentException argumentException)
@@ -47,10 +46,10 @@ public static class DiscordHelper
     {
       Log.Error(exception, Messages.Errors.Exception);
     }
-    
-    return guild == null ? string.Empty : $"[{guild.Name} - {guild.Id}]";
+
+    return string.Empty;
   }
-  
+
   public static async Task HandleSocketInteractionErrorAsync<T>(SocketInteraction socketInteraction, IResult result,
     ILoggerAdapter<T> logger)
   {
@@ -99,6 +98,7 @@ public static class DiscordHelper
 
     // TODO: Maybe create config variable to change this?
     // Will respond with error reason ephemeral by default.
-    await socketInteraction.RespondAsync(result.ErrorReason, ephemeral: true);
+    await socketInteraction.RespondAsync(result.ErrorReason, ephemeral: true)
+      .ConfigureAwait(false);
   }
 }

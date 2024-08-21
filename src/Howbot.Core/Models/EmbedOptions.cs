@@ -38,17 +38,17 @@ public class EmbedOptions
     Author = author;
   }
 
-  public Color Color { get; set; }
+  public Color Color { get; }
 
-  public string Title { get; set; }
+  public string Title { get; init; }
 
-  public string Url { get; set; }
+  public string Url { get; }
 
-  public string ThumbnailUrl { get; set; }
+  public string ThumbnailUrl { get; }
 
-  public EmbedFieldBuilder[] Fields { get; set; }
+  public EmbedFieldBuilder[]? Fields { get; init; }
 
-  public EmbedFooterBuilder Footer { get; set; }
+  public EmbedFooterBuilder Footer { get; }
 
-  public EmbedAuthorBuilder Author { get; set; }
+  public EmbedAuthorBuilder Author { get; }
 }

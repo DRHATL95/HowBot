@@ -1,7 +1,7 @@
 ﻿using Discord;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Services;
+using Howbot.Infrastructure.Services;
 using Lavalink4NET.Players.Queued;
 using Moq;
 using Xunit;

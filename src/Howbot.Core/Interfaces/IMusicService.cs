@@ -4,10 +4,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Howbot.Core.Models;
+using Howbot.Core.Models.Commands;
 using Howbot.Core.Models.Players;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
+using Lavalink4NET.Tracks;
 
 namespace Howbot.Core.Interfaces;
 
@@ -15,8 +16,9 @@ public interface IMusicService
 {
   void Initialize();
 
-  ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player,
-    SearchProviderTypes searchProviderType, string searchRequest, IGuildUser user,
+  ValueTask<string> GetSessionIdForGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default);
+
+  ValueTask<CommandResponse> PlayTrackBySearchTypeAsync(HowbotPlayer player, string searchRequest, IGuildUser user,
     IVoiceState voiceState, ITextChannel textChannel);
 
   ValueTask<CommandResponse> PauseTrackAsync(HowbotPlayer player);
@@ -38,10 +40,18 @@ public interface IMusicService
 
   CommandResponse ToggleShuffle(HowbotPlayer player);
 
-  ValueTask<HowbotPlayer> GetPlayerByContextAsync(
+  ValueTask<HowbotPlayer?> GetPlayerByContextAsync(
     SocketInteractionContext context, bool allowConnect = false, bool requireChannel = true,
     ImmutableArray<IPlayerPrecondition> preconditions = default, bool isDeferred = false, int initialVolume = 100,
     CancellationToken cancellationToken = default);
 
-  CommandResponse GetGuildMusicQueueEmbed(HowbotPlayer player);
+  ValueTask<CommandResponse> JoinVoiceChannelAsync(ulong guildId, ulong voiceChannelId,
+    CancellationToken cancellationToken = default);
+
+  CommandResponse GetMusicQueueForServer(HowbotPlayer player);
+
+  ValueTask<HowbotPlayer?> GetPlayerByGuildIdAsync(ulong guildId, CancellationToken cancellationToken = default);
+
+  ValueTask<string> GetSpotifyRecommendationAsync(LavalinkTrack lavalinkTrack, string market = "US", int limit = 10,
+    CancellationToken cancellationToken = default);
 }

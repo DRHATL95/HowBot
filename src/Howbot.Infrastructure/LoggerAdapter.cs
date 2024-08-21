@@ -1,5 +1,4 @@
-﻿using System;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models.Exceptions;
 using Microsoft.Extensions.Logging;

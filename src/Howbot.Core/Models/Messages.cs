@@ -1,4 +1,4 @@
-﻿namespace Howbot.Core.Models;
+﻿﻿namespace Howbot.Core.Models;
 
 public abstract record Messages
 {
@@ -18,7 +18,6 @@ public abstract record Messages
 
     public const string CommandResumeNotSuccessfulResponse =
       "Current track was not able to be resumed. Try again later.";
-
 
     public const string BotNotConnectedToVoiceResponseMessage = "I am not connected to a voice channel";
     public const string BotSkipQueueOutOfBounds = "There are not that many songs in queue. Try a smaller number.";

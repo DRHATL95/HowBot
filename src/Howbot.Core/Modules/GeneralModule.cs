@@ -17,6 +17,7 @@ using static Howbot.Core.Models.Permissions.User;
 namespace Howbot.Core.Modules;
 
 public class GeneralModule(
+  IHttpService httpService,
   InteractionService interactionService,
   IVoiceService voiceService,
   ILogger<GeneralModule> logger)
@@ -31,24 +32,14 @@ public class GeneralModule(
   {
     try
     {
-      await DeferAsync(true);
+      await DeferAsync();
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
-        var commandResponse = await voiceService.JoinVoiceChannelAsync(user, channel);
-        if (!commandResponse.IsSuccessful)
-        {
-          ModuleHelper.HandleCommandFailed(commandResponse);
+        var commandResponse =
+          await voiceService.JoinVoiceChannelAsync(user, channel);
 
-          await FollowupAsync(commandResponse.Message);
-
-          return;
-        }
-
-        if (!string.IsNullOrEmpty(commandResponse.Message))
-        {
-          await FollowupAsync(commandResponse.Message);
-        }
+        await ModuleHelper.HandleCommandResponseAsync(commandResponse, Context);
       }
     }
     catch (Exception exception)
@@ -67,7 +58,7 @@ public class GeneralModule(
   {
     try
     {
-      await DeferAsync(true);
+      await DeferAsync();
 
       if (Context.User is IGuildUser user && Context.Channel is IGuildChannel channel)
       {
@@ -91,30 +82,42 @@ public class GeneralModule(
   [SlashCommand(PingCommandName, PingCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
-  [RequireUserPermission(GuildPermission.SendMessages | GuildPermission.UseApplicationCommands |
-                         GuildPermission.ViewChannel)]
+  [RequireUserPermission(GuildPermission.Administrator)]
   public async Task PingCommandAsync()
   {
     try
     {
-      logger.LogDebug("Ping command invoked");
-
       await Context.Interaction.RespondAsync("Ping?");
 
-      var client = Context.Client;
       var interactionMessage = await Context.Interaction.GetOriginalResponseAsync();
-      var latency = client.Latency;
-      var responseTime = interactionMessage.CreatedAt - Context.Interaction.CreatedAt;
-      var message = $"Pong! Response time: {Math.Round(responseTime.TotalSeconds, 2)}s, " +
-                    $"Latency: {latency}ms";
+      var responseTime = Math.Round((Context.Interaction.CreatedAt - interactionMessage.CreatedAt).TotalSeconds, 2);
+
+      var message = $"Pong! API Latency: {responseTime}s. " +
+                    $"Bot Latency: {Context.Client.Latency}ms";
 
       await Context.Interaction.ModifyOriginalResponseAsync(properties => properties.Content = message);
-
-      logger.LogDebug("Ping command completed");
     }
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(PingCommandAsync));
+      throw;
+    }
+  }
+
+  [SlashCommand(SayCommandName, SayCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
+  [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
+                         GuildPermission.ViewChannel)]
+  public async Task SayCommandAsync(string message)
+  {
+    try
+    {
+      await RespondAsync(message);
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(SayCommandAsync));
       throw;
     }
   }
@@ -125,8 +128,8 @@ public class GeneralModule(
   [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
                          GuildPermission.ViewChannel)]
   public async Task HelpCommandAsync(
-    [Summary("command", "The name of the command to get help for.")]
-    string commandName = null)
+    [Summary(HelpCommandArgumentName, HelpCommandArgumentDescription)]
+    string? commandName = null)
   {
     try
     {
@@ -139,11 +142,13 @@ public class GeneralModule(
 
         if (command != null)
         {
-          var example = ModuleHelper.CommandExampleDictionary.GetValueOrDefault(command.Name, "No example available");
+          var examples =
+            ModuleHelper.CommandExampleDictionary.GetValueOrDefault(command.Name,
+              new List<string> { "No example available" });
           var embedBuilder = new EmbedBuilder
           {
             Title = $"{command.Name}",
-            Description = $"{command.Description}\nExample: {example}",
+            Description = $"{command.Description}\nExamples:\n{string.Join("\n", examples)}",
             Color = Constants.ThemeColor
           };
 
@@ -164,6 +169,11 @@ public class GeneralModule(
         foreach (var group in groupedCommands)
         {
           var moduleName = group.Key.Replace("Module", ""); // Remove the word "Module" from the group key
+          if (moduleName == "SettingsGroup") // Special case for SettingsGroupModule
+          {
+            moduleName = "Settings";
+          }
+
           var commandList = new List<string>();
           var continuationFields = new List<EmbedFieldBuilder>();
 
@@ -203,6 +213,120 @@ public class GeneralModule(
     catch (Exception exception)
     {
       logger.LogError(exception, nameof(HelpCommandAsync));
+      throw;
+    }
+  }
+  
+  [SlashCommand(CatCommandName, CatCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
+  [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
+                         GuildPermission.ViewChannel)]
+  public async Task CatCommandAsync([Summary("limit", "The limit of images to return. Max 10.")]int limit = 1)
+  {
+    if (limit is < 1 or > 10)
+    {
+      await RespondAsync("The limit must be between 1 and 10.");
+      return;
+    }
+    
+    try
+    {
+      await DeferAsync();
+      
+      // Either returns a single cat image or a list of cat images separated by commas
+      var catImageUrl = await httpService.GetRandomCatImageUrlAsync(limit);
+
+      if (limit == 1)
+      {
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = "Random Cat Image",
+          ImageUrl = catImageUrl,
+          Color = Constants.ThemeColor
+        };
+
+        await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
+      }
+      else
+      {
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = "Random Cat Images",
+          Color = Constants.ThemeColor
+        };
+        
+        // Convert the comma-separated string to a list of URLs
+        var urls = catImageUrl.Split(",").ToList();
+        for (var i = 0; i < urls.Count; i++)
+        {
+          int count = i + 1;
+          embedBuilder.AddField($"Cat Image #{count}", urls[i]);
+        }
+
+        await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
+      }
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(CatCommandAsync));
+      throw;
+    }
+  }
+  
+  [SlashCommand(DogCommandName, DogCommandDescription, true, RunMode.Async)]
+  [RequireContext(ContextType.Guild)]
+  [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
+  [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
+                         GuildPermission.ViewChannel)]
+  public async Task DogCommandAsync([Summary("limit", "The limit of images to return. Max 10.")]int limit = 1)
+  {
+    if (limit is < 1 or > 10)
+    {
+      await RespondAsync("The limit must be between 1 and 10.");
+      return;
+    }
+    
+    try
+    {
+      await DeferAsync();
+      
+      // Either returns a single dog image or a list of dog images separated by commas
+      var dogImageUrl = await httpService.GetRandomDogImageUrlAsync(limit);
+
+      if (limit == 1)
+      {
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = "Random Dog Image",
+          ImageUrl = dogImageUrl,
+          Color = Constants.ThemeColor
+        };
+        
+        await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
+      }
+      else
+      {
+        var embedBuilder = new EmbedBuilder
+        {
+          Title = "Random Dog Images",
+          Color = Constants.ThemeColor
+        };
+        
+        // Convert the comma-separated string to a list of URLs
+        var urls = dogImageUrl.Split(",").ToList();
+        for (var i = 0; i < urls.Count; i++)
+        {
+          int count = i + 1;
+          embedBuilder.AddField($"Dog Image #{count}", urls[i]);
+        }
+
+        await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
+      }
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(DogCommandAsync));
       throw;
     }
   }

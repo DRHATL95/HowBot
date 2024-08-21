@@ -1,20 +1,19 @@
-﻿using System;
+﻿using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Services;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data;
-using Howbot.Infrastructure.Http;
+using Howbot.Infrastructure.Services;
 using Lavalink4NET.Extensions;
 using Lavalink4NET.InactivityTracking;
 using Lavalink4NET.InactivityTracking.Extensions;
 using Lavalink4NET.InactivityTracking.Trackers.Idle;
 using Lavalink4NET.InactivityTracking.Trackers.Users;
-using Lavalink4NET.Lyrics.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpotifyAPI.Web;
 
 namespace Howbot.Infrastructure;
 
@@ -52,38 +51,41 @@ public static class ServiceCollectionSetupExtensions
     // Discord related services
     services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
     services.AddSingleton(x =>
-      new InteractionService(x.GetRequiredService<DiscordSocketClient>(), x.GetRequiredService<IServiceProvider>(),
-        x.GetRequiredService<ILoggerAdapter<InteractionService>>(), Configuration.InteractionServiceConfig));
+      new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
+
+    // Spotify related services
+    var spotifyConfig = SpotifyClientConfig.CreateDefault();
+    var request = new ClientCredentialsRequest(Configuration.SpotifyClientId, Configuration.SpotifyClientSecret);
+    var response = new OAuthClient(spotifyConfig).RequestToken(request).Result;
+
+    services.AddSingleton<ISpotifyClient, SpotifyClient>(_ =>
+      new SpotifyClient(spotifyConfig.WithToken(response.AccessToken)));
 
     // Howbot related services
+    services.AddSingleton<IHowbotService, HowbotService>();
     services.AddSingleton<IVoiceService, VoiceService>();
     services.AddSingleton<IMusicService, MusicService>();
     services.AddSingleton<IEmbedService, EmbedService>();
     services.AddSingleton<IDiscordClientService, DiscordClientService>();
-    services.AddSingleton<IInteractionService, InteractionService>();
-    // services.AddSingleton<IDockerService, DockerService>();
-    // services.AddSingleton<IDeploymentService, DeploymentService>();
     services.AddSingleton<ILavaNodeService, LavaNodeService>();
-    services.AddScoped<IDatabaseService, DatabaseService>();
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
 
-    // YouTube related service
-    /*services.AddSingleton(_ => new YouTubeService(new BaseClientService.Initializer
-    {
-      ApiKey = Configuration.YouTubeToken, ApplicationName = Constants.Discord.BotName
-    }));*/
+    services.AddScoped<IDatabaseService, DatabaseService>();
 
-    // Lavalink4NET related services
-    services.AddLavalink();
-    services.ConfigureLavalink(x =>
+    // Transient Services
+    services.AddTransient<IHttpService, HttpService>();
+  }
+
+  public static void AddLavalinkServices(this IServiceCollection serviceCollection)
+  {
+    serviceCollection.AddLavalink();
+    serviceCollection.ConfigureLavalink(x =>
     {
-      x.BaseAddress = Configuration.LavalinkUrl;
+      x.BaseAddress = Configuration.LavalinkUri;
       x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
     });
-    services.AddLyrics();
-    services.AddInactivityTracking();
-
-    services.ConfigureInactivityTracking(x =>
+    serviceCollection.AddInactivityTracking();
+    serviceCollection.ConfigureInactivityTracking(x =>
     {
       x.DefaultTimeout = TimeSpan.FromSeconds(30); // default
       x.DefaultPollInterval = TimeSpan.FromSeconds(10); // default is 5 seconds
@@ -92,18 +94,15 @@ public static class ServiceCollectionSetupExtensions
       x.UseDefaultTrackers = true; // default
       x.TimeoutBehavior = InactivityTrackingTimeoutBehavior.Lowest; // default
     });
-    services.Configure<IdleInactivityTrackerOptions>(x =>
+    serviceCollection.Configure<IdleInactivityTrackerOptions>(x =>
     {
       x.Timeout = TimeSpan.FromSeconds(10); // default
     });
-    services.Configure<UsersInactivityTrackerOptions>(x =>
+    serviceCollection.Configure<UsersInactivityTrackerOptions>(x =>
     {
       x.Threshold = 1; // default
       x.Timeout = TimeSpan.FromSeconds(30); // default is 10 seconds
       x.ExcludeBots = true; // default
     });
-
-    // Transient Services
-    services.AddTransient<IHttpService, HttpService>();
   }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Discord;
+using Howbot.Core.Interfaces;
 using Howbot.Core.Settings;
 using Lavalink4NET.InactivityTracking.Players;
 using Lavalink4NET.InactivityTracking.Trackers;
@@ -10,25 +11,23 @@ using Microsoft.Extensions.Logging;
 
 namespace Howbot.Core.Models.Players;
 
-public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties)
+public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> properties, ILoggerAdapter<HowbotPlayer> logger)
   : QueuedLavalinkPlayer(properties), IInactivityPlayerListener
 {
-  private readonly ILogger<HowbotPlayer> _logger = properties.Logger;
-  public ITextChannel TextChannel { get; } = properties.Options.Value.TextChannel;
-
+  public ITextChannel? TextChannel { get; } = properties.Options.Value.TextChannel;
+  public bool IsAutoPlayEnabled { get; set; } = properties.Options.Value.IsAutoPlayEnabled;
+  public ITrackQueue AutoPlayQueue { get; } = new TrackQueue();
+  
   #region Inactivity Tracking Events
 
-  public async ValueTask NotifyPlayerActiveAsync(PlayerTrackingState trackingState,
+  public ValueTask NotifyPlayerActiveAsync(PlayerTrackingState trackingState,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-
-    _logger.LogDebug("Player is being tracked as active");
-
-    if (TextChannel is not null && Configuration.IsDebug())
-    {
-      await TextChannel.SendMessageAsync("Player is being tracked as active");
-    }
+    
+    logger.LogDebug("Player is being tracked as active");
+    
+    return ValueTask.CompletedTask;
   }
 
   public ValueTask NotifyPlayerInactiveAsync(PlayerTrackingState trackingState,
@@ -36,23 +35,20 @@ public class HowbotPlayer(IPlayerProperties<HowbotPlayer, HowbotPlayerOptions> p
   {
     cancellationToken.ThrowIfCancellationRequested();
 
-    _logger.LogDebug("Player exceeded inactive timeout");
+    logger.LogDebug("Player exceeded inactive timeout");
 
     return ValueTask.CompletedTask;
   }
 
-  public async ValueTask NotifyPlayerTrackedAsync(PlayerTrackingState trackingState,
+  public ValueTask NotifyPlayerTrackedAsync(PlayerTrackingState trackingState,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
-    _logger.LogDebug("Player is being tracked as inactive");
+    logger.LogDebug("Player is being tracked as inactive");
 
-    if (TextChannel is not null && Configuration.IsDebug())
-    {
-      await TextChannel.SendMessageAsync("Player is being tracked as inactive");
-    }
+    return ValueTask.CompletedTask;
   }
 
-  #endregion
+  #endregion Inactivity Tracking Events
 }

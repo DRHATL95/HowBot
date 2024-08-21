@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models.Players;
 using Lavalink4NET;
@@ -8,13 +6,15 @@ using Lavalink4NET.Clients.Events;
 using Lavalink4NET.Events;
 using Lavalink4NET.Events.Players;
 using Lavalink4NET.Integrations.Lavasrc;
+using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Protocol.Payloads.Events;
 
-namespace Howbot.Core.Services;
+namespace Howbot.Infrastructure.Services;
 
 public class LavaNodeService(
   IAudioService audioService,
   ILoggerAdapter<LavaNodeService> logger,
+  IMusicService musicService,
   IEmbedService embedService)
   : ServiceBase<LavaNodeService>(logger), ILavaNodeService, IAsyncDisposable
 {
@@ -46,6 +46,13 @@ public class LavaNodeService(
     // Discord Client Wrapper (Lavalink4Net) Events
     audioService.DiscordClient.VoiceServerUpdated += DiscordClientOnVoiceServerUpdated;
     audioService.DiscordClient.VoiceStateUpdated += DiscordClientOnVoiceStateUpdated;
+  }
+
+  public async Task<string> GetSessionIdForGuildAsync(ulong guildId)
+  {
+    var player = await audioService.Players.GetPlayerAsync<HowbotPlayer>(guildId);
+
+    return player?.VoiceState.SessionId ?? string.Empty;
   }
 
   #region Events
@@ -87,8 +94,11 @@ public class LavaNodeService(
 
     Logger.LogDebug("Starting track [{TrackTitle}]", eventArgs.Track.Title);
 
-    await channel.SendMessageAsync(
-      embed: embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(track)) as Embed);
+    if (channel != null)
+    {
+      await channel.SendMessageAsync(
+        embed: embedService.CreateNowPlayingEmbed(new ExtendedLavalinkTrack(track)) as Embed);
+    }
   }
 
   private Task AudioServiceOnTrackException(object sender, TrackExceptionEventArgs eventArgs)
@@ -101,7 +111,7 @@ public class LavaNodeService(
     return Task.CompletedTask;
   }
 
-  private Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventArgs)
+  private async Task AudioServiceOnTrackEnded(object sender, TrackEndedEventArgs eventArgs)
   {
     if (eventArgs.Reason is not TrackEndReason.Finished)
     {
@@ -113,7 +123,35 @@ public class LavaNodeService(
       Logger.LogDebug("Current song [{SongName}] has ended.", eventArgs.Track.Title);
     }
 
-    return Task.CompletedTask;
+    if (eventArgs.Player is not HowbotPlayer player)
+    {
+      return;
+    }
+
+    if (player.Queue.IsEmpty)
+    {
+      if (player.AutoPlayQueue.IsEmpty)
+      {
+        var track = await musicService.GetSpotifyRecommendationAsync(eventArgs.Track, "US", 1);
+        if (!string.IsNullOrEmpty(track))
+        {
+          await player.PlayAsync(new TrackQueueItem(track));
+        }
+        else
+        {
+          Logger.LogWarning("No recommendations found for track [{TrackName}]", eventArgs.Track.Title);
+        }
+      }
+      else
+      {
+        var nextTrack = player.AutoPlayQueue.Peek();
+        if (nextTrack == null)
+        {
+          return;
+        }
+        await player.PlayAsync(nextTrack);
+      }
+    }
   }
 
   private Task AudioServiceOnStatisticsUpdated(object sender, StatisticsUpdatedEventArgs eventArgs)
