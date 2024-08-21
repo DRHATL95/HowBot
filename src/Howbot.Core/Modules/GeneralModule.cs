@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
 using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
@@ -216,24 +212,24 @@ public class GeneralModule(
       throw;
     }
   }
-  
+
   [SlashCommand(CatCommandName, CatCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
   [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
                          GuildPermission.ViewChannel)]
-  public async Task CatCommandAsync([Summary("limit", "The limit of images to return. Max 10.")]int limit = 1)
+  public async Task CatCommandAsync([Summary("limit", "The limit of images to return. Max 10.")] int limit = 1)
   {
     if (limit is < 1 or > 10)
     {
       await RespondAsync("The limit must be between 1 and 10.");
       return;
     }
-    
+
     try
     {
       await DeferAsync();
-      
+
       // Either returns a single cat image or a list of cat images separated by commas
       var catImageUrl = await httpService.GetRandomCatImageUrlAsync(limit);
 
@@ -241,26 +237,20 @@ public class GeneralModule(
       {
         var embedBuilder = new EmbedBuilder
         {
-          Title = "Random Cat Image",
-          ImageUrl = catImageUrl,
-          Color = Constants.ThemeColor
+          Title = "Random Cat Image", ImageUrl = catImageUrl, Color = Constants.ThemeColor
         };
 
         await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
       }
       else
       {
-        var embedBuilder = new EmbedBuilder
-        {
-          Title = "Random Cat Images",
-          Color = Constants.ThemeColor
-        };
-        
+        var embedBuilder = new EmbedBuilder { Title = "Random Cat Images", Color = Constants.ThemeColor };
+
         // Convert the comma-separated string to a list of URLs
         var urls = catImageUrl.Split(",").ToList();
         for (var i = 0; i < urls.Count; i++)
         {
-          int count = i + 1;
+          var count = i + 1;
           embedBuilder.AddField($"Cat Image #{count}", urls[i]);
         }
 
@@ -273,24 +263,24 @@ public class GeneralModule(
       throw;
     }
   }
-  
+
   [SlashCommand(DogCommandName, DogCommandDescription, true, RunMode.Async)]
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildPermission.SendMessages | GuildPermission.ViewChannel)]
   [RequireUserPermission(GuildPermission.UseApplicationCommands | GuildPermission.SendMessages |
                          GuildPermission.ViewChannel)]
-  public async Task DogCommandAsync([Summary("limit", "The limit of images to return. Max 10.")]int limit = 1)
+  public async Task DogCommandAsync([Summary("limit", "The limit of images to return. Max 10.")] int limit = 1)
   {
     if (limit is < 1 or > 10)
     {
       await RespondAsync("The limit must be between 1 and 10.");
       return;
     }
-    
+
     try
     {
       await DeferAsync();
-      
+
       // Either returns a single dog image or a list of dog images separated by commas
       var dogImageUrl = await httpService.GetRandomDogImageUrlAsync(limit);
 
@@ -298,26 +288,20 @@ public class GeneralModule(
       {
         var embedBuilder = new EmbedBuilder
         {
-          Title = "Random Dog Image",
-          ImageUrl = dogImageUrl,
-          Color = Constants.ThemeColor
+          Title = "Random Dog Image", ImageUrl = dogImageUrl, Color = Constants.ThemeColor
         };
-        
+
         await ModifyOriginalResponseAsync(properties => properties.Embed = embedBuilder.Build());
       }
       else
       {
-        var embedBuilder = new EmbedBuilder
-        {
-          Title = "Random Dog Images",
-          Color = Constants.ThemeColor
-        };
-        
+        var embedBuilder = new EmbedBuilder { Title = "Random Dog Images", Color = Constants.ThemeColor };
+
         // Convert the comma-separated string to a list of URLs
         var urls = dogImageUrl.Split(",").ToList();
         for (var i = 0; i < urls.Count; i++)
         {
-          int count = i + 1;
+          var count = i + 1;
           embedBuilder.AddField($"Dog Image #{count}", urls[i]);
         }
 

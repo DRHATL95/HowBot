@@ -1,13 +1,8 @@
-﻿using System;
-using System.Threading.Tasks;
-using Howbot.Core.Helpers;
+﻿using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure;
 using Howbot.Infrastructure.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 

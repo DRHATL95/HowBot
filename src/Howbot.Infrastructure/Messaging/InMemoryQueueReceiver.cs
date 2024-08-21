@@ -6,7 +6,7 @@ namespace Howbot.Infrastructure.Messaging;
 public class InMemoryQueueReceiver : IQueueReceiver
 {
   public static readonly Queue<string?> MessageQueue = new();
-  
+
   public async Task<string?> GetMessageFromQueueAsync(string queueName)
   {
     Guard.Against.NullOrWhiteSpace(queueName, nameof(queueName));

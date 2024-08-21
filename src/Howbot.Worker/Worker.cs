@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Howbot.Core.Interfaces;
-using Microsoft.Extensions.Hosting;
+﻿using Howbot.Core.Interfaces;
 
 namespace Howbot.Worker;
 

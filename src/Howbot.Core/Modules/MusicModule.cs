@@ -1,21 +1,19 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
 using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
+using Lavalink4NET;
 using Lavalink4NET.Integrations.Lavasrc;
+using Lavalink4NET.Integrations.LyricsJava;
+using Lavalink4NET.Integrations.LyricsJava.Extensions;
+using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Messages.Responses;
 using static Howbot.Core.Models.Permissions.Bot;
 using static Howbot.Core.Models.Permissions.User;
-using Lavalink4NET;
-using Lavalink4NET.Integrations.LyricsJava.Extensions;
-using Lavalink4NET.Players;
 
 
 namespace Howbot.Core.Modules;
@@ -67,8 +65,9 @@ public class MusicModule(
 
           return;
         }
-        
-        if (player.Queue.Any() && player.CurrentTrack != null && player.State is PlayerState.Playing or PlayerState.Paused)
+
+        if (player.Queue.Any() && player.CurrentTrack != null &&
+            player.State is PlayerState.Playing or PlayerState.Paused)
         {
           if (player.Queue.Count > tracksBeforePlay + 1)
           {
@@ -392,7 +391,18 @@ public class MusicModule(
         return;
       }
 
-      var lyrics = await audioService.Tracks.GetCurrentTrackLyricsAsync(player);
+      Lyrics? lyrics = null;
+
+      try
+      {
+        lyrics = await audioService.Tracks.GetCurrentTrackLyricsAsync(player);
+      }
+      catch (Exception e)
+      {
+        logger.LogError(e, "Failed to get lyrics for track {track}", track.Title);
+        logger.LogError("Trying backup method..");
+        lyrics = await audioService.Tracks.GetGeniusLyricsAsync(player.CurrentTrack?.Title ?? string.Empty);
+      }
 
       if (lyrics is null)
       {

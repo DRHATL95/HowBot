@@ -76,7 +76,7 @@ public partial class MusicService(
     {
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
-      
+
       await db.UpdateGuildSessionIdAsync(guildId, await GetSessionIdForGuildIdAsync(guildId, cancellationToken));
     }
 
@@ -93,7 +93,7 @@ public partial class MusicService(
       ClearQueueOnStop = false,
       ClearHistoryOnStop = false,
       InitialVolume = persistedVolume > 0 ? persistedVolume / 100f : initialVolume / 100f,
-      IsAutoPlayEnabled = false,
+      IsAutoPlayEnabled = false
     };
 
     var result = await audioService.Players.RetrieveAsync<HowbotPlayer, HowbotPlayerOptions>(guildId, voiceChannelId,

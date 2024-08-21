@@ -9,7 +9,7 @@ public sealed record HowbotPlayerOptions() : QueuedLavalinkPlayerOptions
   {
     TextChannel = textChannel;
     LastRequestedBy = lastRequestedBy;
-    
+
     IsAutoPlayEnabled = false;
   }
 

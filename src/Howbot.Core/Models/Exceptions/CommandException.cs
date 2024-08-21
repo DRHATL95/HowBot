@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Howbot.Core.Models.Exceptions;
+﻿namespace Howbot.Core.Models.Exceptions;
 
 public class CommandException : Exception
 {

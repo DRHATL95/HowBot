@@ -1,5 +1,4 @@
-﻿using System;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -63,9 +62,9 @@ public static class Configuration
   public static string SpotifyClientId => GetTokenByName(SpotifyClientIdKey);
 
   public static string SpotifyClientSecret => GetTokenByName(SpotifyClientSecretKey);
-  
+
   private static GatewayIntents GatewayIntents => GatewayIntents.AllUnprivileged | GatewayIntents.GuildMembers;
-  
+
   public static DiscordSocketConfig DiscordSocketConfig =>
     new()
     {
@@ -75,12 +74,12 @@ public static class Configuration
       LogGatewayIntentWarnings = false,
       UseInteractionSnowflakeDate = false
     };
-  
+
   public static AudioServiceOptions AudioServiceOptions => new()
   {
     Passphrase = LavaNodePassword, BaseAddress = LavalinkUri, HttpClientName = Constants.Discord.BotName
   };
-  
+
   public static InteractionServiceConfig InteractionServiceConfig =>
     new() { LogLevel = IsDebug() ? LogSeverity.Debug : LogSeverity.Error };
 
@@ -93,7 +92,7 @@ public static class Configuration
     UserName = RabbitMqUserName,
     Password = RabbitMqPassword
   };
-  
+
   public static bool IsDebug()
   {
 #if DEBUG

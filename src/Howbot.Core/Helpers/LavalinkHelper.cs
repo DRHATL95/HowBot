@@ -1,7 +1,5 @@
 ﻿using Howbot.Core.Extensions;
-using Howbot.Core.Models;
 using Howbot.Core.Models.Enums;
-using Howbot.Core.Models.Players;
 using Lavalink4NET.Rest.Entities.Tracks;
 
 namespace Howbot.Core.Helpers;

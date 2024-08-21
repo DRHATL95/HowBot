@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace Howbot.Core.Models;
+﻿namespace Howbot.Core.Models;
 
 public abstract class RequestCancellationBase
 {

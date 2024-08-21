@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Howbot.Core.Helpers;
+﻿namespace Howbot.Core.Helpers;
 
 public static class EnumHelper
 {

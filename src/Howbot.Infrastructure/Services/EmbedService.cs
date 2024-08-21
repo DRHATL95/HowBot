@@ -113,7 +113,9 @@ public class EmbedService(ILoggerAdapter<EmbedService> logger) : ServiceBase<Emb
 
     embedBuilder.Fields.Add(new EmbedFieldBuilder
     {
-      IsInline = true, Name = "Source", Value = LavalinkHelper.GetSourceAsString(lavalinkTrack.SourceName ?? string.Empty)
+      IsInline = true,
+      Name = "Source",
+      Value = LavalinkHelper.GetSourceAsString(lavalinkTrack.SourceName ?? string.Empty)
     });
 
     if (trackPosition.HasValue)

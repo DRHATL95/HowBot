@@ -1,10 +1,8 @@
-﻿using System.Threading.Tasks;
-
-namespace Howbot.Core.Interfaces;
+﻿namespace Howbot.Core.Interfaces;
 
 public interface ILavaNodeService
 {
   void Initialize();
-  
+
   Task<string> GetSessionIdForGuildAsync(ulong guildId);
 }

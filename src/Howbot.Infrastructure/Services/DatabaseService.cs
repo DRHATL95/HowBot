@@ -1,6 +1,6 @@
 ﻿using Ardalis.GuardClauses;
-using Howbot.Core.Helpers;
 using Howbot.Core.Entities;
+using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Enums;
@@ -32,7 +32,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       Logger.LogError(exception, "Failed to add new guild to database");
     }
   }
-  
+
   public Guild? GetGuildById(ulong guildId)
   {
     try
@@ -223,16 +223,17 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
       return string.Empty;
     }
-    
+
     if (string.IsNullOrWhiteSpace(guildEntity.EncryptedSessionId))
     {
       return string.Empty;
     }
-    
-    var decryptedSessionId = StringCipher.Decrypt(guildEntity.EncryptedSessionId, Howbot.Infrastructure.Data.Config.Constants.EncryptionKey);
+
+    var decryptedSessionId =
+      StringCipher.Decrypt(guildEntity.EncryptedSessionId, Infrastructure.Data.Config.Constants.EncryptionKey);
     return decryptedSessionId;
   }
-  
+
   public async Task UpdateGuildSessionIdAsync(ulong guildId, string sessionId)
   {
     try
@@ -245,8 +246,8 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
         Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
         return;
       }
-      
-      var encryptedSessionId = StringCipher.Encrypt(sessionId, Howbot.Infrastructure.Data.Config.Constants.EncryptionKey);
+
+      var encryptedSessionId = StringCipher.Encrypt(sessionId, Infrastructure.Data.Config.Constants.EncryptionKey);
 
       guildEntity.EncryptedSessionId = encryptedSessionId;
 
@@ -258,7 +259,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       throw;
     }
   }
-  
+
   private bool ShouldCreateGuild(ulong guildId)
   {
     try

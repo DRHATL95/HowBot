@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Howbot.Core.Entities;
+﻿using Howbot.Core.Entities;
 using Howbot.Core.Models.Enums;
 
 namespace Howbot.Core.Interfaces;

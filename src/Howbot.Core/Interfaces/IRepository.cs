@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Howbot.Core.Entities;
+﻿using Howbot.Core.Entities;
 
 namespace Howbot.Core.Interfaces;
 

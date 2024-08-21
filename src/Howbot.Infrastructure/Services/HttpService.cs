@@ -22,7 +22,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     GC.SuppressFinalize(this);
   }
-  
+
   public async Task<int> GetUrlResponseStatusCodeAsync(string url, CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -31,7 +31,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     return (int)result.StatusCode;
   }
-  
+
   public async Task<string> CreateWatchTogetherRoomAsync(string url, CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -61,7 +61,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     return $"{Constants.WatchTogetherRoomUrl}/{convertedResponse.StreamKey}";
   }
-  
+
   public async Task<List<ActivityApplication>> GetCurrentApplicationIdsAsync(
     CancellationToken cancellationToken = default)
   {
@@ -107,7 +107,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     return data;
   }
-  
+
   public async Task<string> StartDiscordActivityAsync(string channelId, string activityId,
     CancellationToken cancellationToken = default)
   {
@@ -141,7 +141,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
     // Return the invite link
     return $"https://discord.gg/{invite.Code}";
   }
-  
+
   public async Task<string> GetRandomCatImageUrlAsync(int limit = 1, CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -151,8 +151,8 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
       throw new Exception("Invalid number of cat images requested. Limit must be between 1 and 10.");
     }
 
-    string url = $"{Constants.CapApiUrl}/images/search?limit={limit}";
-    
+    var url = $"{Constants.CapApiUrl}/images/search?limit={limit}";
+
     var response = await _client.GetAsync(url, cancellationToken);
     // Limit doesn't work without API key, so anything with limit will return 10
     var responseContent = await response.Content.ReadFromJsonAsync<CatImageResponse[]>(cancellationToken);
@@ -172,7 +172,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
     // Default behavior
     return limit == 1 ? responseContent[0].Url : string.Join(",", responseContent.Select(x => x.Url));
   }
-  
+
   public async Task<string> GetRandomDogImageUrlAsync(int limit = 1, CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
@@ -182,8 +182,8 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
       throw new Exception("Invalid number of dog images requested. Limit must be between 1 and 10.");
     }
 
-    string url = $"{Constants.DogApiUrl}/images/search?limit={limit}";
-    
+    var url = $"{Constants.DogApiUrl}/images/search?limit={limit}";
+
     var response = await _client.GetAsync(url, cancellationToken);
     // Limit doesn't work without API key, so anything with limit will return 10
     var responseContent = await response.Content.ReadFromJsonAsync<DogImageResponse[]>(cancellationToken);
@@ -203,7 +203,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
     // Default behavior
     return limit == 1 ? responseContent[0].Url : string.Join(",", responseContent.Select(x => x.Url));
   }
-  
+
   public async Task<Tuple<string, string, int>?> GetTarkovMarketPriceByItemNameAsync(string itemName,
     CancellationToken cancellationToken = default)
   {
@@ -213,7 +213,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
       $"{{items(name: \"{itemName}\") {{id name shortName basePrice wikiLink avg24hPrice iconLink updated sellFor {{price currency priceRUB source}}}}}}";
     var data = new Dictionary<string, string> { { "query", query } };
 
-    const string url = Howbot.Core.Models.Constants.EscapeFromTarkov.EftApiBaseUrl;
+    const string url = Core.Models.Constants.EscapeFromTarkov.EftApiBaseUrl;
 
     var response = await _client.PostAsJsonAsync(url, data, cancellationToken);
 

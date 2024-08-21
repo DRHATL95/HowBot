@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Ardalis.GuardClauses;
+﻿using Ardalis.GuardClauses;
 using Discord;
 using Discord.Interactions;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Commands;
-using Serilog;
 using CommandException = Howbot.Core.Models.Exceptions.CommandException;
 
 namespace Howbot.Core.Helpers;
@@ -43,7 +39,7 @@ public static class ModuleHelper
     { Constants.Commands.PurgeCommandName, ["/purge 5"] },
     { Constants.Commands.SayCommandName, ["/say Hello, World!"] }
   };
-  
+
   public static void HandleCommandFailed(CommandResponse commandResponse)
   {
     Guard.Against.Null(commandResponse, nameof(commandResponse));
@@ -65,7 +61,7 @@ public static class ModuleHelper
 
     throw new CommandException(commandResponse.Exception.Message);
   }
-  
+
   public static bool CheckValidCommandParameter(params object[] args)
   {
     foreach (var arg in args)
@@ -86,7 +82,7 @@ public static class ModuleHelper
 
     return false;
   }
-  
+
   public static TimeSpan ConvertToTimeSpan(int hours, int minutes, int seconds)
   {
     if (hours == 0 && minutes == 0 && seconds == 0)

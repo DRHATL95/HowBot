@@ -1,5 +1,4 @@
-﻿using System;
-using Discord;
+﻿using Discord;
 using Howbot.Core.Models.Players;
 using Lavalink4NET.Tracks;
 
