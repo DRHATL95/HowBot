@@ -23,10 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Howbot.Core\Howbot.Core.csproj"/>
     <ProjectReference Include="..\..\src\Howbot.Infrastructure\Howbot.Infrastructure.csproj"/>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Worker"/>
+    <ProjectReference Include="..\..\src\Howbot.Worker\Howbot.Worker.csproj" />
   </ItemGroup>
 
 </Project>
