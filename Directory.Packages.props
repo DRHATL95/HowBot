@@ -32,7 +32,7 @@
     <PackageVersion Include="Google.Apis.YouTube.v3" Version="1.68.0.3513"/>
     <PackageVersion Include="Lavalink4NET.Discord.NET" Version="4.0.21"/>
     <PackageVersion Include="Lavalink4NET.Integrations.ExtraFilters" Version="4.0.0-beta.3-2"/>
-    <PackageVersion Include="Lavalink4NET.Integrations.Lavasearch" Version="4.0.21"/>
+    <PackageVersion Include="Lavalink4NET.Integrations.Lavasearch" Version="4.0.24"/>
     <PackageVersion Include="Lavalink4NET.Integrations.Lavasrc" Version="4.0.21"/>
     <PackageVersion Include="Lavalink4NET.Integrations.LyricsJava" Version="4.0.21"/>
     <PackageVersion Include="Lavalink4NET.InactivityTracking" Version="4.0.21"/>
