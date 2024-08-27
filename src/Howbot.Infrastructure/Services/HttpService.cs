@@ -6,15 +6,15 @@ using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models.Commands;
 using Howbot.Core.Settings;
-using Newtonsoft.Json;
+using Howbot.Infrastructure.Data.Models.Responses;
+using Howbot.Infrastructure.Data.Models.Watch2Gether;
 using Constants = Howbot.Infrastructure.Data.Config.Constants;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Howbot.Infrastructure.Services;
 
 public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, IDisposable
 {
-  private readonly HttpClient _client = httpClientFactory.CreateClient();
+  private readonly HttpClient _client = httpClientFactory.CreateClient("HttpService");
 
   public void Dispose()
   {
@@ -49,14 +49,14 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
       RequestUri = new Uri(Constants.WatchTogetherCreateRoomUrl),
       Method = HttpMethod.Post,
       Headers = { Accept = { new MediaTypeWithQualityHeaderValue("application/json") } },
-      Content = new StringContent(JsonSerializer.Serialize(parameters), Encoding.UTF8, "application/json")
+      Content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(parameters), Encoding.UTF8, "application/json")
     };
 
     var httpResponseMessage = await _client.SendAsync(request, cancellationToken);
     httpResponseMessage.EnsureSuccessStatusCode();
 
     var response = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
-    var convertedResponse = JsonSerializer.Deserialize<Watch2GetherResponse>(response) ??
+    var convertedResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<Watch2GetherUrlResponse>(response) ??
                             throw new Exception("Unable to parse response");
 
     return $"{Constants.WatchTogetherRoomUrl}/{convertedResponse.StreamKey}";
@@ -91,7 +91,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
         version = versionMatch.Groups[1].Value;
       }
 
-      var match = DiscordApplicationIdsLineRegex().Match(line);
+      var match = Constants.DiscordApplicationIdsLineRegex.Match(line);
       if (match.Success)
       {
         data.Add(new ActivityApplication
@@ -114,8 +114,9 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
     cancellationToken.ThrowIfCancellationRequested();
 
     var requestUri = $"https://discord.com/api/v9/channels/{channelId}/invites";
-
-    var requestContent = new StringContent(JsonSerializer.Serialize(new
+    
+    // Use Newtonsoft for this one
+    var requestContent = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(new
     {
       max_age = 86400,
       max_uses = 10,
@@ -135,8 +136,13 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
       throw new Exception($"Failed to start activity. Status code: {response.StatusCode}. Response: {responseContent}");
     }
 
-    var invite = JsonSerializer.Deserialize<DiscordInvite>(responseContent) ??
+    var invite = Newtonsoft.Json.JsonConvert.DeserializeObject<DiscordInviteResponse>(responseContent) ??
                  throw new Exception($"Failed to start activity. Invite is null. Response: {responseContent}");
+    
+    if (string.IsNullOrEmpty(invite.Code))
+    {
+      throw new Exception($"Failed to start activity. Invite code is null. Response: {responseContent}");
+    }
 
     // Return the invite link
     return $"https://discord.gg/{invite.Code}";
@@ -208,34 +214,40 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-
-    var query =
+    var requestQuery =
       $"{{items(name: \"{itemName}\") {{id name shortName basePrice wikiLink avg24hPrice iconLink updated sellFor {{price currency priceRUB source}}}}}}";
-    var data = new Dictionary<string, string> { { "query", query } };
+    var data = new Dictionary<string, string> { { "query", requestQuery } };
+    
+    var apiResponse = await _client.PostAsJsonAsync(Constants.EftApiBaseUrl, data, cancellationToken);
+    
+    apiResponse.EnsureSuccessStatusCode();
+    
+    EftMarketResponse? parseResponse;
 
-    const string url = Core.Models.Constants.EscapeFromTarkov.EftApiBaseUrl;
-
-    var response = await _client.PostAsJsonAsync(url, data, cancellationToken);
-
-    var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-
-    if (!response.IsSuccessStatusCode || responseContent.Contains("errors"))
+    try
     {
-      throw new Exception(
-        $"Failed to get Tarkov market price. Status code: {response.StatusCode}. Response: {responseContent}");
+      var content = await apiResponse.Content.ReadAsStringAsync(cancellationToken);
+      
+      // Parse with Newtonsoft
+      parseResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<EftMarketResponse>(content);
+      if (parseResponse is null)
+      {
+        return null;
+      }
+    }
+    catch (Exception e)
+    {
+      throw new Exception($"Failed to parse Tarkov API response. {e.Message}");
     }
 
-    var rawResponse = JsonSerializer.Deserialize<GraphQlResponse>(responseContent) ??
-                      throw new Exception("Unable to parse tarkov API response");
-
-    if (rawResponse.Data.Items.Count == 0 || rawResponse.Data.Items.All(x => x.SellFor.Count == 0))
+    if (!parseResponse.Data.Items.Any() || parseResponse.Data.Items.All(x => x.SellFor.Count == 0))
     {
       return null;
     }
 
     var dictionary = new Dictionary<string, int>();
 
-    foreach (var item in rawResponse.Data.Items)
+    foreach (var item in parseResponse.Data.Items)
     {
       var splitName = item.Name.Split(' ');
       if (splitName.Contains(itemName, StringComparer.OrdinalIgnoreCase))
@@ -255,7 +267,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
       return null;
     }
 
-    var marketItem = rawResponse.Data.Items.FirstOrDefault(x => x.Name == result.Key);
+    var marketItem = parseResponse.Data.Items.FirstOrDefault(x => x.Name == result.Key);
 
     if (marketItem is null)
     {
@@ -284,228 +296,4 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     return new Tuple<string, string, int>(result.Key, trader, maxPrice);
   }
-
-  // This is for application ids, this will provide one line at a time from the markdown file
-  // https://raw.githubusercontent.com/Delitefully/DiscordLists/master/activities.md
-  [GeneratedRegex(@"\|\s*!\[Icon\]\((.*?)\)\s*\|\s*(\d{18})\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|")]
-  private static partial Regex DiscordApplicationIdsLineRegex();
-}
-
-internal record GraphQlResponse
-{
-  [JsonProperty("data")] public Data Data { get; set; } = new();
-}
-
-internal record Data
-{
-  [JsonProperty("items")] public List<TarkovMarketItem> Items { get; set; } = [];
-}
-
-internal record TarkovMarketItem
-{
-  [JsonProperty("id")] public string Id { get; set; } = string.Empty;
-
-  [JsonProperty("name")] public string Name { get; set; } = string.Empty;
-
-  [JsonProperty("shortName")] public string ShortName { get; set; } = string.Empty;
-
-  [JsonProperty("basePrice")] public string BasePrice { get; set; } = string.Empty;
-
-  [JsonProperty("wikiLink")] public string WikiLink { get; set; } = string.Empty;
-
-  [JsonProperty("avg24hPrice")] public string Avg24HPrice { get; set; } = string.Empty;
-
-  [JsonProperty("iconLink")] public string IconLink { get; set; } = string.Empty;
-
-  [JsonProperty("updated")] public string Updated { get; set; } = string.Empty;
-
-  [JsonProperty("sellFor")] public List<TarkovSellForRequest> SellFor { get; set; } = [];
-}
-
-internal record TarkovSellForRequest
-{
-  [JsonProperty("price")] public int Price { get; set; }
-
-  [JsonProperty("currency")] public string Currency { get; set; } = string.Empty;
-
-  [JsonProperty("priceRUB")] public int PriceInRubles { get; set; }
-
-  [JsonProperty("source")] public string Source { get; set; } = string.Empty;
-}
-
-internal record DiscordInvite
-{
-  public string Code { get; set; } = string.Empty;
-}
-
-internal record Watch2GetherParameters
-{
-  [JsonProperty("w2g_api_key")] public string W2GApiKey { get; set; } = string.Empty;
-
-  [JsonProperty("share")] public string Share { get; set; } = string.Empty;
-
-  [JsonProperty("bg_color")] public string BackgroundColor { get; set; } = string.Empty;
-
-  [JsonProperty("bg_opacity")] public string BackgroundOpacity { get; set; } = string.Empty;
-}
-
-internal record Watch2GetherResponse
-{
-  [JsonProperty("id")] public int Id { get; set; }
-
-  [JsonProperty("streamkey")] public string StreamKey { get; set; } = string.Empty;
-
-  [JsonProperty("created_at")] public DateTime CreatedAt { get; set; }
-
-  [JsonProperty("persistent")] public bool Persistent { get; set; }
-
-  [JsonProperty("persistent_name")] public string PersistentName { get; set; } = string.Empty;
-
-  [JsonProperty("deleted")] public bool Deleted { get; set; }
-
-  [JsonProperty("moderated")] public bool Moderated { get; set; }
-
-  [JsonProperty("location")] public string Location { get; set; } = string.Empty;
-
-  [JsonProperty("stream_created")] public bool StreamCreated { get; set; }
-
-  [JsonProperty("background")] public string Background { get; set; } = string.Empty;
-
-  [JsonProperty("moderated_background")] public bool ModeratedBackground { get; set; }
-
-  [JsonProperty("moderated_playlist")] public bool ModeratedPlaylist { get; set; }
-
-  [JsonProperty("bg_color")] public string BackgroundColor { get; set; } = string.Empty;
-
-  [JsonProperty("bg_opacity")] public double BackgroundOpacity { get; set; }
-
-  [JsonProperty("moderated_item")] public bool ModeratedItem { get; set; }
-
-  [JsonProperty("theme_bg")] public string ThemeBackground { get; set; } = string.Empty;
-
-  [JsonProperty("playlist_id")] public int PlaylistId { get; set; }
-
-  [JsonProperty("members_only")] public bool MembersOnly { get; set; }
-
-  [JsonProperty("moderated_suggestions")]
-  public bool ModeratedSuggestions { get; set; }
-
-  [JsonProperty("moderated_chat")] public bool ModeratedChat { get; set; }
-
-  [JsonProperty("moderated_user")] public bool ModeratedUser { get; set; }
-
-  [JsonProperty("moderated_cam")] public bool ModeratedCam { get; set; }
-}
-
-internal record SpotifyRecommendationsResponse
-{
-  [JsonProperty("tracks")] public List<SpotifyTrack> Tracks { get; set; } = new();
-
-  [JsonProperty("seeds")] public List<SpotifySeed> Seeds { get; set; } = new();
-}
-
-internal record SpotifyTrack
-{
-  [JsonProperty("album")] public SpotifyAlbum Album { get; set; } = new();
-
-  [JsonProperty("artists")] public List<SpotifyArtist> Artists { get; set; } = new();
-
-  [JsonProperty("duration_ms")] public int DurationMs { get; set; }
-
-  [JsonProperty("external_urls")] public Dictionary<string, string> ExternalUrls { get; set; } = new();
-
-  [JsonProperty("id")] public string Id { get; set; } = string.Empty;
-
-  [JsonProperty("name")] public string Name { get; set; } = string.Empty;
-
-  [JsonProperty("popularity")] public int Popularity { get; set; }
-
-  [JsonProperty("preview_url")] public string PreviewUrl { get; set; } = string.Empty;
-
-  [JsonProperty("uri")] public string Uri { get; set; } = string.Empty;
-}
-
-internal record SpotifyAlbum
-{
-  [JsonProperty("album_type")] public string AlbumType { get; set; } = string.Empty;
-
-  [JsonProperty("artists")] public List<SpotifyArtist> Artists { get; set; } = new();
-
-  [JsonProperty("external_urls")] public Dictionary<string, string> ExternalUrls { get; set; } = new();
-
-  [JsonProperty("id")] public string Id { get; set; } = string.Empty;
-
-  [JsonProperty("images")] public List<SpotifyImage> Images { get; set; } = new();
-
-  [JsonProperty("name")] public string Name { get; set; } = string.Empty;
-
-  [JsonProperty("release_date")] public string ReleaseDate { get; set; } = string.Empty;
-
-  [JsonProperty("release_date_precision")]
-  public string ReleaseDatePrecision { get; set; } = string.Empty;
-
-  [JsonProperty("total_tracks")] public int TotalTracks { get; set; }
-
-  [JsonProperty("uri")] public string Uri { get; set; } = string.Empty;
-}
-
-internal record SpotifyArtist
-{
-  [JsonProperty("external_urls")] public Dictionary<string, string> ExternalUrls { get; set; } = new();
-
-  [JsonProperty("href")] public string Href { get; set; } = string.Empty;
-
-  [JsonProperty("id")] public string Id { get; set; } = string.Empty;
-
-  [JsonProperty("name")] public string Name { get; set; } = string.Empty;
-
-  [JsonProperty("type")] public string Type { get; set; } = string.Empty;
-
-  [JsonProperty("uri")] public string Uri { get; set; } = string.Empty;
-}
-
-internal record SpotifyImage
-{
-  [JsonProperty("height")] public int Height { get; set; }
-
-  [JsonProperty("url")] public string Url { get; set; } = string.Empty;
-
-  [JsonProperty("width")] public int Width { get; set; }
-}
-
-internal record SpotifySeed
-{
-  [JsonProperty("initialPoolSize")] public int InitialPoolSize { get; set; }
-
-  [JsonProperty("afterFilteringSize")] public int AfterFilteringSize { get; set; }
-
-  [JsonProperty("afterRelinkingSize")] public int AfterRelinkingSize { get; set; }
-
-  [JsonProperty("href")] public string Href { get; set; } = string.Empty;
-
-  [JsonProperty("id")] public string Id { get; set; } = string.Empty;
-
-  [JsonProperty("type")] public string Type { get; set; } = string.Empty;
-}
-
-internal record CatImageResponse
-{
-  [JsonProperty("id")] public string Id { get; set; } = string.Empty;
-
-  [JsonProperty("url")] public string Url { get; set; } = string.Empty;
-
-  [JsonProperty("width")] public int Width { get; set; }
-
-  [JsonProperty("height")] public int Height { get; set; }
-}
-
-internal record DogImageResponse
-{
-  [JsonProperty("id")] public string Id { get; set; } = string.Empty;
-
-  [JsonProperty("url")] public string Url { get; set; } = string.Empty;
-
-  [JsonProperty("width")] public int Width { get; set; }
-
-  [JsonProperty("height")] public int Height { get; set; }
 }
