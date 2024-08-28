@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.Text;
+using Discord;
 using Discord.Interactions;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
@@ -123,24 +124,62 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
   public class EscapeFromTarkovGroup(IHttpService httpService, ILoggerAdapter<EscapeFromTarkovGroup> logger)
     : InteractionModuleBase<SocketInteractionContext>
   {
-    [SlashCommand("item", "Get the current market price of an item.", false, RunMode.Async)]
+    [SlashCommand("price", "Get all relevant pricing information on a given item.", false, RunMode.Async)]
     public async Task EftItemCommandAsync([Summary("itemName", "The name of the item to search for.")] string itemName)
     {
       await DeferAsync();
 
       try
       {
-        var priceTuple = await httpService.GetTarkovMarketPriceByItemNameAsync(itemName);
+        var item = await httpService.GetTarkovMarketPriceByItemNameAsync(itemName);
 
-        if (priceTuple is null)
+        if (item is null)
         {
           await ModifyOriginalResponseAsync(properties => properties.Content = "Failed to get Tarkov market price.");
           return;
         }
 
-        await ModifyOriginalResponseAsync(properties =>
-          properties.Content =
-            $"The item **{priceTuple.Item1}** is being bought by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
+        // Create an embed that displays the amount each vendor will give for the item
+        var embedFields = item.SellFor.Select(price => new EmbedFieldBuilder()
+            .WithName(price.Vendor.Name)
+            .WithValue($"{price.Price:N0} \u20bd")
+            .WithIsInline(true))
+          .ToList();
+
+        if (item.ChangeLast48HPercent is not null)
+        {
+          if (item.ChangeLast48HPercent > 0.0f)
+          {
+            embedFields.Add(new EmbedFieldBuilder()
+              .WithName($" {Emojis.UpArrow} Price Change")
+              .WithValue($"{item.ChangeLast48HPercent} %")
+              .WithIsInline(true));
+          }
+          else
+          {
+            embedFields.Add(new EmbedFieldBuilder()
+              .WithName($"{Emojis.DownArrow} Price Change")
+              .WithValue($"{item.ChangeLast48HPercent} %")
+              .WithIsInline(true));
+          }
+        }
+
+        // Add 48hr price change percent to the embed
+        embedFields.Add(new EmbedFieldBuilder()
+          .WithName("Avg 24h Price")
+          .WithValue($"{item.Avg24HPrice:N0} \u20bd")
+          .WithIsInline(true));
+
+        var embed = new EmbedBuilder();
+        embed.WithTitle(item.Name)
+          .WithUrl(item.WikiUrl ?? "https://escapefromtarkov.gamepedia.com/Escape_from_Tarkov_Wiki")
+          .WithDescription(item.Description)
+          .WithFields(embedFields)
+          .WithImageUrl(item.IconUrl)
+          .WithColor(Constants.ThemeColor)
+          .WithFooter($"Updated at {item.Updated}");
+
+        await ModifyOriginalResponseAsync(properties => properties.Embed = embed.Build());
       }
       catch (Exception exception)
       {
@@ -157,17 +196,26 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
       try
       {
         var task = await httpService.GetTarkovTaskByTaskNameAsync(taskName);
-
-        if (string.IsNullOrEmpty(task))
+        if (task is null)
         {
           await ModifyOriginalResponseAsync(properties =>
             properties.Content = "Failed to get Tarkov task information.");
           return;
         }
 
+        var sb = new StringBuilder();
+
+        sb.AppendLine(
+          $"The task **{task.Name}** is given by **{task.Trader.Name}** for **{task.Map?.Name}** and requires you to:");
+        sb.AppendLine();
+        sb.AppendLine("**Objectives:**");
+        foreach (var objective in task.Objectives)
+        {
+          sb.AppendLine($"- {objective.Description}");
+        }
+
         await ModifyOriginalResponseAsync(properties =>
-          properties.Content =
-            $"The task **{task}** is given by **IDK** and requires you to **IDK**.");
+          properties.Content = sb.ToString());
       }
       catch (Exception exception)
       {

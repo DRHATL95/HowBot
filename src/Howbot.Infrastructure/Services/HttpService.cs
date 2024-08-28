@@ -5,11 +5,13 @@ using System.Text.RegularExpressions;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models.Commands;
+using Howbot.Core.Models.Tarkov;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data.Models.Responses;
 using Howbot.Infrastructure.Data.Models.Watch2Gether;
 using Newtonsoft.Json;
 using Constants = Howbot.Infrastructure.Data.Config.Constants;
+using Task = Howbot.Core.Models.Tarkov.Task;
 
 namespace Howbot.Infrastructure.Services;
 
@@ -211,12 +213,12 @@ public class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, I
     return limit == 1 ? responseContent[0].Url : string.Join(",", responseContent.Select(x => x.Url));
   }
 
-  public async Task<Tuple<string, string, int>?> GetTarkovMarketPriceByItemNameAsync(string itemName,
+  public async Task<Item?> GetTarkovMarketPriceByItemNameAsync(string itemName,
     CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
     var requestQuery =
-      $"{{items(name: \"{itemName}\") {{id name shortName basePrice wikiLink avg24hPrice iconLink updated sellFor {{price currency priceRUB vendor {{ name normalizedName }}  }} }}}}";
+      $"{{items(name: \"{itemName}\") {{ id name shortName basePrice wikiLink avg24hPrice iconLink updated changeLast48hPercent sellFor {{ price currency priceRUB vendor {{ name normalizedName }}  }} }}}}";
     var data = new Dictionary<string, string> { { "query", requestQuery } };
 
     var apiResponse = await _client.PostAsJsonAsync(Constants.EftApiBaseUrl, data, cancellationToken);
@@ -281,34 +283,15 @@ public class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, I
       return null;
     }
 
-    // Get the highest price and the trader
-    var maxPrice = 0; // Rubles
-    var trader = string.Empty;
-
-    foreach (var item in marketItem.SellFor.Where(x => x is { PriceInRubles: > 0, Price: > 0 }))
-    {
-      if (item.PriceInRubles <= maxPrice)
-      {
-        continue;
-      }
-
-      maxPrice = item.Price ?? 0;
-      trader = item.Vendor.Name;
-    }
-
-    if (maxPrice == 0 || string.IsNullOrEmpty(trader))
-    {
-      return null;
-    }
-
-    return new Tuple<string, string, int>(result.Key, trader, maxPrice);
+    return marketItem;
   }
 
-  public async Task<string> GetTarkovTaskByTaskNameAsync(string taskName, CancellationToken cancellationToken = default)
+  public async Task<Task?> GetTarkovTaskByTaskNameAsync(string taskName, CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
-    const string requestQuery = "{tasks(lang: en) {id name taskImageLink}}";
+    const string requestQuery =
+      "{tasks(lang: en) {id name taskImageLink trader { name } objectives { description optional  } map { name } }}";
     var data = new Dictionary<string, string> { { "query", requestQuery } };
 
     var apiResponse = await _client.PostAsJsonAsync(Constants.EftApiBaseUrl, data, cancellationToken);
@@ -323,13 +306,49 @@ public class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, I
 
       if (parseResponse is null || !parseResponse.Data.Tasks.Any())
       {
-        return string.Empty;
+        return null;
       }
 
       var task = parseResponse.Data.Tasks.FirstOrDefault(x =>
         x.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
 
-      return task is null ? string.Empty : task.Name;
+      if (task is not null)
+      {
+        return task;
+      }
+
+      // Try to find the task with the closest name
+      var dictionary = new Dictionary<string, int>();
+
+      foreach (var t in parseResponse.Data.Tasks)
+      {
+        var splitName = t.Name?.Split(' ');
+        if (splitName != null && splitName.Contains(taskName, StringComparer.OrdinalIgnoreCase))
+        {
+          if (t.Name != null)
+          {
+            dictionary[t.Name] = 0;
+          }
+        }
+        else
+        {
+          if (t.Name != null)
+          {
+            dictionary[t.Name] = StringHelper.CalculateLevenshteinDistance(taskName, t.Name);
+          }
+        }
+      }
+
+      var result = dictionary.OrderBy(kvp => kvp.Value).FirstOrDefault();
+
+      if (result.Key is null)
+      {
+        return null;
+      }
+
+      task = parseResponse.Data.Tasks.FirstOrDefault(x => x.Name == result.Key);
+
+      return task ?? null;
     }
     catch (Exception e)
     {

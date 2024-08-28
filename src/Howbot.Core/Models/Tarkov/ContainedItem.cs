@@ -1,6 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿using Howbot.Infrastructure.Data.Models.Tarkov;
+using Newtonsoft.Json;
 
-namespace Howbot.Infrastructure.Data.Models.Tarkov;
+namespace Howbot.Core.Models.Tarkov;
 
 public class ContainedItem
 {

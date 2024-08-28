@@ -14,4 +14,6 @@ public static class Emojis
   public static string ThumbsUp => ":thumbsup:";
   public static string NextTrack => ":track_next:";
   public static string TrashCan => ":wastebasket:";
+  public static string UpArrow => ":arrow_up:";
+  public static string DownArrow => ":arrow_down:";
 }

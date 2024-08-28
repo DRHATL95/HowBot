@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Task = Howbot.Infrastructure.Data.Models.Tarkov.Task;
+using Task = Howbot.Core.Models.Tarkov.Task;
 
 namespace Howbot.Infrastructure.Data.Models.Responses;
 
