@@ -16,6 +16,8 @@ public interface IHttpService
   Task<Tuple<string, string, int>?> GetTarkovMarketPriceByItemNameAsync(string itemName,
     CancellationToken cancellationToken = default);
 
+  Task<string> GetTarkovTaskByTaskNameAsync(string taskName, CancellationToken cancellationToken = default);
+
   Task<string> GetRandomCatImageUrlAsync(int limit = 1, CancellationToken cancellationToken = default);
 
   Task<string> GetRandomDogImageUrlAsync(int limit = 1, CancellationToken cancellationToken = default);

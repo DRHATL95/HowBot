@@ -1,5 +1,4 @@
-﻿using Howbot.Infrastructure.Services;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace Howbot.Infrastructure.Data.Models.Spotify;
 

@@ -118,30 +118,62 @@ public class GameModule(IHttpService httpService, ILoggerAdapter<GameModule> log
     }
   }
 
-  [SlashCommand(Constants.Commands.EftCommandName, Constants.Commands.EftCommandDescription, true, RunMode.Async)]
-  [RequireOwner]
-  public async Task EftCommandAsync([Summary("itemName", "The name of the item to search for.")] string itemName)
+
+  [Group("eft", "Escape from Tarkov commands.")]
+  public class EscapeFromTarkovGroup(IHttpService httpService, ILoggerAdapter<EscapeFromTarkovGroup> logger)
+    : InteractionModuleBase<SocketInteractionContext>
   {
-    await DeferAsync();
-
-    try
+    [SlashCommand("item", "Get the current market price of an item.", false, RunMode.Async)]
+    public async Task EftItemCommandAsync([Summary("itemName", "The name of the item to search for.")] string itemName)
     {
-      var priceTuple = await httpService.GetTarkovMarketPriceByItemNameAsync(itemName);
+      await DeferAsync();
 
-      if (priceTuple is null)
+      try
       {
-        await ModifyOriginalResponseAsync(properties => properties.Content = "Failed to get Tarkov market price.");
-        return;
-      }
+        var priceTuple = await httpService.GetTarkovMarketPriceByItemNameAsync(itemName);
 
-      await ModifyOriginalResponseAsync(properties =>
-        properties.Content =
-          $"The item **{priceTuple.Item1}** is being bought by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
+        if (priceTuple is null)
+        {
+          await ModifyOriginalResponseAsync(properties => properties.Content = "Failed to get Tarkov market price.");
+          return;
+        }
+
+        await ModifyOriginalResponseAsync(properties =>
+          properties.Content =
+            $"The item **{priceTuple.Item1}** is being bought by **{priceTuple.Item2}** for the highest price of **{priceTuple.Item3:N0}** \u20bd.");
+      }
+      catch (Exception exception)
+      {
+        logger.LogError(exception, nameof(EftItemCommandAsync));
+        throw;
+      }
     }
-    catch (Exception exception)
+
+    [SlashCommand("task", "Lookup information on an eft task.", false, RunMode.Async)]
+    public async Task EftTaskCommandAsync([Summary("taskName", "The name of the task to search for.")] string taskName)
     {
-      logger.LogError(exception, nameof(EftCommandAsync));
-      await DeleteOriginalResponseAsync();
+      await DeferAsync();
+
+      try
+      {
+        var task = await httpService.GetTarkovTaskByTaskNameAsync(taskName);
+
+        if (string.IsNullOrEmpty(task))
+        {
+          await ModifyOriginalResponseAsync(properties =>
+            properties.Content = "Failed to get Tarkov task information.");
+          return;
+        }
+
+        await ModifyOriginalResponseAsync(properties =>
+          properties.Content =
+            $"The task **{task}** is given by **IDK** and requires you to **IDK**.");
+      }
+      catch (Exception exception)
+      {
+        logger.LogError(exception, nameof(EftTaskCommandAsync));
+        throw;
+      }
     }
   }
 }

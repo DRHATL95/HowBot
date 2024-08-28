@@ -287,7 +287,7 @@ public class DiscordClientService(
       {
         Logger.LogInformation("Attempting to delete the failed command");
 
-        // If exception is thrown, acknowledgement will still be there. This will clean-up.
+        // If exception is thrown, acknowledgement will still be there. This will clean up.
         await socketInteraction.DeleteOriginalResponseAsync();
 
         Logger.LogInformation("Successfully deleted the failed command");

@@ -10,8 +10,5 @@ public record EftMarketResponse
 
 public record EftMarketResponseData
 {
-  [JsonProperty("items")] public IEnumerable<MarketItem> Items { get; set; } = [];
+  [JsonProperty("items")] public IEnumerable<Item> Items { get; set; } = [];
 }
-
-
-

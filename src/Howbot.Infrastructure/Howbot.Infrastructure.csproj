@@ -8,10 +8,10 @@
 
   <ItemGroup>
     <PackageReference Include="Ardalis.GuardClauses"/>
-    <PackageReference Include="GraphQL" />
-    <PackageReference Include="GraphQL.DataLoader" />
-    <PackageReference Include="GraphQL.MemoryCache" />
-    <PackageReference Include="GraphQL.SystemTextJson" />
+    <PackageReference Include="GraphQL"/>
+    <PackageReference Include="GraphQL.DataLoader"/>
+    <PackageReference Include="GraphQL.MemoryCache"/>
+    <PackageReference Include="GraphQL.SystemTextJson"/>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
     <PackageReference Include="SpotifyAPI.Web"/>

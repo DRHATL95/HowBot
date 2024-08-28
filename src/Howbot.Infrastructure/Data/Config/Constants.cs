@@ -13,7 +13,7 @@ public static class Constants
   public const string DogApiUrl = "https://api.thedogapi.com/v1";
   public const string CapApiUrl = "https://api.thecatapi.com/v1";
   public const string EftApiBaseUrl = "https://api.tarkov.dev/graphql";
-  
+
   // This is for application ids, this will provide one line at a time from the markdown file
   // https://raw.githubusercontent.com/Delitefully/DiscordLists/master/activities.md
   public static Regex DiscordApplicationIdsLineRegex { get; } =

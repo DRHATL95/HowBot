@@ -8,11 +8,12 @@ using Howbot.Core.Models.Commands;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data.Models.Responses;
 using Howbot.Infrastructure.Data.Models.Watch2Gether;
+using Newtonsoft.Json;
 using Constants = Howbot.Infrastructure.Data.Config.Constants;
 
 namespace Howbot.Infrastructure.Services;
 
-public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, IDisposable
+public class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, IDisposable
 {
   private readonly HttpClient _client = httpClientFactory.CreateClient("HttpService");
 
@@ -49,14 +50,14 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
       RequestUri = new Uri(Constants.WatchTogetherCreateRoomUrl),
       Method = HttpMethod.Post,
       Headers = { Accept = { new MediaTypeWithQualityHeaderValue("application/json") } },
-      Content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(parameters), Encoding.UTF8, "application/json")
+      Content = new StringContent(JsonConvert.SerializeObject(parameters), Encoding.UTF8, "application/json")
     };
 
     var httpResponseMessage = await _client.SendAsync(request, cancellationToken);
     httpResponseMessage.EnsureSuccessStatusCode();
 
     var response = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
-    var convertedResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<Watch2GetherUrlResponse>(response) ??
+    var convertedResponse = JsonConvert.DeserializeObject<Watch2GetherUrlResponse>(response) ??
                             throw new Exception("Unable to parse response");
 
     return $"{Constants.WatchTogetherRoomUrl}/{convertedResponse.StreamKey}";
@@ -114,9 +115,9 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
     cancellationToken.ThrowIfCancellationRequested();
 
     var requestUri = $"https://discord.com/api/v9/channels/{channelId}/invites";
-    
+
     // Use Newtonsoft for this one
-    var requestContent = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(new
+    var requestContent = new StringContent(JsonConvert.SerializeObject(new
     {
       max_age = 86400,
       max_uses = 10,
@@ -136,9 +137,9 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
       throw new Exception($"Failed to start activity. Status code: {response.StatusCode}. Response: {responseContent}");
     }
 
-    var invite = Newtonsoft.Json.JsonConvert.DeserializeObject<DiscordInviteResponse>(responseContent) ??
+    var invite = JsonConvert.DeserializeObject<DiscordInviteResponse>(responseContent) ??
                  throw new Exception($"Failed to start activity. Invite is null. Response: {responseContent}");
-    
+
     if (string.IsNullOrEmpty(invite.Code))
     {
       throw new Exception($"Failed to start activity. Invite code is null. Response: {responseContent}");
@@ -215,21 +216,21 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
   {
     cancellationToken.ThrowIfCancellationRequested();
     var requestQuery =
-      $"{{items(name: \"{itemName}\") {{id name shortName basePrice wikiLink avg24hPrice iconLink updated sellFor {{price currency priceRUB source}}}}}}";
+      $"{{items(name: \"{itemName}\") {{id name shortName basePrice wikiLink avg24hPrice iconLink updated sellFor {{price currency priceRUB vendor {{ name normalizedName }}  }} }}}}";
     var data = new Dictionary<string, string> { { "query", requestQuery } };
-    
+
     var apiResponse = await _client.PostAsJsonAsync(Constants.EftApiBaseUrl, data, cancellationToken);
-    
+
     apiResponse.EnsureSuccessStatusCode();
-    
+
     EftMarketResponse? parseResponse;
 
     try
     {
       var content = await apiResponse.Content.ReadAsStringAsync(cancellationToken);
-      
+
       // Parse with Newtonsoft
-      parseResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<EftMarketResponse>(content);
+      parseResponse = JsonConvert.DeserializeObject<EftMarketResponse>(content);
       if (parseResponse is null)
       {
         return null;
@@ -240,7 +241,7 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
       throw new Exception($"Failed to parse Tarkov API response. {e.Message}");
     }
 
-    if (!parseResponse.Data.Items.Any() || parseResponse.Data.Items.All(x => x.SellFor.Count == 0))
+    if (!parseResponse.Data.Items.Any() || parseResponse.Data.Items.All(x => !x.SellFor.Any()))
     {
       return null;
     }
@@ -249,14 +250,20 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
 
     foreach (var item in parseResponse.Data.Items)
     {
-      var splitName = item.Name.Split(' ');
-      if (splitName.Contains(itemName, StringComparer.OrdinalIgnoreCase))
+      var splitName = item.Name?.Split(' ');
+      if (splitName != null && splitName.Contains(itemName, StringComparer.OrdinalIgnoreCase))
       {
-        dictionary[item.Name] = 0;
+        if (item.Name != null)
+        {
+          dictionary[item.Name] = 0;
+        }
       }
       else
       {
-        dictionary[item.Name] = StringHelper.CalculateLevenshteinDistance(itemName, item.Name);
+        if (item.Name != null)
+        {
+          dictionary[item.Name] = StringHelper.CalculateLevenshteinDistance(itemName, item.Name);
+        }
       }
     }
 
@@ -285,8 +292,8 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
         continue;
       }
 
-      maxPrice = item.Price;
-      trader = item.Source;
+      maxPrice = item.Price ?? 0;
+      trader = item.Vendor.Name;
     }
 
     if (maxPrice == 0 || string.IsNullOrEmpty(trader))
@@ -295,5 +302,38 @@ public partial class HttpService(IHttpClientFactory httpClientFactory) : IHttpSe
     }
 
     return new Tuple<string, string, int>(result.Key, trader, maxPrice);
+  }
+
+  public async Task<string> GetTarkovTaskByTaskNameAsync(string taskName, CancellationToken cancellationToken = default)
+  {
+    cancellationToken.ThrowIfCancellationRequested();
+
+    const string requestQuery = "{tasks(lang: en) {id name taskImageLink}}";
+    var data = new Dictionary<string, string> { { "query", requestQuery } };
+
+    var apiResponse = await _client.PostAsJsonAsync(Constants.EftApiBaseUrl, data, cancellationToken);
+
+    apiResponse.EnsureSuccessStatusCode();
+
+    try
+    {
+      var content = await apiResponse.Content.ReadAsStringAsync(cancellationToken);
+
+      var parseResponse = JsonConvert.DeserializeObject<EftTaskResponse>(content);
+
+      if (parseResponse is null || !parseResponse.Data.Tasks.Any())
+      {
+        return string.Empty;
+      }
+
+      var task = parseResponse.Data.Tasks.FirstOrDefault(x =>
+        x.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
+
+      return task is null ? string.Empty : task.Name;
+    }
+    catch (Exception e)
+    {
+      throw new Exception($"Failed to parse Tarkov API response. {e.Message}");
+    }
   }
 }

@@ -230,7 +230,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     }
 
     var decryptedSessionId =
-      StringCipher.Decrypt(guildEntity.EncryptedSessionId, Infrastructure.Data.Config.Constants.EncryptionKey);
+      StringCipher.Decrypt(guildEntity.EncryptedSessionId, Data.Config.Constants.EncryptionKey);
     return decryptedSessionId;
   }
 
@@ -247,7 +247,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
         return;
       }
 
-      var encryptedSessionId = StringCipher.Encrypt(sessionId, Infrastructure.Data.Config.Constants.EncryptionKey);
+      var encryptedSessionId = StringCipher.Encrypt(sessionId, Data.Config.Constants.EncryptionKey);
 
       guildEntity.EncryptedSessionId = encryptedSessionId;
 
