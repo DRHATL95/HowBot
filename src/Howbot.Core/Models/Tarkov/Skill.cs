@@ -1,4 +1,4 @@
-﻿namespace Howbot.Infrastructure.Data.Models.Tarkov;
+﻿namespace Howbot.Core.Models.Tarkov;
 
 public class Skill
 {

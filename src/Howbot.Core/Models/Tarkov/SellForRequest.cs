@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace Howbot.Infrastructure.Data.Models.Tarkov;
+namespace Howbot.Core.Models.Tarkov;
 
 public record SellForRequest
 {

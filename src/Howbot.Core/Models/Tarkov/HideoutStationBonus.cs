@@ -1,7 +1,6 @@
-﻿using Howbot.Core.Models.Tarkov;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
-namespace Howbot.Infrastructure.Data.Models.Tarkov;
+namespace Howbot.Core.Models.Tarkov;
 
 public class HideoutStationBonus
 {
