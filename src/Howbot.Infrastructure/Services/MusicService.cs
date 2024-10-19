@@ -528,7 +528,60 @@ public partial class MusicService(
 
   public ValueTask<CommandResponse> GetLyricsFromTrackAsync(HowbotPlayer player)
   {
+    // Command is currently not working very well. 
+    // TODO: Check w/ Lavalink team for future fixes
+    
     throw new NotImplementedException();
+    
+    /*
+     * Lyrics? lyrics = null;
+
+      try
+      {
+        lyrics = await audioService.Tracks.GetCurrentTrackLyricsAsync(player);
+      }
+      catch (Exception e)
+      {
+        logger.LogError(e, "Failed to get lyrics for track {track}", track.Title);
+        logger.LogError("Trying backup method..");
+        lyrics = await audioService.Tracks.GetGeniusLyricsAsync(player.CurrentTrack?.Title ?? string.Empty);
+      }
+
+      if (lyrics is null)
+      {
+        await FollowupAsync("😖 No lyrics found.");
+        return;
+      }
+
+      var text = lyrics.Text;
+      var startIndex = 0;
+      var title = $"Lyrics for {track.Title}";
+
+      // Loop that sends potentially multiple embeds
+      while (startIndex < text.Length)
+      {
+        var embedBuilder = new EmbedBuilder { Title = title, Color = Constants.ThemeColor };
+
+        var descriptionChars = Math.Min(Constants.MaximumEmbedDescriptionLength, text.Length - startIndex);
+        var description = text.Substring(startIndex, descriptionChars);
+        startIndex += descriptionChars;
+
+        // If there's more text, we have to add it as a field
+        if (startIndex < text.Length)
+        {
+          var fieldChars = Math.Min(Constants.MaximumFieldLength, text.Length - startIndex);
+          var field = text.Substring(startIndex, fieldChars);
+          startIndex += fieldChars;
+          embedBuilder.Fields = [new EmbedFieldBuilder { Name = "...continuation", Value = field }];
+        }
+
+        // Removing title from other pages of text
+        title = string.Empty;
+        embedBuilder.Description = description;
+
+        await FollowupAsync("", embed: embedBuilder.Build());
+      }
+     */
   }
 
   public CommandResponse ToggleShuffle(HowbotPlayer player)
