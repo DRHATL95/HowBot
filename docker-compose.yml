@@ -1,0 +1,6 @@
+﻿services:
+  howbot.api:
+    image: howbot.api
+    build:
+      context: .
+      dockerfile: src/Howbot.API/Dockerfile
