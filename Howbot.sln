@@ -25,9 +25,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sln", "sln", "{2DD960C4-746
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Howbot.Presentation.Dashboard", "src\Howbot.Dashboard\Howbot.Presentation.Dashboard.csproj", "{D1D41EAF-7176-4CBE-8103-6377D86A15C0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Howbot.Presentation.Dashboard", "src\Howbot.Presentation.Dashboard\Howbot.Presentation.Dashboard.csproj", "{D1D41EAF-7176-4CBE-8103-6377D86A15C0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Howbot.Presentation.WebAPI", "Howbot.Presentation.WebAPI\Howbot.Presentation.WebAPI.csproj", "{E471713B-B542-45D0-A6E7-EBAEE8FE3780}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Howbot.Presentation.WebAPI", "src\Howbot.Presentation.WebAPI\Howbot.Presentation.WebAPI.csproj", "{E471713B-B542-45D0-A6E7-EBAEE8FE3780}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

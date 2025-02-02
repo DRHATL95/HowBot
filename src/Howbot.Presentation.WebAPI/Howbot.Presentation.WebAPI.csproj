@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Howbot.Core\Howbot.Core.csproj" />
-    <ProjectReference Include="..\src\Howbot.Infrastructure\Howbot.Infrastructure.csproj" />
+    <ProjectReference Include="..\Howbot.Core\Howbot.Core.csproj" />
+    <ProjectReference Include="..\Howbot.Infrastructure\Howbot.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
