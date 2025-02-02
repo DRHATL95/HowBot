@@ -12,5 +12,6 @@ public class Guild : BaseEntity
 
   [Required] public SearchProviderTypes SearchProvider { get; set; } = SearchProviderTypes.YouTubeMusic;
 
-  public string EncryptedSessionId { get; set; } = string.Empty;
+  // Foreign Key to LavalinkSessions table
+  public ulong LavalinkSessionId { get; set; }
 }

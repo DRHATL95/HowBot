@@ -217,41 +217,83 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
 
   public string GetGuildSessionId(ulong guildId)
   {
-    var guildEntity = repository.GetById<Guild>(guildId);
-    if (guildEntity is null)
+    var guild = repository.GetById<Guild>(guildId);
+    if (guild is null)
     {
       Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
       return string.Empty;
     }
 
-    if (string.IsNullOrWhiteSpace(guildEntity.EncryptedSessionId))
+    var sessions = repository.List<LavalinkSession>();
+    if (sessions is null || sessions.Count == 0)
     {
+      Logger.LogWarning("No sessions found in database");
       return string.Empty;
     }
 
-    var decryptedSessionId =
-      StringCipher.Decrypt(guildEntity.EncryptedSessionId, Infrastructure.Data.Config.Constants.EncryptionKey);
-    return decryptedSessionId;
+    var session = sessions.FirstOrDefault(s => s.Id == guildId);
+
+    return session is null 
+      ? string.Empty 
+      : StringCipher.Decrypt(session.EncryptedSessionId, Infrastructure.Data.Config.Constants.EncryptionKey);
   }
 
-  public async Task UpdateGuildSessionIdAsync(ulong guildId, string sessionId)
+/*  public async Task UpdateSessionIdAsync(ulong sessionId, string newSessionId)
+  {
+    try
+    {
+      var session = repository.GetById<LavalinkSession>(sessionId);
+      if (session is null)
+      {
+        Logger.LogWarning("Unable to find session id [{SessionId}]", sessionId);
+        return;
+      }
+
+      var encryptedSessionId = StringCipher.Encrypt(newSessionId, Infrastructure.Data.Config.Constants.EncryptionKey);
+
+      session.EncryptedSessionId = encryptedSessionId;
+
+      await repository.UpdateAsync(session);
+    }
+    catch (Exception exception)
+    {
+      Logger.LogError(exception, "Failed to update session id [{SessionId}]", sessionId);
+      throw;
+    }
+  }*/
+
+  public async Task UpdateSessionIdAsync(ulong guildId, string sessionId)
   {
     try
     {
       Guard.Against.NullOrWhiteSpace(sessionId, nameof(sessionId));
 
-      var guildEntity = repository.GetById<Guild>(guildId);
-      if (guildEntity is null)
+      var guild = repository.GetById<Guild>(guildId);
+      if (guild is null)
       {
         Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
         return;
       }
 
+      var sessions = repository.List<LavalinkSession>();
+      if (sessions is null || sessions.Count == 0)
+      {
+        Logger.LogWarning("No sessions found in database");
+        return;
+      }
+
+      var session = sessions.FirstOrDefault(s => s.Id == guildId);
+      if (session is null)
+      {
+        Logger.LogWarning("Unable to find session for guild with id [{GuildId}]", guildId);
+        return;
+      }
+
       var encryptedSessionId = StringCipher.Encrypt(sessionId, Infrastructure.Data.Config.Constants.EncryptionKey);
 
-      guildEntity.EncryptedSessionId = encryptedSessionId;
+      session.EncryptedSessionId = encryptedSessionId;
 
-      await repository.UpdateAsync(guildEntity);
+      await repository.UpdateAsync(session);
     }
     catch (Exception exception)
     {

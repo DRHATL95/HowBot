@@ -20,7 +20,8 @@ public class EfRepository(AppDbContext dbContext) : IRepository
   {
     dbContext.Set<T>().Add(entity);
 
-    await dbContext.SaveChangesAsync();
+    await dbContext.SaveChangesAsync()
+      .ConfigureAwait(false);
 
     return entity;
   }

@@ -25,5 +25,5 @@ public interface IDatabaseService
 
   string GetGuildSessionId(ulong guildId);
 
-  Task UpdateGuildSessionIdAsync(ulong guildId, string sessionId);
+  Task UpdateSessionIdAsync(ulong guildId, string sessionId);
 }
