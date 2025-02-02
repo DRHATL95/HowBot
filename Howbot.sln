@@ -27,6 +27,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sln", "sln", "{2DD960C4-746
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Howbot.Presentation.Dashboard", "src\Howbot.Dashboard\Howbot.Presentation.Dashboard.csproj", "{D1D41EAF-7176-4CBE-8103-6377D86A15C0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Howbot.Presentation.WebAPI", "Howbot.Presentation.WebAPI\Howbot.Presentation.WebAPI.csproj", "{E471713B-B542-45D0-A6E7-EBAEE8FE3780}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{D1D41EAF-7176-4CBE-8103-6377D86A15C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D1D41EAF-7176-4CBE-8103-6377D86A15C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1D41EAF-7176-4CBE-8103-6377D86A15C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E471713B-B542-45D0-A6E7-EBAEE8FE3780}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E471713B-B542-45D0-A6E7-EBAEE8FE3780}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E471713B-B542-45D0-A6E7-EBAEE8FE3780}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E471713B-B542-45D0-A6E7-EBAEE8FE3780}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -63,6 +69,7 @@ Global
 		{57D03E58-4CF6-48C9-AE51-45122A6DE029} = {103BC25E-93A0-485E-8C74-77D2CB4F0AA1}
 		{2163398E-7732-4F63-B490-6DFEF8A5E619} = {103BC25E-93A0-485E-8C74-77D2CB4F0AA1}
 		{D1D41EAF-7176-4CBE-8103-6377D86A15C0} = {103BC25E-93A0-485E-8C74-77D2CB4F0AA1}
+		{E471713B-B542-45D0-A6E7-EBAEE8FE3780} = {103BC25E-93A0-485E-8C74-77D2CB4F0AA1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {35EF64A7-2C17-4EB0-B9FB-D9C7B21AEDC0}

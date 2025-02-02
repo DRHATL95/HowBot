@@ -1,0 +1,6 @@
+@Howbot.Presentation.WebAPI_HostAddress = http://localhost:5258
+
+GET {{Howbot.Presentation.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
