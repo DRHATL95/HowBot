@@ -1,0 +1,27 @@
+﻿@inherits LayoutComponentBase
+
+<BlazorBootstrapLayout StickyHeader="true">
+    <HeaderSection>
+        <ThemeSwitcher Position="DropdownMenuPosition.End" OnThemeChanged="OnThemeChanged" />
+    </HeaderSection>
+    
+    <ContentSection>
+        @Body
+    </ContentSection>
+</BlazorBootstrapLayout>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code
+{
+    [Inject] ToastService ToastService { get; set; } = default!;
+
+    private void OnThemeChanged(string themeName)
+    {
+        ToastService.Notify(new(ToastType.Success, $"Theme changed to {themeName}"));
+    }
+}
