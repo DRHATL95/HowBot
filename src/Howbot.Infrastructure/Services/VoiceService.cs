@@ -69,8 +69,6 @@ public class VoiceService(IAudioService audioService, ILoggerAdapter<VoiceServic
 
   private async ValueTask<ILavalinkPlayer?> GetPlayerAsync(GetPlayerParameters playerParams)
   {
-    ArgumentNullException.ThrowIfNull(playerParams);
-
     if (playerParams.VoiceChannelId == 0)
     {
       throw new ArgumentException("Voice channel id cannot be 0.", nameof(playerParams));
