@@ -47,11 +47,6 @@ public abstract record Constants
     // public const string PlaylistRegexPattern = @"playlist\s\w+";
   }
 
-  public static class EscapeFromTarkov
-  {
-    public const string EftApiBaseUrl = "https://api.tarkov.dev/graphql";
-  }
-
   public struct Commands
   {
     public const string JoinCommandName = "join";

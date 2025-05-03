@@ -4,10 +4,7 @@ using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Lavalink4NET;
 using Lavalink4NET.Integrations.Lavasrc;
-using Lavalink4NET.Integrations.LyricsJava;
-using Lavalink4NET.Integrations.LyricsJava.Extensions;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Preconditions;
 using static Howbot.Core.Models.Constants.Commands;
@@ -21,8 +18,7 @@ namespace Howbot.Core.Modules;
 public class MusicModule(
   IMusicService musicService,
   IEmbedService embedService,
-  IAudioService audioService,
-  ILoggerAdapter<MusicModule> logger)
+    ILoggerAdapter<MusicModule> logger)
   : InteractionModuleBase<SocketInteractionContext>
 {
   [SlashCommand(PlayCommandName, PlayCommandDescription, true, RunMode.Async)]
@@ -365,6 +361,7 @@ public class MusicModule(
   }
 
   [SlashCommand(LyricsCommandName, LyricsCommandDescription, true, RunMode.Async)]
+  [RequireOwner] // Since command doesn't work from Lavalink. Will be removed when it's fixed.
   [RequireContext(ContextType.Guild)]
   [RequireBotPermission(GuildBotVoicePlayCommandPermission)]
   [RequireUserPermission(GuildUserVoicePlayCommandPermission)]
@@ -391,52 +388,15 @@ public class MusicModule(
         return;
       }
 
-      Lyrics? lyrics = null;
-
-      try
+      var commandResponse = await musicService.GetLyricsFromTrackAsync(player);
+      if (!commandResponse.IsSuccessful)
       {
-        lyrics = await audioService.Tracks.GetCurrentTrackLyricsAsync(player);
-      }
-      catch (Exception e)
-      {
-        logger.LogError(e, "Failed to get lyrics for track {track}", track.Title);
-        logger.LogError("Trying backup method..");
-        lyrics = await audioService.Tracks.GetGeniusLyricsAsync(player.CurrentTrack?.Title ?? string.Empty);
-      }
+        ModuleHelper.HandleCommandFailed(commandResponse);
 
-      if (lyrics is null)
-      {
-        await FollowupAsync("😖 No lyrics found.");
-        return;
-      }
-
-      var text = lyrics.Text;
-      var startIndex = 0;
-      var title = $"Lyrics for {track.Title}";
-
-      // Loop that sends potentially multiple embeds
-      while (startIndex < text.Length)
-      {
-        var embedBuilder = new EmbedBuilder { Title = title, Color = Constants.ThemeColor };
-
-        var descriptionChars = Math.Min(Constants.MaximumEmbedDescriptionLength, text.Length - startIndex);
-        var description = text.Substring(startIndex, descriptionChars);
-        startIndex += descriptionChars;
-
-        // If there's more text, we have to add it as a field
-        if (startIndex < text.Length)
+        if (string.IsNullOrEmpty(commandResponse.Message))
         {
-          var fieldChars = Math.Min(Constants.MaximumFieldLength, text.Length - startIndex);
-          var field = text.Substring(startIndex, fieldChars);
-          startIndex += fieldChars;
-          embedBuilder.Fields = [new EmbedFieldBuilder { Name = "...continuation", Value = field }];
+          await DeleteOriginalResponseAsync();
         }
-
-        // Removing title from other pages of text
-        title = string.Empty;
-        embedBuilder.Description = description;
-
-        await FollowupAsync("", embed: embedBuilder.Build());
       }
     }
     catch (Exception exception)

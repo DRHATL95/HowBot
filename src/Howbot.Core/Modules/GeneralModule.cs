@@ -170,6 +170,11 @@ public class GeneralModule(
             moduleName = "Settings";
           }
 
+          if (moduleName == "EscapeFromTarkovGroup")
+          {
+            moduleName = "Escape From Tarkov";
+          }
+
           var commandList = new List<string>();
           var continuationFields = new List<EmbedFieldBuilder>();
 
