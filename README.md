@@ -1,6 +1,6 @@
 # Howbot
 
-A music and general purpose bot for Discord written in C# using .NET7 Worker Service
+A music and general purpose bot for Discord written in C# using .NET9 Worker Service
 
 ## Give a Star! :star:
 
