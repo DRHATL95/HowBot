@@ -22,8 +22,4 @@ public interface IDatabaseService
   bool DoesGuildExist(ulong guildId);
 
   Task UpdateGuildPrefixAsync(ulong guildId, string newPrefix);
-
-  string GetGuildSessionId(ulong guildId);
-
-  Task UpdateGuildSessionIdAsync(ulong guildId, string sessionId);
 }

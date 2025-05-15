@@ -1,6 +1,5 @@
 ﻿using Ardalis.GuardClauses;
 using Howbot.Core.Entities;
-using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Enums;
@@ -211,51 +210,6 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     catch (Exception exception)
     {
       Logger.LogError(exception, "Failed to update guild prefix for guild [{GuildId}]", guildId);
-      throw;
-    }
-  }
-
-  public string GetGuildSessionId(ulong guildId)
-  {
-    var guildEntity = repository.GetById<Guild>(guildId);
-    if (guildEntity is null)
-    {
-      Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
-      return string.Empty;
-    }
-
-    if (string.IsNullOrWhiteSpace(guildEntity.EncryptedSessionId))
-    {
-      return string.Empty;
-    }
-
-    var decryptedSessionId =
-      StringCipher.Decrypt(guildEntity.EncryptedSessionId, Data.Config.Constants.EncryptionKey);
-    return decryptedSessionId;
-  }
-
-  public async Task UpdateGuildSessionIdAsync(ulong guildId, string sessionId)
-  {
-    try
-    {
-      Guard.Against.NullOrWhiteSpace(sessionId, nameof(sessionId));
-
-      var guildEntity = repository.GetById<Guild>(guildId);
-      if (guildEntity is null)
-      {
-        Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
-        return;
-      }
-
-      var encryptedSessionId = StringCipher.Encrypt(sessionId, Data.Config.Constants.EncryptionKey);
-
-      guildEntity.EncryptedSessionId = encryptedSessionId;
-
-      await repository.UpdateAsync(guildEntity);
-    }
-    catch (Exception exception)
-    {
-      Logger.LogError(exception, "Failed to update guild session id for guild [{GuildId}]", guildId);
       throw;
     }
   }

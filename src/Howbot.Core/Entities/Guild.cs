@@ -6,11 +6,16 @@ namespace Howbot.Core.Entities;
 
 public class Guild : BaseEntity
 {
+  public ulong GuildId { get; set; }
+  
+  [Required] public string Name { get; set; } = string.Empty;
+  
   [Required] [StringLength(10)] public string Prefix { get; set; } = Constants.DefaultPrefix;
-
+  
   [Required] public float Volume { get; set; } = 100.0f;
 
   [Required] public SearchProviderTypes SearchProvider { get; set; } = SearchProviderTypes.YouTubeMusic;
-
-  public string EncryptedSessionId { get; set; } = string.Empty;
+  
+  // Navigation properties
+  public ICollection<GuildUser> Users { get; set; } = [];
 }

@@ -76,8 +76,6 @@ public partial class MusicService(
     {
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
-
-      await db.UpdateGuildSessionIdAsync(guildId, await GetSessionIdForGuildIdAsync(guildId, cancellationToken));
     }
 
     if (context.Channel is not ITextChannel textChannel)
@@ -229,7 +227,7 @@ public partial class MusicService(
       return recommendationsResponse.Tracks.Count == 0 ||
              !recommendationsResponse.Tracks[0].ExternalUrls.TryGetValue("spotify", out var url)
         ? string.Empty
-        : url ?? string.Empty;
+        : url;
     }
     catch (Exception exception)
     {
