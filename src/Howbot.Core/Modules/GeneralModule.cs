@@ -4,7 +4,7 @@ using Howbot.Core.Attributes;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Models.Exceptions;
+using Howbot.Core.Exceptions;
 using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Constants.Commands;
 using static Howbot.Core.Models.Permissions.Bot;

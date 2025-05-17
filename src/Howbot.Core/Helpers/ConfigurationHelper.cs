@@ -6,8 +6,6 @@ namespace Howbot.Core.Helpers;
 
 public static class ConfigurationHelper
 {
-  public static IConfiguration? HostConfiguration { get; private set; }
-
   public static void AddOrUpdateAppSetting<T>(string sectionPathKey, T value)
   {
     try
@@ -31,11 +29,6 @@ public static class ConfigurationHelper
     {
       Log.Logger.Error(ex, "Error writing app settings");
     }
-  }
-
-  public static void SetHostConfiguration(IConfiguration configuration)
-  {
-    HostConfiguration = configuration;
   }
 
   private static void SetValueRecursively<T>(string sectionPathKey, dynamic jsonObj, T value)

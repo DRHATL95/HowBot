@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace Howbot.Infrastructure.Data;
 
-public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
+public class AppDbContextFactory(BotSettings botSettings) : IDesignTimeDbContextFactory<AppDbContext>
 {
   public AppDbContext CreateDbContext(string[] args)
   {
     var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
     
-    optionsBuilder.UseNpgsql(Configuration.PostgresConnectionString);
+    optionsBuilder.UseNpgsql(botSettings.PostgresConnectionString);
     
     return new AppDbContext(optionsBuilder.Options);
   }

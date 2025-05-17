@@ -1,6 +1,6 @@
 ﻿using Ardalis.GuardClauses;
+using Howbot.Core.Exceptions;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace Howbot.Infrastructure;

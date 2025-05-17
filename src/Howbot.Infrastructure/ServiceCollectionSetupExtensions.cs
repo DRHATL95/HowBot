@@ -1,7 +1,6 @@
 ﻿using Discord.Interactions;
 using Discord.WebSocket;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data;
 using Howbot.Infrastructure.Services;
@@ -11,57 +10,38 @@ using Lavalink4NET.InactivityTracking.Extensions;
 using Lavalink4NET.InactivityTracking.Trackers.Idle;
 using Lavalink4NET.InactivityTracking.Trackers.Users;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using SpotifyAPI.Web;
 
 namespace Howbot.Infrastructure;
 
 public static class ServiceCollectionSetupExtensions
 {
-  /// <summary>
-  ///   Add the EF DbContext to the service collection.
-  ///   Also, configure Npgsql to use the connection string from the appsettings.json file.
-  /// </summary>
-  /// <param name="services">The service collection where DbContext is added</param>
-  /// <param name="configuration">The host builder configuration</param>
-  public static void AddDbContext(this IServiceCollection services, IConfiguration configuration)
-  {
-    services.AddDbContext<AppDbContext>(options =>
-      options.UseNpgsql(
-        configuration.GetConnectionString(Constants.DatabaseConnectionStringName)));
-  }
-
-  /// <summary>
-  ///   Add the EfRepository to the service collection used for Entity Framework and Postgres.
-  /// </summary>
-  /// <param name="services">The service collection where the repository is added.</param>
   public static void AddRepositories(this IServiceCollection services)
   {
     services.AddScoped<IRepository, EfRepository>();
   }
 
-  /// <summary>
-  ///   Adding the howbot specific services to the service collection.
-  ///   Also adds an HttpClient from the Howbot.Infrastructure.Http namespace.
-  /// </summary>
-  /// <param name="services">The service collection where the services are added.</param>
   public static void AddHowbotServices(this IServiceCollection services)
   {
-    // Discord related services
-    services.AddSingleton(_ => new DiscordSocketClient(Configuration.DiscordSocketConfig));
+    services.AddSingleton(_ => new DiscordSocketClient(new DiscordSocketConfig()
+    {
+      AlwaysDownloadUsers = true,
+      GatewayIntents = Discord.GatewayIntents.AllUnprivileged | Discord.GatewayIntents.GuildMembers,
+      LogLevel = Discord.LogSeverity.Debug,
+      LogGatewayIntentWarnings = false,
+      UseInteractionSnowflakeDate = false
+    }));
+
     services.AddSingleton(x =>
-      new InteractionService(x.GetRequiredService<DiscordSocketClient>(), Configuration.InteractionServiceConfig));
+      new InteractionService(x.GetRequiredService<DiscordSocketClient>(), new InteractionServiceConfig()
+      {
+        LogLevel = Discord.LogSeverity.Debug,
+        DefaultRunMode = RunMode.Async,
+        UseCompiledLambda = true
+      }));
 
-    // Spotify related services
-    var spotifyConfig = SpotifyClientConfig.CreateDefault();
-    var request = new ClientCredentialsRequest(Configuration.SpotifyClientId, Configuration.SpotifyClientSecret);
-    var response = new OAuthClient(spotifyConfig).RequestToken(request).Result;
-
-    services.AddSingleton<ISpotifyClient, SpotifyClient>(_ =>
-      new SpotifyClient(spotifyConfig.WithToken(response.AccessToken)));
-
-    // Howbot related services
     services.AddSingleton<IHowbotService, HowbotService>();
     services.AddSingleton<IVoiceService, VoiceService>();
     services.AddSingleton<IMusicService, MusicService>();
@@ -70,39 +50,68 @@ public static class ServiceCollectionSetupExtensions
     services.AddSingleton<ILavaNodeService, LavaNodeService>();
     services.AddSingleton<IInteractionHandlerService, InteractionHandlerService>();
 
+    var botSettings = services.BuildServiceProvider()
+      .GetRequiredService<IOptions<BotSettings>>();
+
+    services.AddDbContext(botSettings.Value);
+    services.AddSpotifyService(botSettings.Value);
+    services.AddLavalinkServices(botSettings.Value);
+
     services.AddScoped<IDatabaseService, DatabaseService>();
 
-    // Transient Services
     services.AddTransient<IHttpService, HttpService>();
   }
 
-  public static void AddLavalinkServices(this IServiceCollection serviceCollection)
+  private static void AddDbContext(this IServiceCollection services, BotSettings botSettings)
+  {
+    services.AddDbContext<AppDbContext>(options =>
+      options.UseNpgsql(botSettings.PostgresConnectionString));
+  }
+
+  private static void AddSpotifyService(this IServiceCollection services, BotSettings botSettings)
+  {
+    var spotifyConfig = SpotifyClientConfig.CreateDefault();
+
+    var request = new ClientCredentialsRequest(botSettings.SpotifyClientId, botSettings.SpotifyClientSecret);
+
+    var response = new OAuthClient(spotifyConfig).RequestToken(request).Result;
+
+    services.AddSingleton<ISpotifyClient, SpotifyClient>(_ =>
+      new SpotifyClient(spotifyConfig.WithToken(response.AccessToken)));
+  }
+
+  private static void AddLavalinkServices(this IServiceCollection serviceCollection, BotSettings botSettings)
   {
     serviceCollection.AddLavalink();
+
     serviceCollection.ConfigureLavalink(x =>
     {
-      x.BaseAddress = Configuration.LavalinkUri;
-      x.Passphrase = Configuration.AudioServiceOptions.Passphrase;
+      x.BaseAddress = new Uri(botSettings.LavalinkNodeAddress);
+      x.Passphrase = botSettings.LavalinkNodePassword;
     });
+
     serviceCollection.AddInactivityTracking();
+
     serviceCollection.ConfigureInactivityTracking(x =>
     {
-      x.DefaultTimeout = TimeSpan.FromSeconds(30); // default
-      x.DefaultPollInterval = TimeSpan.FromSeconds(10); // default is 5 seconds
-      x.TrackingMode = InactivityTrackingMode.Any; // default
-      x.InactivityBehavior = PlayerInactivityBehavior.None; // default
-      x.UseDefaultTrackers = true; // default
-      x.TimeoutBehavior = InactivityTrackingTimeoutBehavior.Lowest; // default
+      x.DefaultTimeout = TimeSpan.FromSeconds(30);
+      x.DefaultPollInterval = TimeSpan.FromSeconds(10);
+      x.TrackingMode = InactivityTrackingMode.Any;
+      x.InactivityBehavior = PlayerInactivityBehavior.None;
+      x.UseDefaultTrackers = true;
+      x.TimeoutBehavior = InactivityTrackingTimeoutBehavior.Lowest;
     });
+
     serviceCollection.Configure<IdleInactivityTrackerOptions>(x =>
     {
-      x.Timeout = TimeSpan.FromSeconds(10); // default
+      x.Timeout = TimeSpan.FromSeconds(10);
     });
+
     serviceCollection.Configure<UsersInactivityTrackerOptions>(x =>
     {
-      x.Threshold = 1; // default
-      x.Timeout = TimeSpan.FromSeconds(30); // default is 10 seconds
-      x.ExcludeBots = true; // default
+      x.Threshold = 1;
+      x.Timeout = TimeSpan.FromSeconds(30);
+      x.ExcludeBots = true;
     });
   }
 }

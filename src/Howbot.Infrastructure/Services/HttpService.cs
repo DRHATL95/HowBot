@@ -9,13 +9,14 @@ using Howbot.Core.Models.Tarkov;
 using Howbot.Core.Settings;
 using Howbot.Infrastructure.Data.Models.Responses;
 using Howbot.Infrastructure.Data.Models.Watch2Gether;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Constants = Howbot.Infrastructure.Data.Config.Constants;
 using Task = Howbot.Core.Models.Tarkov.Task;
 
 namespace Howbot.Infrastructure.Services;
 
-public class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, IDisposable
+public class HttpService(IHttpClientFactory httpClientFactory, IOptions<BotSettings> botSettings) : IHttpService, IDisposable
 {
   private readonly HttpClient _client = httpClientFactory.CreateClient("HttpService");
 
@@ -41,7 +42,7 @@ public class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, I
 
     var parameters = new Watch2GetherParameters
     {
-      W2GApiKey = Configuration.WatchTogetherApiKey,
+      W2GApiKey = botSettings.Value.WatchTogetherApiKey,
       Share = url,
       BackgroundColor = "#00ff00",
       BackgroundOpacity = "50"
@@ -129,7 +130,7 @@ public class HttpService(IHttpClientFactory httpClientFactory) : IHttpService, I
       validate = false // null?
     }), Encoding.UTF8, "application/json");
 
-    _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", Configuration.DiscordToken);
+    _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bot", botSettings.Value.DiscordToken);
 
     var response = await _client.PostAsync(requestUri, requestContent, cancellationToken);
     var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);

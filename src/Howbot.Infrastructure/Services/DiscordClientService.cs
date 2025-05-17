@@ -5,7 +5,7 @@ using Discord.WebSocket;
 using Howbot.Core.Helpers;
 using Howbot.Core.Interfaces;
 using Howbot.Core.Models;
-using Howbot.Core.Models.Exceptions;
+using Howbot.Core.Exceptions;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.Logging;
 using static Howbot.Core.Models.Messages.Debug;
@@ -193,19 +193,16 @@ public class DiscordClientService(
 
     try
     {
-      if (Configuration.IsDebug())
-      {
-        Logger.LogInformation($"Registering commands to DEV Guild [{Constants.Discord.DiscordDevelopmentGuildId}]");
+#if DEBUG
+      Logger.LogInformation($"Registering commands to DEV Guild [{Constants.Discord.DiscordDevelopmentGuildId}]");
 
-        await interactionService.RegisterCommandsToGuildAsync(Constants.Discord.DiscordDevelopmentGuildId);
-      }
-      else
-      {
-        Logger.LogInformation("Registering commands globally");
+      await interactionService.RegisterCommandsToGuildAsync(Constants.Discord.DiscordDevelopmentGuildId);
+#else
+      Logger.LogInformation("Registering commands globally");
 
         // TODO: Investigate if this is necessary
         await interactionService.RegisterCommandsGloballyAsync();
-      }
+#endif
     }
     catch (Exception exception)
     {
@@ -295,5 +292,5 @@ public class DiscordClientService(
     }
   }
 
-  #endregion Discord Client Events
+#endregion Discord Client Events
 }

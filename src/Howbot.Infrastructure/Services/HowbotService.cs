@@ -1,12 +1,14 @@
 ﻿using Discord.WebSocket;
+using Howbot.Core.Exceptions;
 using Howbot.Core.Interfaces;
-using Howbot.Core.Models.Exceptions;
 using Howbot.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Howbot.Infrastructure.Services;
 
 public class HowbotService(
+  IOptions<BotSettings> botSettings,
   DiscordSocketClient discordClient,
   IDiscordClientService discordClientService,
   IServiceProvider serviceProvider,
@@ -27,7 +29,7 @@ public class HowbotService(
 
       await InitializeHowbotServicesAsync();
 
-      await LoginBotToDiscordAsync(Configuration.DiscordToken, cancellationToken);
+      await LoginBotToDiscordAsync(botSettings.Value.DiscordToken, cancellationToken);
 
       await StartDiscordBotAsync(cancellationToken);
     }

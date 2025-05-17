@@ -1,4 +1,4 @@
-﻿namespace Howbot.Core.Models.Exceptions;
+﻿namespace Howbot.Core.Exceptions;
 
 /// <summary>
 ///   Created this exception to use try/catch in logger adapter.

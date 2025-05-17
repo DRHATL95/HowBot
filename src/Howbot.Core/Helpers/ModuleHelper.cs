@@ -3,7 +3,7 @@ using Discord;
 using Discord.Interactions;
 using Howbot.Core.Models;
 using Howbot.Core.Models.Commands;
-using CommandException = Howbot.Core.Models.Exceptions.CommandException;
+using CommandException = Howbot.Core.Exceptions.CommandException;
 
 namespace Howbot.Core.Helpers;
 
