@@ -3,7 +3,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,10 +11,18 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="SpotifyAPI.Web" />
     <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="Lavalink4NET.Integrations.Lavasearch" />
+    <PackageReference Include="Serilog" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Howbot.Core\Howbot.Core.csproj" />
+    <ProjectReference Include="..\Howbot.Application\Howbot.Application.csproj" />
+    <ProjectReference Include="..\Howbot.Domain\Howbot.Domain.csproj" />
+    <ProjectReference Include="..\Howbot.SharedKernel\Howbot.SharedKernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Configuration\Constants\" />
   </ItemGroup>
 
 </Project>

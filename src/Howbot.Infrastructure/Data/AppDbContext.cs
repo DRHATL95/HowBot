@@ -1,5 +1,5 @@
 ﻿using System.Reflection;
-using Howbot.Core.Entities;
+using Howbot.Domain.Entities.Concrete;
 using Microsoft.EntityFrameworkCore;
 
 namespace Howbot.Infrastructure.Data;

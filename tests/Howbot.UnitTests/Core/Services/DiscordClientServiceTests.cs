@@ -2,8 +2,9 @@
 using System.Threading.Tasks;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Howbot.Core.Interfaces;
-using Howbot.Infrastructure.Services;
+using Howbot.Application.Interfaces.Discord;
+using Howbot.Infrastructure.Discord.Services;
+using Howbot.SharedKernel;
 using Moq;
 using Xunit;
 

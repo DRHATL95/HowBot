@@ -22,9 +22,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Howbot.Core\Howbot.Core.csproj" />
+    <ProjectReference Include="..\..\src\Howbot.Application\Howbot.Application.csproj" />
+    <ProjectReference Include="..\..\src\Howbot.Domain\Howbot.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Howbot.Presentation.WebAPI\Howbot.Presentation.WebAPI.csproj" />
+    <ProjectReference Include="..\..\src\Howbot.SharedKernel\Howbot.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Howbot.Worker.Discord\Howbot.Worker.Discord.csproj" />
     <ProjectReference Include="..\..\src\Howbot.Infrastructure\Howbot.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\Howbot.Worker\Howbot.Worker.csproj" />
   </ItemGroup>
 
 </Project>

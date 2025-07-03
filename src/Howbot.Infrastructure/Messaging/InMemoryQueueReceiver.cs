@@ -1,5 +1,5 @@
 ﻿using Ardalis.GuardClauses;
-using Howbot.Core.Interfaces;
+using Howbot.Application.Interfaces.Infrastructure;
 
 namespace Howbot.Infrastructure.Messaging;
 

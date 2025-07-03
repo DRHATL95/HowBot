@@ -1,4 +1,4 @@
-﻿using Howbot.Core.Models.Tarkov;
+﻿using Howbot.Application.Models.Tarkov;
 using Newtonsoft.Json;
 
 namespace Howbot.Infrastructure.Data.Models.Responses;

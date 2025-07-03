@@ -1,5 +1,5 @@
-﻿using Howbot.Core.Entities;
-using Howbot.Core.Interfaces;
+﻿using Howbot.Application.Interfaces.Infrastructure;
+using Howbot.Domain.Entities.Abstract;
 using Microsoft.EntityFrameworkCore;
 
 namespace Howbot.Infrastructure.Data;

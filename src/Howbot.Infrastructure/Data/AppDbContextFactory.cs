@@ -1,4 +1,4 @@
-﻿using Howbot.Core.Settings;
+﻿using Howbot.SharedKernel.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 

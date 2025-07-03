@@ -1,6 +1,8 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Howbot.Core.Interfaces;
+using Howbot.Application.Interfaces.Discord;
+using Howbot.SharedKernel;
+using Howbot.Worker.Discord;
 using Moq;
 using Xunit;
 
@@ -9,14 +11,14 @@ namespace Howbot.UnitTests.Worker;
 public class WorkerTests
 {
   private readonly Mock<IHowbotService> _mockHowbotService;
-  private readonly Mock<ILoggerAdapter<Howbot.Worker.Worker>> _mockLogger;
-  private readonly Howbot.Worker.Worker _worker;
+  private readonly Mock<ILoggerAdapter<Howbot.Worker.Discord.Worker>> _mockLogger;
+  private readonly Howbot.Worker.Discord.Worker _worker;
 
   public WorkerTests()
   {
     _mockHowbotService = new Mock<IHowbotService>();
-    _mockLogger = new Mock<ILoggerAdapter<Howbot.Worker.Worker>>();
-    _worker = new Howbot.Worker.Worker(_mockHowbotService.Object, _mockLogger.Object);
+    _mockLogger = new Mock<ILoggerAdapter<Howbot.Worker.Discord.Worker>>();
+    _worker = new Howbot.Worker.Discord.Worker(_mockLogger.Object, _mockHowbotService.Object);
   }
 
   [Fact]
