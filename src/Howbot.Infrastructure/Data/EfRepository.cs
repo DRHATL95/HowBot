@@ -1,14 +1,20 @@
 ﻿using Howbot.Application.Interfaces.Infrastructure;
 using Howbot.Domain.Entities.Abstract;
+using Howbot.Domain.Entities.Concrete;
 using Microsoft.EntityFrameworkCore;
 
 namespace Howbot.Infrastructure.Data;
 
 public class EfRepository(AppDbContext dbContext) : IRepository
 {
-  public T? GetById<T>(ulong id) where T : BaseEntity
+  public T? GetById<T>(Guid id) where T : BaseEntity
   {
     return dbContext.Set<T>().SingleOrDefault(e => e.Id == id);
+  }
+
+  public Guild? GetGuildByGuildId(ulong guildId)
+  {
+    return dbContext.Set<Guild>().SingleOrDefault(g => g.GuildId == guildId);
   }
 
   public List<T> List<T>() where T : BaseEntity

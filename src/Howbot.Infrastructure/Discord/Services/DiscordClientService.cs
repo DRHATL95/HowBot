@@ -158,7 +158,7 @@ public class DiscordClientService(
   // TODO: Revisit this
   /*private Task DiscordSocketClientOnSlashCommandExecuted(SocketSlashCommand arg)
   {
-    var guild = GetGuildById(arg.GuildId);
+    var guild = GetGuildByGuildId(arg.GuildId);
     if (guild == null)
     {
       LogErrorGuildLookup(nameof(DiscordSocketClientOnSlashCommandExecuted));

@@ -6,18 +6,15 @@ namespace Howbot.Domain.Entities.Concrete;
 
 public class CommandUsage : BaseEntity
 {
-  public ulong GuildUserId { get; set; }
-
   public ulong GuildId { get; set; }
+
+  public ulong UserId { get; set; }
 
   public string CommandName { get; set; } = string.Empty;
 
-  public DateTime CreatedAt { get; set; }
+  public bool IsSuccess { get; set; }
 
-  public bool IsSuccess { get; set; } = false;
+  public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-  // Relationships
-  public GuildUser? GuildUser { get; set; }
-
-  public Guild? Guild { get; set; }
+  public GuildUser GuildUser { get; set; } = default!;
 }

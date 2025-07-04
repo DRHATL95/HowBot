@@ -10,14 +10,13 @@ public class Guild : BaseEntity
 
   public string Name { get; set; } = string.Empty;
 
-  public string Prefix { get; set; } = string.Empty;
-  
+  public string? Prefix { get; set; }
+
   public float Volume { get; set; }
 
-  public int SearchProvider { get; set; } = 4; // Default to YouTube
+  public int SearchProvider { get; set; } = 4;
 
   public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-  // Navigation properties
   public ICollection<GuildUser> GuildUsers { get; set; } = [];
 }

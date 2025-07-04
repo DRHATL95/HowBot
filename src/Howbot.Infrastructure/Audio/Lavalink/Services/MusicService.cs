@@ -476,7 +476,7 @@ public partial class MusicService(
       else
       {
         // Needs to be added to db
-        db.AddNewGuild(new Guild { Id = player.GuildId, Volume = newVolume });
+        db.AddNewGuild(new Guild { GuildId = player.GuildId, Volume = newVolume });
       }
 
       return CommandResponse.Create(true, $"Volume set to {newVolume}%");

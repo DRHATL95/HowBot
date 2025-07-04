@@ -12,13 +12,15 @@ namespace Howbot.Infrastructure.Services.Concrete;
 public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseService> logger)
   : ServiceBase<DatabaseService>(logger), IDatabaseService
 {
-  public void AddNewGuild(Guild guild)
+  public Guid? AddNewGuild(Guild guild)
   {
     try
     {
       Guard.Against.Null(guild, nameof(guild));
 
-      repository.Add(guild);
+      var id = repository.Add(guild).Id;
+
+      return id;
     }
     catch (ArgumentNullException)
     {
@@ -32,9 +34,11 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     {
       Logger.LogError(exception, "Failed to add new guild to database");
     }
+
+    return null;
   }
 
-  public Guild? GetGuildById(ulong guildId)
+  public Guild? GetGuildByGuildId(ulong guildId)
   {
     try
     {
@@ -43,20 +47,26 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       // If the guild does not exist, create a new one and persist to the database
       if (!ShouldCreateGuild(guildId))
       {
-        return repository.GetById<Guild>(guildId);
+        return repository.GetGuildByGuildId(guildId);
       }
 
       Logger.LogInformation("Adding new guild with id [{GuildId}] to database", guildId);
 
-      AddNewGuild(new Guild
+      var id = AddNewGuild(new Guild
       {
-        Id = guildId,
+        GuildId = guildId,
         Prefix = BotDefaults.DefaultPrefix,
         Volume = BotDefaults.DefaultVolume,
         SearchProvider = (int)BotDefaults.DefaultSearchProvider
       });
 
-      return repository.GetById<Guild>(guildId);
+      if (!id.HasValue)
+      {
+        Logger.LogError("Failed to add new guild with id [{GuildId}] to database", guildId);
+        return null;
+      }
+
+      return repository.GetById<Guild>(id.Value);
     }
     catch (ArgumentException)
     {
@@ -76,7 +86,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     {
       Guard.Against.NegativeOrZero((long)guildId, nameof(guildId));
 
-      var guildEntity = repository.GetById<Guild>(guildId);
+      var guildEntity = repository.GetGuildByGuildId(guildId);
       if (guildEntity is not null)
       {
         return guildEntity.Volume;
@@ -85,7 +95,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
       Logger.LogInformation("Adding new guild with id [{GuildId}] to database", guildId);
 
-      AddNewGuild(new Guild { Id = guildId });
+      AddNewGuild(new Guild { GuildId = guildId });
 
       return 0;
     }
@@ -108,7 +118,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
       Guard.Against.NegativeOrZero((long)playerGuildId, nameof(playerGuildId), "Invalid guild id");
       Guard.Against.NegativeOrZero((long)newVolume, nameof(newVolume), "Invalid volume level");
 
-      var guildEntity = repository.GetById<Guild>(playerGuildId);
+      var guildEntity = repository.GetGuildByGuildId(playerGuildId);
       if (guildEntity is null)
       {
         Logger.LogWarning("Unable to find guild with id [{GuildId}]", playerGuildId);
@@ -142,7 +152,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
         throw new ArgumentException("Invalid guild id");
       }
 
-      var guildEntity = repository.GetById<Guild>(guildId);
+      var guildEntity = repository.GetGuildByGuildId(guildId);
       if (guildEntity is null)
       {
         Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
@@ -167,7 +177,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
         throw new ArgumentException("Invalid guild id");
       }
 
-      var guildEntity = repository.GetById<Guild>(guildId);
+      var guildEntity = repository.GetGuildByGuildId(guildId);
       if (guildEntity is null)
       {
         Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
@@ -187,7 +197,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
 
   public bool DoesGuildExist(ulong guildId)
   {
-    var guild = GetGuildById(guildId);
+    var guild = GetGuildByGuildId(guildId);
 
     return guild is not null;
   }
@@ -198,7 +208,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     {
       Guard.Against.NullOrWhiteSpace(newPrefix, nameof(newPrefix));
 
-      var guildEntity = repository.GetById<Guild>(guildId);
+      var guildEntity = repository.GetGuildByGuildId(guildId);
       if (guildEntity is null)
       {
         Logger.LogWarning("Unable to find guild with id [{GuildId}]", guildId);
@@ -222,7 +232,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     {
       Guard.Against.NegativeOrZero((long)guildId, nameof(guildId));
 
-      return repository.GetById<Guild>(guildId) is null;
+      return repository.GetGuildByGuildId(guildId) is null;
     }
     catch (ArgumentException)
     {

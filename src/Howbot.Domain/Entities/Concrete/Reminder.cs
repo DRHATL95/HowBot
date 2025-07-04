@@ -6,7 +6,9 @@ namespace Howbot.Domain.Entities.Concrete;
 
 public class Reminder : BaseEntity
 {
-  public ulong GuildUserId { get; set; }
+  public ulong GuildId { get; set; }
+
+  public ulong UserId { get; set; }
 
   public ulong TextChannelId { get; set; }
 
@@ -14,8 +16,7 @@ public class Reminder : BaseEntity
 
   public DateTime RemindAt { get; set; }
 
-  public DateTime CreatedAt { get; set; }
+  public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-  // Relationships
-  public GuildUser? GuildUser { get; set; }
+  public GuildUser GuildUser { get; set; } = default!;
 }

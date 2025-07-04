@@ -1,11 +1,14 @@
 ﻿using Howbot.Domain.Entities;
 using Howbot.Domain.Entities.Abstract;
+using Howbot.Domain.Entities.Concrete;
 
 namespace Howbot.Application.Interfaces.Infrastructure;
 
 public interface IRepository
 {
-  T? GetById<T>(ulong id) where T : BaseEntity;
+  T? GetById<T>(Guid id) where T : BaseEntity;
+
+  Guild? GetGuildByGuildId(ulong guildId);
 
   List<T> List<T>() where T : BaseEntity;
 

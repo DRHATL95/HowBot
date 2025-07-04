@@ -7,13 +7,25 @@ public class Worker(ILoggerAdapter<Worker> logger, IHowbotService howbotService)
 {
   protected override async Task ExecuteAsync(CancellationToken stoppingToken)
   {
-    while (!stoppingToken.IsCancellationRequested)
+    try
     {
-      if (logger.IsLogLevelEnabled(LogLevel.Debug))
+      while (!stoppingToken.IsCancellationRequested)
       {
-        logger.LogDebug("Worker running at: {time}", DateTimeOffset.Now);
+        if (logger.IsLogLevelEnabled(LogLevel.Debug))
+        {
+          logger.LogDebug("Worker running at: {time}", DateTimeOffset.Now);
+        }
+        await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
       }
-      await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
+    }
+    catch (OperationCanceledException)
+    {
+      // This exception is expected when the service is stopped.
+      logger.LogDebug("Worker execution was cancelled.");
+    }
+    catch (Exception ex)
+    {
+      logger.LogError(ex, "An error occurred while executing the worker.");
     }
   }
 

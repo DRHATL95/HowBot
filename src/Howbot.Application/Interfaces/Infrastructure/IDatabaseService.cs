@@ -7,9 +7,9 @@ public interface IDatabaseService
 {
   void Initialize();
 
-  void AddNewGuild(Guild guild);
+  Guid? AddNewGuild(Guild guild);
 
-  Guild? GetGuildById(ulong guildId);
+  Guild? GetGuildByGuildId(ulong guildId);
 
   float GetPlayerVolumeLevel(ulong guildId);
 

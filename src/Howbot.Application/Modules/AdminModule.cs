@@ -371,7 +371,7 @@ public class AdminModule(ILoggerAdapter<AdminModule> logger) : InteractionModule
         var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
 
         // Get the guild settings from the database
-        var guild = databaseService.GetGuildById(Context.Guild.Id);
+        var guild = databaseService.GetGuildByGuildId(Context.Guild.Id);
         if (guild is null)
         {
           await FollowupAsync("Unable to find guild in database.");
