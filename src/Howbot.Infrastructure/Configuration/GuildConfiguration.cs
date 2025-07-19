@@ -39,6 +39,10 @@ public class GuildConfiguration : IEntityTypeConfiguration<Guild>
         .IsRequired()
         .HasDefaultValue(BotDefaults.DefaultSearchProvider);
 
+    builder.Property(g => g.LavalinkSessionId)
+        .HasMaxLength(64)
+        .IsRequired(false);
+
     builder.Property(g => g.CreatedAt)
         .IsRequired()
         .HasDefaultValueSql("CURRENT_TIMESTAMP");

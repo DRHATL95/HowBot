@@ -4,6 +4,7 @@ namespace Howbot.SharedKernel;
 
 public interface ILoggerAdapter<T>
 {
+  public ILoggerAdapter<TClass> CastToLoggerClass<TClass>();
   void Log(LogLevel severity, string message, params object[] args);
 
   void LogInformation(string message, params object[] args);

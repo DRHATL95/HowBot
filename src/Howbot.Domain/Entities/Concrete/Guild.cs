@@ -16,6 +16,8 @@ public class Guild : BaseEntity
 
   public int SearchProvider { get; set; } = 4;
 
+  public string? LavalinkSessionId { get; set; }
+
   public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
   public ICollection<GuildUser> GuildUsers { get; set; } = [];

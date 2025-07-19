@@ -11,6 +11,11 @@ namespace Howbot.Infrastructure;
 /// <typeparam name="T"></typeparam>
 public class LoggerAdapter<T>(ILogger<LoggerAdapter<T>> logger) : ILoggerAdapter<T>
 {
+  public ILoggerAdapter<T> CastToLoggerClass()
+  {
+    return this as ILoggerAdapter<T>;
+  }
+
   /// <summary>
   ///   Logs a message with the specified severity.
   /// </summary>
