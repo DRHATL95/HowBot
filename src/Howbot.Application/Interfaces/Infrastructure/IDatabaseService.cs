@@ -15,7 +15,7 @@ public interface IDatabaseService
 
   Task UpdatePlayerVolumeLevel(ulong playerGuildId, float newVolume);
 
-  SearchProviderTypes GetSearchProviderTypeAsync(ulong guildId);
+  SearchProviderTypes GetGuildSearchProviderType(ulong guildId);
 
   Task UpdateSearchProviderAsync(ulong guildId, SearchProviderTypes searchProviderType);
 

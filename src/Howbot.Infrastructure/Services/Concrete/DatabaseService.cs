@@ -143,7 +143,7 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     }
   }
 
-  public SearchProviderTypes GetSearchProviderTypeAsync(ulong guildId)
+  public SearchProviderTypes GetGuildSearchProviderType(ulong guildId)
   {
     try
     {

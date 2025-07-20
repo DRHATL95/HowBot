@@ -10,7 +10,7 @@ using Lavalink4NET.Tracks;
 namespace Howbot.Application.Interfaces.Lavalink;
 public interface IMusicPlaybackService
 {
-  ValueTask<MusicCommandResult> PlayTrackAsync(ulong guildId, string query, CancellationToken ct = default);
+  ValueTask<MusicCommandResult> PlayTrackAsync(ulong guildId, ulong voiceChannelId, string query, CancellationToken ct = default);
   ValueTask<MusicCommandResult> PauseTrackAsync(ulong guildId, CancellationToken ct = default);
   ValueTask<MusicCommandResult> ResumeTrackAsync(ulong guildId, CancellationToken ct = default);
   ValueTask<MusicCommandResult> SkipTrackAsync(ulong guildId, int? numberOfTracks = null, CancellationToken ct = default);
