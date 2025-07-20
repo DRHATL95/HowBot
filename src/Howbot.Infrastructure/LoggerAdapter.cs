@@ -11,9 +11,9 @@ namespace Howbot.Infrastructure;
 /// <typeparam name="T"></typeparam>
 public class LoggerAdapter<T>(ILogger<LoggerAdapter<T>> logger) : ILoggerAdapter<T>
 {
-  public ILoggerAdapter<T> CastToLoggerClass()
+  public ILoggerAdapter<TNew> CastToLoggerClass<TNew>()
   {
-    return this as ILoggerAdapter<T>;
+    return this as ILoggerAdapter<TNew> ?? throw new InvalidOperationException();
   }
 
   /// <summary>
