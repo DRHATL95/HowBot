@@ -1,4 +1,5 @@
-using Howbot.Web.Components;
+﻿using Howbot.Web.Components;
+using Howbot.Web.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,8 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.MapHub<BotHub>("/botHub");
 
 
 app.UseAntiforgery();

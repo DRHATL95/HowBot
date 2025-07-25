@@ -68,6 +68,8 @@ public static class Program
         services.AddSingleton<INotificationChannel, InMemoryNotificationChannel>();
         services.AddSingleton<INotificationService, HybridNotificationService>();
 
+        services.AddHostedService<NotificationBackgroundService>();
+
         services.AddHowbotServices();
         services.AddLavalinkServices();
 

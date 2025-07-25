@@ -34,7 +34,7 @@ public class HybridNotificationService : INotificationService, IAsyncDisposable
     _logger = logger;
 
     // Try to connect to external SignalR hub if configured
-    var externalHubUrl = configuration["ExternalSignalRHubUrl"];
+    var externalHubUrl = configuration.GetConnectionString("ExternalSignalRHubUrl");
     if (!string.IsNullOrEmpty(externalHubUrl))
     {
       try
@@ -235,6 +235,22 @@ public class HybridNotificationService : INotificationService, IAsyncDisposable
     if (_externalHubConnection != null)
     {
       await _externalHubConnection.DisposeAsync();
+    }
+  }
+
+  public async Task EnsureConnectionAsync()
+  {
+    if (_externalHubConnection?.State == HubConnectionState.Disconnected)
+    {
+      try
+      {
+        await _externalHubConnection.StartAsync();
+        _logger.LogInformation("SignalR connected successfully");
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError(ex, "Failed to connect to SignalR hub");
+      }
     }
   }
 }
