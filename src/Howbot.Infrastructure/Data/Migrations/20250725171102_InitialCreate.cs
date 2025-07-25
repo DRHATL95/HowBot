@@ -2,10 +2,10 @@
 
 #nullable disable
 
-namespace Howbot.Infrastructure.Data.Migrations
+namespace Howbot.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,7 +16,8 @@ namespace Howbot.Infrastructure.Data.Migrations
                 {
                     Id = table.Column<decimal>(type: "numeric(20,0)", nullable: false),
                     Prefix = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    Volume = table.Column<float>(type: "real", nullable: false)
+                    Volume = table.Column<float>(type: "real", nullable: false),
+                    SearchProvider = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {

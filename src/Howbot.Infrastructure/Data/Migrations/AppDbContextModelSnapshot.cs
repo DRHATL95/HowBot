@@ -7,46 +7,42 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Howbot.Infrastructure.Data.Migrations
+namespace Howbot.Infrastructure.Migrations
 {
-  [DbContext(typeof(AppDbContext))]
-  partial class AppDbContextModelSnapshot : ModelSnapshot
-  {
-    protected override void BuildModel(ModelBuilder modelBuilder)
+    [DbContext(typeof(AppDbContext))]
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
+        protected override void BuildModel(ModelBuilder modelBuilder)
+        {
 #pragma warning disable 612, 618
-      modelBuilder
-        .HasAnnotation("ProductVersion", "8.0.7")
-        .HasAnnotation("Relational:MaxIdentifierLength", 63);
+            modelBuilder
+                .HasAnnotation("ProductVersion", "9.0.7")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-      NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-      modelBuilder.Entity("Howbot.Core.Entities.Guild", b =>
-      {
-        b.Property<decimal>("Id")
-          .ValueGeneratedOnAdd()
-          .HasColumnType("numeric(20,0)");
+            modelBuilder.Entity("Howbot.Core.Entities.Guild", b =>
+                {
+                    b.Property<decimal>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(20,0)");
 
-        b.Property<string>("EncryptedSessionId")
-          .IsRequired()
-          .HasColumnType("text");
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
-        b.Property<string>("Prefix")
-          .IsRequired()
-          .HasMaxLength(10)
-          .HasColumnType("character varying(10)");
+                    b.Property<int>("SearchProvider")
+                        .HasColumnType("integer");
 
-        b.Property<int>("SearchProvider")
-          .HasColumnType("integer");
+                    b.Property<float>("Volume")
+                        .HasColumnType("real");
 
-        b.Property<float>("Volume")
-          .HasColumnType("real");
+                    b.HasKey("Id");
 
-        b.HasKey("Id");
-
-        b.ToTable("Guilds");
-      });
+                    b.ToTable("Guilds");
+                });
 #pragma warning restore 612, 618
+        }
     }
-  }
 }

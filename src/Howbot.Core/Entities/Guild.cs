@@ -11,6 +11,4 @@ public class Guild : BaseEntity
   [Required] public float Volume { get; set; } = 100.0f;
 
   [Required] public SearchProviderTypes SearchProvider { get; set; } = SearchProviderTypes.YouTubeMusic;
-
-  public string EncryptedSessionId { get; set; } = string.Empty;
 }

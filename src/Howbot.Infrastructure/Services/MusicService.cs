@@ -77,8 +77,6 @@ public partial class MusicService(
     {
       var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
       persistedVolume = db.GetPlayerVolumeLevel(guildId);
-
-      await db.UpdateGuildSessionIdAsync(guildId, await GetSessionIdForGuildIdAsync(guildId, cancellationToken));
     }
 
     if (context.Channel is not ITextChannel textChannel)
