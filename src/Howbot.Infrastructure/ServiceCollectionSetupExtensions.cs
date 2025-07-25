@@ -29,7 +29,7 @@ public static class ServiceCollectionSetupExtensions
   {
     services.AddDbContext<AppDbContext>(options =>
       options.UseNpgsql(
-        configuration.GetConnectionString(Constants.DatabaseConnectionStringName)));
+        configuration["PostgresConnectionString"]));
   }
 
   /// <summary>

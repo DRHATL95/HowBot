@@ -65,6 +65,9 @@ public static class Program
         services.AddSingleton(typeof(ILoggerAdapter<>), typeof(LoggerAdapter<>));
         services.AddSingleton<IServiceLocator, ServiceScopeFactoryLocator>();
 
+        services.AddSingleton<INotificationChannel, InMemoryNotificationChannel>();
+        services.AddSingleton<INotificationService, HybridNotificationService>();
+
         services.AddHowbotServices();
         services.AddLavalinkServices();
 

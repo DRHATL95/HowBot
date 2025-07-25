@@ -187,4 +187,10 @@ public abstract record Constants
 
     public const string RpcQueue = "rpc_queue";
   }
+
+  public static class HubConnectionConfiguration
+  {
+    public const string HubUrl = "https://localhost:7001/bothub";
+    public const string HubName = "NotificationHub";
+  }
 }

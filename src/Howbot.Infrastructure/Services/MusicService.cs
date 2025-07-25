@@ -33,6 +33,7 @@ public partial class MusicService(
   ISpotifyClient spotifyClient,
   ILavalinkSessionProvider sessionProvider,
   IServiceProvider serviceProvider,
+  INotificationService notificationService,
   ILoggerAdapter<MusicService> logger)
   : ServiceBase<MusicService>(logger), IMusicService
 {
@@ -369,10 +370,18 @@ public partial class MusicService(
 
       var trackQueueItem =
         await player.Queue.TryDequeueAsync(player.Shuffle ? TrackDequeueMode.Shuffle : TrackDequeueMode.Normal);
-      if (trackQueueItem is null)
+      if (trackQueueItem is null || trackQueueItem.Track is null)
       {
         return CommandResponse.Create(false, Messages.Responses.CommandPlayNotSuccessfulResponse);
       }
+
+      await notificationService.NotifyMusicStatusChangedAsync(player.GuildId, new MusicStatus()
+      {
+        IsPlaying = true,
+        CurrentTrack = new ExtendedLavalinkTrack(trackQueueItem.Track),
+        Position = player.Position,
+        QueueCount = player.Queue.Count,
+      });
 
       await player.PlayAsync(trackQueueItem, false);
 
@@ -601,4 +610,13 @@ public partial class MusicService(
   }
 
   #endregion Music Module Commands
+
+  public void SubscribeToNotifications()
+  {
+    notificationService.MusicStatusChanged += async (guildId, status) =>
+    {
+      await Task.Delay(TimeSpan.FromSeconds(1)); // Delay to ensure player is ready
+      Logger.LogInformation("Music status changed for guild {GuildId}: {Status}", guildId, status);
+    };
+  }
 }
