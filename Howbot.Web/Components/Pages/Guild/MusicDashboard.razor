@@ -1,0 +1,658 @@
+﻿@page "/guild/{guildId}/music"
+
+@using Howbot.Web.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@using Howbot.Core.Models
+@inject IBotApiService BotApi
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+@inject NavigationManager Navigation 
+
+<PageTitle>Music Dashboard - Guild @GuildId</PageTitle>
+
+<div class="music-dashboard">
+    <div class="connection-status">
+        <span class="status-indicator @(IsConnected ? "online" : "offline")"></span>
+        @(IsConnected ? "Connected" : "Disconnected")
+    </div>
+
+    <!-- Current Track Display -->
+    <div class="current-track-section">
+        <h3>Now Playing</h3>
+        @if (currentStatus?.CurrentTrack != null)
+        {
+            <div class="current-track">
+                @if (!string.IsNullOrEmpty(currentStatus.CurrentTrack?.ArtworkUri?.OriginalString))
+                {
+                    <img src="@currentStatus.CurrentTrack.Value.ArtworkUri.OriginalString" alt="Thumbnail" class="track-thumbnail" />
+                }
+                <div class="track-info">
+                    <h4>@currentStatus.CurrentTrack?.Title</h4>
+                    <p>@currentStatus.CurrentTrack?.Artist</p>
+@*                     <small>Requested by: @currentStatus.CurrentTrack?</small>
+ *@                </div>
+                <div class="track-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: @GetProgressPercentage()%"></div>
+                    </div>
+                    @if (currentStatus.Position.HasValue && currentStatus.CurrentTrack.HasValue)
+                    {
+                        <span class="time-display">
+                            @FormatTime(currentStatus.Position.Value.Position) / @FormatTime(currentStatus.CurrentTrack.Value.Duration)
+                        </span>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="no-track">
+                <p>No track currently playing</p>
+            </div>
+        }
+    </div>
+
+    <!-- Music Controls -->
+    <div class="music-controls">
+        <div class="control-buttons">
+            <button class="btn btn-control" @onclick="PlayPause" disabled="@isLoading">
+                @if (currentStatus?.IsPlaying == true)
+                {
+                    <span>⏸️ Pause</span>
+                }
+                else
+                {
+                    <span>▶️ Play</span>
+                }
+            </button>
+            <button class="btn btn-control" @onclick="Stop" disabled="@isLoading">
+                ⏹️ Stop
+            </button>
+            <button class="btn btn-control" @onclick="Skip" disabled="@isLoading">
+                ⏭️ Skip
+            </button>
+        </div>
+
+        <div class="volume-control">
+            <label>Volume: @currentStatus?.Volume</label>
+            <input type="range" min="0" max="100" @bind="volumeLevel" @oninput="OnVolumeChange" />
+        </div>
+    </div>
+
+    <!-- Add Track Section -->
+    <div class="add-track-section">
+        <h4>Add to Queue</h4>
+        <div class="search-container">
+            <input type="text" @bind="searchQuery" @onkeypress="OnSearchKeyPress"
+                   placeholder="Search for music (YouTube, Spotify, etc.)" class="search-input" />
+            <button class="btn btn-primary" @onclick="AddToQueue" disabled="@(isLoading || string.IsNullOrWhiteSpace(searchQuery))">
+                Add to Queue
+            </button>
+        </div>
+    </div>
+
+    <!-- Queue Display -->
+    <div class="queue-section">
+        <h4>Queue (@(currentQueue?.Tracks?.Count ?? 0) tracks)</h4>
+        @if (currentQueue?.Tracks?.Any() == true)
+        {
+            <div class="queue-list">
+                @for (int i = 0; i < currentQueue.Tracks.Count; i++)
+                {
+                    var track = currentQueue.Tracks[i];
+                    var isCurrentTrack = i == currentQueue.CurrentIndex;
+
+                    <div class="queue-item @(isCurrentTrack ? "current" : "")">
+                        <div class="track-number">@(i + 1)</div>
+                        <div class="track-details">
+                            <div class="track-title">@track.Title</div>
+                            <div class="track-artist">@track.Artist</div>
+                            <div class="track-duration">@FormatTime(track.Duration)</div>
+                        </div>
+@*                         <div class="track-requester">@track.RequestedByUsername</div>
+ *@                        @if (isCurrentTrack)
+                        {
+                            <div class="current-indicator">🎵</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="empty-queue">Queue is empty</p>
+        }
+    </div>
+
+    <!-- Status Messages -->
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert alert-info">
+            @statusMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            @errorMessage
+        </div>
+    }
+</div>
+
+<style>
+    .music-dashboard {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+        .status-indicator.online {
+            background-color: #28a745;
+        }
+
+        .status-indicator.offline {
+            background-color: #dc3545;
+        }
+
+    .current-track-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .current-track {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .track-thumbnail {
+        width: 80px;
+        height: 80px;
+        border-radius: 4px;
+        object-fit: cover;
+    }
+
+    .track-info h4 {
+        margin: 0 0 5px 0;
+        font-size: 1.2em;
+    }
+
+    .track-info p {
+        margin: 0 0 5px 0;
+        color: #666;
+    }
+
+    .track-progress {
+        margin-left: auto;
+        text-align: right;
+        min-width: 150px;
+    }
+
+    .progress-bar {
+        width: 150px;
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+        margin-bottom: 5px;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: #007bff;
+        border-radius: 2px;
+        transition: width 1s ease;
+    }
+
+    .music-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .control-buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-control {
+        padding: 10px 20px;
+        font-size: 16px;
+    }
+
+    .volume-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .add-track-section {
+        margin-bottom: 20px;
+    }
+
+    .search-container {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+    }
+
+    .queue-section {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .queue-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .queue-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #f8f9fa;
+        gap: 15px;
+    }
+
+        .queue-item.current {
+            background-color: #e3f2fd;
+            font-weight: bold;
+        }
+
+    .track-number {
+        min-width: 30px;
+        text-align: center;
+        font-weight: bold;
+        color: #666;
+    }
+
+    .track-details {
+        flex: 1;
+    }
+
+    .track-title {
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+
+    .track-artist {
+        color: #666;
+        font-size: 0.9em;
+        margin-bottom: 2px;
+    }
+
+    .track-duration {
+        color: #999;
+        font-size: 0.8em;
+    }
+
+    .track-requester {
+        color: #666;
+        font-size: 0.9em;
+        min-width: 100px;
+    }
+
+    .current-indicator {
+        font-size: 1.2em;
+    }
+
+    .no-track, .empty-queue {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        padding: 20px;
+    }
+
+    .alert {
+        padding: 10px 15px;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+
+    .alert-info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-control {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+</style>
+
+@code {
+    [Parameter] public string GuildId { get; set; } = string.Empty;
+
+    private HubConnection? hubConnection;
+    private MusicStatus? currentStatus;
+    private MusicQueue? currentQueue;
+    private string searchQuery = string.Empty;
+    private string statusMessage = string.Empty;
+    private string errorMessage = string.Empty;
+    private bool isLoading;
+    private int volumeLevel = 50;
+
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;     
+
+    @code {  
+        protected override async Task OnInitializedAsync()  
+        {  
+            // Initialize SignalR connection  
+            hubConnection = new HubConnectionBuilder()  
+                .WithUrl(Navigation.ToAbsoluteUri("/bothub"))  
+                .WithAutomaticReconnect()  
+                .Build();  
+
+            // Set up event handlers  
+            hubConnection.On<object>("MusicStatusChanged", OnMusicStatusChanged);  
+            hubConnection.On<object>("QueueUpdated", OnQueueUpdated);  
+            hubConnection.On<string>("PlayerConnected", OnPlayerConnected);  
+            hubConnection.On("PlayerDisconnected", OnPlayerDisconnected);  
+            hubConnection.On<string>("ErrorOccurred", OnErrorOccurred);  
+
+            // Start connection  
+            await hubConnection.StartAsync();  
+
+            // Join guild group  
+            await hubConnection.SendAsync("JoinGuildGroup", GuildId);  
+
+            // Load initial data  
+            await LoadInitialData();  
+        }  
+    }
+
+    private async Task LoadInitialData()
+    {
+        try
+        {
+            var guildIdUlong = ulong.Parse(GuildId);
+            currentStatus = await BotApi.GetMusicStatusAsync(guildIdUlong);
+            currentQueue = await BotApi.GetQueueAsync(guildIdUlong);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load initial data: {ex.Message}";
+        }
+    }
+
+    private async Task OnMusicStatusChanged(object statusObj)
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(statusObj);
+            currentStatus = System.Text.Json.JsonSerializer.Deserialize<MusicStatus>(json);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deserializing music status: {ex.Message}");
+        }
+    }
+
+    private async Task OnQueueUpdated(object queueObj)
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(queueObj);
+            currentQueue = System.Text.Json.JsonSerializer.Deserialize<MusicQueue>(json);
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deserializing queue: {ex.Message}");
+        }
+    }
+
+    private async Task OnPlayerConnected(string channelName)
+    {
+        statusMessage = $"Connected to voice channel: {channelName}";
+        await InvokeAsync(StateHasChanged);
+
+        // Clear message after 3 seconds
+        _ = Task.Delay(3000).ContinueWith(_ =>
+        {
+            statusMessage = string.Empty;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task OnPlayerDisconnected()
+    {
+        statusMessage = "Disconnected from voice channel";
+        await InvokeAsync(StateHasChanged);
+
+        // Clear message after 3 seconds
+        _ = Task.Delay(3000).ContinueWith(_ =>
+        {
+            statusMessage = string.Empty;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task OnErrorOccurred(string error)
+    {
+        errorMessage = error;
+        await InvokeAsync(StateHasChanged);
+
+        // Clear error after 5 seconds
+        _ = Task.Delay(5000).ContinueWith(_ =>
+        {
+            errorMessage = string.Empty;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private async Task PlayPause()
+    {
+        if (isLoading) return;
+
+        isLoading = true;
+        try
+        {
+            var guildIdUlong = ulong.Parse(GuildId);
+            bool success;
+
+            if (currentStatus?.IsPlaying == true)
+            {
+                success = await BotApi.PauseMusicAsync(guildIdUlong);
+            }
+            else
+            {
+                success = await BotApi.ResumeMusicAsync(guildIdUlong);
+            }
+
+            if (!success)
+            {
+                errorMessage = "Failed to execute play/pause command";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task Stop()
+    {
+        if (isLoading) return;
+
+        isLoading = true;
+        try
+        {
+            var guildIdUlong = ulong.Parse(GuildId);
+            var success = await BotApi.StopMusicAsync(guildIdUlong);
+
+            if (!success)
+            {
+                errorMessage = "Failed to stop music";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task Skip()
+    {
+        if (isLoading) return;
+
+        isLoading = true;
+        try
+        {
+            var guildIdUlong = ulong.Parse(GuildId);
+            var success = await BotApi.SkipTrackAsync(guildIdUlong);
+
+            if (!success)
+            {
+                errorMessage = "Failed to skip track";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task AddToQueue()
+    {
+        if (isLoading || string.IsNullOrWhiteSpace(searchQuery)) return;
+
+        isLoading = true;
+        try
+        {
+            var guildIdUlong = ulong.Parse(GuildId);
+            var success = await BotApi.PlayMusicAsync(guildIdUlong, searchQuery.Trim(), 0); // 0 = dashboard user
+
+            if (success)
+            {
+                statusMessage = $"Added '{searchQuery}' to queue";
+                searchQuery = string.Empty;
+            }
+            else
+            {
+                errorMessage = "Failed to add track to queue";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OnSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await AddToQueue();
+        }
+    }
+
+    private void OnVolumeChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var volume))
+        {
+            volumeLevel = volume;
+            // You can implement volume change API call here
+        }
+    }
+
+    private double GetProgressPercentage()
+    {
+        if (currentStatus is null || !currentStatus.CurrentTrack.HasValue) return 0;
+
+        if (!currentStatus.CurrentTrack.HasValue && currentStatus.CurrentTrack.Value.Duration.TotalSeconds == 0) return 0;
+
+        if (currentStatus.Position.HasValue && currentStatus.CurrentTrack.HasValue)
+        {
+            return (currentStatus.Position.Value.Position.TotalSeconds / currentStatus.CurrentTrack.Value.Duration.TotalSeconds) * 100;
+        }
+
+        return 0;
+    }
+
+    private string FormatTime(TimeSpan time)
+    {
+        return time.ToString(@"mm\:ss");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
