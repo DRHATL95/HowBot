@@ -1,9 +1,11 @@
-﻿using Discord;
+﻿using Ardalis.GuardClauses;
+using Discord;
 using Howbot.SharedKernel;
 using Lavalink4NET.InactivityTracking.Players;
 using Lavalink4NET.InactivityTracking.Trackers;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Howbot.Application.Models.Lavalink.Players;
 
@@ -12,7 +14,7 @@ public class HowbotPlayer(
   ILoggerAdapter<HowbotPlayer> logger)
   : QueuedLavalinkPlayer(properties), IInactivityPlayerListener
 {
-  public ITextChannel? TextChannel { get; } = properties.Options.Value.TextChannel;
+  public ulong? TextChannelId { get; } = properties.Options.Value.TextChannelId;
   public bool IsAutoPlayEnabled { get; set; } = properties.Options.Value.IsAutoPlayEnabled;
   public ITrackQueue AutoPlayQueue { get; } = new TrackQueue();
 

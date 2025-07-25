@@ -111,8 +111,10 @@ public class DatabaseService(IRepository repository, ILoggerAdapter<DatabaseServ
     }
   }
 
-  public async Task UpdatePlayerVolumeLevel(ulong playerGuildId, float newVolume)
+  public async Task UpdatePlayerVolumeLevelAsync(ulong playerGuildId, float newVolume, CancellationToken cancellationToken = default)
   {
+    cancellationToken.ThrowIfCancellationRequested();
+
     try
     {
       Guard.Against.NegativeOrZero((long)playerGuildId, nameof(playerGuildId), "Invalid guild id");

@@ -1,11 +1,9 @@
 ﻿using System.Text.RegularExpressions;
-using Discord;
-using Discord.WebSocket;
 using Howbot.Application.Constants;
-using Howbot.Application.Enums;
 using Howbot.Application.Interfaces.Infrastructure;
 using Howbot.Application.Interfaces.Lavalink;
 using Howbot.Application.Models.Lavalink;
+using Howbot.Domain.Entities.Concrete;
 using Howbot.Infrastructure.Audio.Helpers;
 using Howbot.SharedKernel;
 using Howbot.SharedKernel.Constants;
@@ -23,6 +21,10 @@ namespace Howbot.Infrastructure.Audio.Lavalink.Services;
 
 public partial class MusicPlaybackService(IAudioService audioService, IPlayerFactoryService playerFactory, IServiceProvider serviceProvider, ILoggerAdapter<MusicPlaybackService> logger) : IMusicPlaybackService
 {
+  [GeneratedRegex(RegexPatterns.UrlPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+  private static partial Regex UrlPattern();
+
+
   public async ValueTask<MusicCommandResult> PlayTrackAsync(ulong guildId, ulong voiceChannelId, string query, CancellationToken ct = default)
   {
     try
@@ -47,7 +49,7 @@ public partial class MusicPlaybackService(IAudioService audioService, IPlayerFac
         return MusicCommandResult.Failure("No tracks have been found for the given search query.");
       }
 
-      var player = await playerFactory.GetOrCreatePlayerAsync(guildId, voiceChannelId, ct);
+      var player = await playerFactory.GetOrCreatePlayerAsync(guildId, voiceChannelId, token: ct);
       if (player == null)
       {
         return MusicCommandResult.Failure("Failed to create or retrieve the player for the specified guild.");
@@ -70,7 +72,11 @@ public partial class MusicPlaybackService(IAudioService audioService, IPlayerFac
         return MusicCommandResult.Failure("Failed to dequeue a track from the queue.");
       }
 
-      await player.PlayAsync(trackQueueItem, false, cancellationToken: ct);
+      logger.LogDebug("Playing track: {TrackTitle} for guild {GuildId} in voice channel {VoiceChannelId}", trackQueueItem!.Track?.Title ?? string.Empty, guildId, voiceChannelId);
+
+      await player.PlayAsync(trackQueueItem!, false, cancellationToken: ct);
+
+      return MusicCommandResult.Success();
     }
     catch (Exception exception)
     {
@@ -79,11 +85,11 @@ public partial class MusicPlaybackService(IAudioService audioService, IPlayerFac
     }
   }
 
-  public async ValueTask<MusicCommandResult> PauseTrackAsync(ulong guildId, CancellationToken ct = default)
+  public async ValueTask<MusicCommandResult> PauseTrackAsync(ulong guildId, ulong voiceChannelId, CancellationToken ct = default)
   {
     try
     {
-      var player = await playerFactory.GetOrCreatePlayerAsync(guildId, ct: ct);
+      var player = await playerFactory.GetOrCreatePlayerAsync(guildId, voiceChannelId, token: ct);
       if (player == null)
       {
         return MusicCommandResult.Failure("Failed to retrieve the player for the specified guild.");
@@ -94,7 +100,10 @@ public partial class MusicPlaybackService(IAudioService audioService, IPlayerFac
         return MusicCommandResult.Failure("The player is not currently playing any track.");
       }
 
+      logger.LogDebug("Pausing track for guild {GuildId} in voice channel {VoiceChannelId}", guildId, voiceChannelId);
+
       await player.PauseAsync(cancellationToken: ct);
+
       return MusicCommandResult.Success("Track has been paused successfully.");
     }
     catch (Exception exception)
@@ -104,54 +113,144 @@ public partial class MusicPlaybackService(IAudioService audioService, IPlayerFac
     }
   }
 
-  public ValueTask<MusicCommandResult> ResumeTrackAsync(ulong guildId, CancellationToken ct = default)
+  public async ValueTask<MusicCommandResult> ResumeTrackAsync(ulong guildId, ulong voiceChannelId, CancellationToken ct = default)
+  {
+    try
+    {
+      var player = await playerFactory.GetOrCreatePlayerAsync(guildId, voiceChannelId, token: ct);
+      if (player == null)
+      {
+        return MusicCommandResult.Failure("Failed to retrieve the player for the specified guild.");
+      }
+
+      logger.LogDebug("Resuming track for guild {GuildId} in voice channel {VoiceChannelId}", guildId, voiceChannelId);
+
+      await player.ResumeAsync(cancellationToken: ct);
+
+      return player.State == PlayerState.Playing
+        ? MusicCommandResult.Success("Track has been resumed successfully.")
+        : MusicCommandResult.Failure("Failed to resume the track. The player is not in a valid state.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(ResumeTrackAsync));
+      return MusicCommandResult.Failure("An error occurred while trying to resume the track. Please try again later.");
+    }
+  }
+
+  public async ValueTask<MusicCommandResult> SkipTrackAsync(ulong guildId, ulong voiceChannelId, int? numberOfTracks = null, CancellationToken ct = default)
+  {
+    try
+    {
+      var player = await playerFactory.GetOrCreatePlayerAsync(guildId, voiceChannelId, token: ct);
+      if (player == null)
+      {
+        return MusicCommandResult.Failure("Failed to retrieve the player for the specified guild.");
+      }
+
+      logger.LogDebug("Skipping track. Number of tracks to skip: {NumberOfTracks}", numberOfTracks ?? 1);
+
+      await player.SkipAsync(numberOfTracks ?? 1, cancellationToken: ct);
+
+      return MusicCommandResult.Success("Track has been skipped successfully.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(SkipTrackAsync));
+      return MusicCommandResult.Failure("An error occurred while trying to skip the track. Please try again later.");
+    }
+  }
+
+  public async ValueTask<MusicCommandResult> SeekTrackAsync(ulong guildId, ulong voiceChannelId, TimeSpan seekPosition, CancellationToken ct = default)
+  {
+    try
+    {
+      var player = await playerFactory.GetOrCreatePlayerAsync(guildId, voiceChannelId, token: ct);
+      if (player == null)
+      {
+        return MusicCommandResult.Failure("Failed to retrieve the player for the specified guild.");
+      }
+
+      logger.LogDebug("Seeking track to position: {SeekPosition}", seekPosition);
+
+      await player.SeekAsync(seekPosition, cancellationToken: ct);
+
+      return MusicCommandResult.Success($"Track has been seeked to {seekPosition:mm\\:ss} successfully.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(SeekTrackAsync));
+      return MusicCommandResult.Failure("An error occurred while trying to seek the track. Please try again later.");
+    }
+  }
+
+  public async ValueTask<MusicCommandResult> ChangeVolumeAsync(ulong guildId, ulong voiceChannelId, int volume, CancellationToken ct = default)
+  {
+    try
+    {
+      if (volume < 0 || volume > 100)
+      {
+        return MusicCommandResult.Failure("Volume must be between 0 and 100.");
+      }
+
+      var player = await playerFactory.GetOrCreatePlayerAsync(guildId, voiceChannelId, token: ct);
+      if (player == null)
+      {
+        return MusicCommandResult.Failure("Failed to retrieve the player for the specified guild.");
+      }
+
+      logger.LogDebug("Changing volume to: {Volume}", volume);
+
+      await player.SetVolumeAsync(volume, cancellationToken: ct);
+
+      using var scope = serviceProvider.CreateScope();
+      var db = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
+
+      if (db.DoesGuildExist(guildId))
+      {
+        await db.UpdatePlayerVolumeLevelAsync(guildId, volume, ct);
+      }
+      else
+      {
+        db.AddNewGuild(new Guild { GuildId = player.GuildId, Volume = volume });
+      }
+
+      return MusicCommandResult.Success($"Volume has been set to {volume}% successfully.");
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(ChangeVolumeAsync));
+      return MusicCommandResult.Failure("An error occurred while trying to change the volume. Please try again later.");
+    }
+  }
+
+  public ValueTask<MusicCommandResult> ApplyAudioFilterAsync(ulong guildId, ulong voiceChannelId, IPlayerFilters filters, CancellationToken ct = default)
+  {
+    try
+    {
+      var player = playerFactory.GetOrCreatePlayerAsync(guildId, voiceChannelId, token: ct).AsTask().Result;
+      if (player == null)
+      {
+        return new ValueTask<MusicCommandResult>(MusicCommandResult.Failure("Failed to retrieve the player for the specified guild."));
+      }
+
+      logger.LogDebug("Applying audio filters for guild {GuildId} in voice channel {VoiceChannelId}", guildId, voiceChannelId);
+
+      return new ValueTask<MusicCommandResult>(MusicCommandResult.Success());
+
+      // return new ValueTask<MusicCommandResult>(MusicCommandResult.Success("Audio filters have been applied successfully."));
+    }
+    catch (Exception exception)
+    {
+      logger.LogError(exception, nameof(ApplyAudioFilterAsync));
+      return new ValueTask<MusicCommandResult>(MusicCommandResult.Failure("An error occurred while trying to apply audio filters. Please try again later."));
+    }
+  }
+
+  public ValueTask<MusicCommandResult> GetLyricsAsync(ulong guildId, ulong voiceChannelId, CancellationToken ct = default)
   {
     throw new NotImplementedException();
   }
-
-  public ValueTask<MusicCommandResult> SkipTrackAsync(ulong guildId, int? numberOfTracks = null, CancellationToken ct = default)
-  {
-    throw new NotImplementedException();
-  }
-
-  public ValueTask<MusicCommandResult> SeekTrackAsync(ulong guildId, TimeSpan seekPosition, CancellationToken ct = default)
-  {
-    throw new NotImplementedException();
-  }
-
-  public ValueTask<MusicCommandResult> ChangeVolumeAsync(ulong guildId, int volume, CancellationToken ct = default)
-  {
-    throw new NotImplementedException();
-  }
-
-  public ValueTask<MusicCommandResult> ApplyAudioFilterAsync(ulong guildId, IPlayerFilters filters, CancellationToken ct = default)
-  {
-    throw new NotImplementedException();
-  }
-
-  public ValueTask<MusicCommandResult> GetLyricsAsync(ulong guildId, CancellationToken ct = default)
-  {
-    throw new NotImplementedException();
-  }
-
-  public ValueTask<MusicCommandResult> ToggleShuffleAsync(ulong guildId, CancellationToken ct = default)
-  {
-    throw new NotImplementedException();
-  }
-
-  public ValueTask<MusicCommandResult> GetQueueAsync(ulong guildId, CancellationToken ct = default)
-  {
-    throw new NotImplementedException();
-  }
-
-  public ValueTask<string> GetSpotifyRecommendationAsync(LavalinkTrack track, string market = "US", int limit = 10,
-    CancellationToken ct = default)
-  {
-    throw new NotImplementedException();
-  }
-
-  [GeneratedRegex(RegexPatterns.UrlPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
-  private static partial Regex UrlPattern();
 
   private async ValueTask<SearchResult?> SearchForTrackBySearchQueryAsync(string searchQuery, TrackLoadOptions trackLoadOptions = default, CancellationToken ct = default)
   {

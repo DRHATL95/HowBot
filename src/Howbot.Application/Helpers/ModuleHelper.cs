@@ -4,6 +4,7 @@ using Discord.Interactions;
 using Howbot.Application.Constants;
 using Howbot.Application.Models;
 using Howbot.Application.Models.Discord.Commands;
+using Howbot.Application.Models.Lavalink;
 using CommandException = Howbot.Application.Exceptions.CommandException;
 
 namespace Howbot.Application.Helpers;
@@ -61,6 +62,28 @@ public static class ModuleHelper
     }
 
     throw new CommandException(commandResponse.Exception.Message);
+  }
+
+  public static void HandleCommandFailed(MusicCommandResult commandResult)
+  {
+    Guard.Against.Null(commandResult, nameof(commandResult));
+
+    if (!string.IsNullOrEmpty(commandResult.Message))
+    {
+      throw new CommandException(commandResult.Message);
+    }
+
+    if (commandResult.Exception == null)
+    {
+      throw new CommandException("An unknown error occurred. Please try again.");
+    }
+
+    if (commandResult.Exception.InnerException != null)
+    {
+      throw new CommandException(commandResult.Exception.Message, commandResult.Exception.InnerException);
+    }
+
+    throw new CommandException(commandResult.Exception.Message);
   }
 
   public static bool CheckValidCommandParameter(params object[] args)

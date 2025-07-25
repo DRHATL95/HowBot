@@ -18,6 +18,8 @@ using static Howbot.Application.Models.Discord.Permissions.User;
 namespace Howbot.Application.Modules;
 
 public class MusicModule(
+  IPlayerFactoryService playerFactoryService,
+  IMusicPlaybackService musicPlaybackService,
   IMusicService musicService,
   IEmbedService embedService,
     ILoggerAdapter<MusicModule> logger)
@@ -35,6 +37,31 @@ public class MusicModule(
     try
     {
       await DeferAsync();
+
+      var player = await playerFactoryService.GetOrCreatePlayerAsync(Context);
+      if (player is null)
+      {
+        await FollowupAsync("Unable to get player for this guild. Please try again later.");
+        return;
+      }
+
+      var user = Context.User as IGuildUser;
+      var voiceState = Context.User as IVoiceState;
+      var textChannel = Context.Channel as ITextChannel;
+
+      var trackCountBeforePlay = player.Queue.Count;
+
+      var response = await musicPlaybackService.PlayTrackAsync(player.GuildId, player.VoiceChannelId, searchRequest);
+      if (!response.IsSuccessful)
+      {
+        await DeleteOriginalResponseAsync();
+
+        ModuleHelper.HandleCommandFailed(response);
+
+        return;
+      }
+
+
 
       var player =
         await musicService.GetPlayerByContextAsync(Context, true);

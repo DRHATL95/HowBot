@@ -13,7 +13,6 @@ using Howbot.Application.Models.Discord.Commands;
 using Howbot.Application.Models.Lavalink.Players;
 using Howbot.Domain.Entities.Concrete;
 using Howbot.Infrastructure.Audio.Helpers;
-using Howbot.Infrastructure.Data.Config;
 using Howbot.Infrastructure.Services.Abstract;
 using Howbot.SharedKernel;
 using Howbot.SharedKernel.Constants;

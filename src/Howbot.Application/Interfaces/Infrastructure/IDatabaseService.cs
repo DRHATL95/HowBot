@@ -13,7 +13,7 @@ public interface IDatabaseService
 
   float GetPlayerVolumeLevel(ulong guildId);
 
-  Task UpdatePlayerVolumeLevel(ulong playerGuildId, float newVolume);
+  Task UpdatePlayerVolumeLevelAsync(ulong playerGuildId, float newVolume, CancellationToken cancellationToken = default);
 
   SearchProviderTypes GetGuildSearchProviderType(ulong guildId);
 
